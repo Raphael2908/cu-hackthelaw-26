@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+
+# Node
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Data / local store
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# OS
+.DS_Store
+
+# Misc
+system-design.zip

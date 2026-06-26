@@ -1,0 +1,82 @@
+{
+  "draft-dpa-atlas": {
+    "summary": "Review of the Project Atlas DPA against the firm standard. Three clauses warrant attention: the liability cap, the international transfer wording, and the governing law.",
+    "clauses_relied_on": ["liability", "data_transfer", "governing_law"],
+    "audit_sources": ["firm-standard-dpa", "62018CJ0311", "32016R0679"],
+    "findings": [
+      {
+        "id": "f-dpa-1",
+        "clause_ref": "3.2 Liability",
+        "statement": "The liability cap of 50% of trailing-12-month fees is below the firm minimum of 100% of annual fees and was not partner-approved.",
+        "citation": null
+      },
+      {
+        "id": "f-dpa-2",
+        "clause_ref": "7.1 International transfers",
+        "statement": "Transfers of personal data to the supplier's US affiliates are permissible without additional safeguards.",
+        "citation": {"celex": "62018CJ0311", "claim": "transfers of personal data to the US require no additional safeguards"}
+      },
+      {
+        "id": "f-dpa-3",
+        "clause_ref": "9 Governing law",
+        "statement": "The agreement is governed by the laws of the State of New York.",
+        "citation": null
+      }
+    ],
+    "deviations": [
+      {
+        "clause_ref": "3.2 Liability",
+        "standard_key": "liability",
+        "draft_text": "Aggregate liability capped at 50% of trailing-12-month fees.",
+        "score": 0.8,
+        "rationale": "Cap is materially below the firm standard of 100% of annual fees; sub-1x caps require recorded partner approval."
+      },
+      {
+        "clause_ref": "9 Governing law",
+        "standard_key": "governing_law",
+        "draft_text": "Governed by the laws of the State of New York.",
+        "score": 0.7,
+        "rationale": "Governing law departs from the firm standard of England & Wales without recorded partner approval."
+      }
+    ]
+  },
+
+  "draft-govlaw-atlas": {
+    "summary": "Review of the Project Atlas governing-law clause. The clause itself is broadly acceptable, but the supporting authority cited is questionable and the conclusion is not stable across runs.",
+    "clauses_relied_on": ["governing_law"],
+    "audit_sources": ["firm-standard-dpa", "32008R0593"],
+    "findings": [
+      {
+        "id": "f-gov-1",
+        "clause_ref": "11 Governing law",
+        "statement": "Parties are free to select the governing law of the agreement.",
+        "citation": {"celex": "32020R9999", "claim": "parties may freely select the governing law of a contract"},
+        "runs": [0, 1, 2]
+      },
+      {
+        "id": "f-gov-2",
+        "clause_ref": "11 Governing law",
+        "statement": "The exclusive-jurisdiction wording may require a carve-out for interim relief; recommend amendment.",
+        "citation": null,
+        "runs": [1]
+      }
+    ],
+    "deviations": []
+  },
+
+  "draft-recital-atlas": {
+    "summary": "The background recital is non-operative and consistent with the firm standard. No obligations arise.",
+    "clauses_relied_on": ["recital"],
+    "audit_sources": ["firm-standard-dpa"],
+    "findings": [],
+    "deviations": []
+  },
+
+  "draft-confidentiality-atlas": {
+    "summary": "The confidentiality clause mirrors the firm standard (mutual, three-year survival).",
+    "clauses_relied_on": ["confidentiality"],
+    "audit_sources": ["firm-standard-dpa"],
+    "findings": [],
+    "deviations": []
+  }
+}

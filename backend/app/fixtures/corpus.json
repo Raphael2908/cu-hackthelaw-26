@@ -1,0 +1,158 @@
+[
+  {
+    "id": "firm-standard-dpa",
+    "celex": null,
+    "kind": "firm_standard",
+    "title": "Firm Standard — Data Processing & Commercial Terms (v4)",
+    "source_url": "internal://standards/dpa-v4",
+    "text": "FIRM STANDARD TERMS (v4)\n\n1. Liability. Aggregate liability is capped at 100% of the annual fees payable under the agreement. Caps below 1x annual fees require partner approval and a recorded rationale.\n\n2. Governing law. Agreements are governed by the laws of England & Wales unless a different governing law is approved by the supervising partner.\n\n3. International data transfers. Transfers of personal data outside the UK/EEA must rely on Standard Contractual Clauses together with a documented transfer risk assessment and supplementary measures, consistent with Schrems II.\n\n4. Confidentiality. Mutual confidentiality obligations survive for three years after termination.",
+    "clauses": {
+      "liability": "Aggregate liability capped at 100% of annual fees; sub-1x caps require partner approval.",
+      "governing_law": "Governed by the laws of England & Wales unless the partner approves otherwise.",
+      "data_transfer": "Non-UK/EEA transfers require SCCs plus a transfer risk assessment and supplementary measures (Schrems II).",
+      "confidentiality": "Mutual confidentiality survives three years post-termination."
+    },
+    "planted_defects": [],
+    "ground_truth": {}
+  },
+  {
+    "id": "process-doc-review",
+    "celex": null,
+    "kind": "process_doc",
+    "title": "Process Document — Document Review Severity Policy",
+    "source_url": "internal://process/review-severity",
+    "text": "Severity is set up front by policy, not inferred by a model after the fact. Task types and their severity labels are defined here.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {},
+    "task_types": {
+      "review_binding_obligation": {"severity": "high", "label": "Review of a binding obligation (liability, indemnity, data transfer)"},
+      "review_governing_law": {"severity": "medium", "label": "Review of governing law / jurisdiction clause"},
+      "review_recital_summary": {"severity": "low", "label": "Summary of a non-key recital / background"},
+      "confidentiality_clause_review": {"severity": "low", "label": "Confidentiality clause review"}
+    }
+  },
+
+  {
+    "id": "32016R0679",
+    "celex": "32016R0679",
+    "kind": "legislation",
+    "title": "Regulation (EU) 2016/679 — General Data Protection Regulation (GDPR)",
+    "source_url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "text": "Article 44–49 set the conditions for transfers of personal data to third countries: such transfers require appropriate safeguards. Article 17 establishes the right to erasure.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "transfers of personal data to third countries require appropriate safeguards",
+        "data subjects have a right to erasure"
+      ]
+    }
+  },
+  {
+    "id": "62018CJ0311",
+    "celex": "62018CJ0311",
+    "kind": "case_law",
+    "title": "Case C-311/18 — Data Protection Commissioner v Facebook Ireland and Schrems (Schrems II)",
+    "source_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:62018CJ0311",
+    "text": "The Court invalidated the EU-US Privacy Shield and held that controllers relying on Standard Contractual Clauses must verify, on a case-by-case basis, whether the law of the third country ensures adequate protection and must adopt supplementary measures where it does not.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "the EU-US Privacy Shield is invalid",
+        "transfers relying on SCCs to the US require supplementary measures",
+        "controllers must assess third-country law before transferring personal data"
+      ]
+    }
+  },
+  {
+    "id": "32008R0593",
+    "celex": "32008R0593",
+    "kind": "legislation",
+    "title": "Regulation (EC) 593/2008 — Law applicable to contractual obligations (Rome I)",
+    "source_url": "https://eur-lex.europa.eu/eli/reg/2008/593/oj",
+    "text": "Article 3 provides that a contract is governed by the law chosen by the parties. Article 4 provides default rules where no choice is made.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "parties may choose the law governing their contract",
+        "absent a choice of law, default connecting factors determine the governing law"
+      ]
+    }
+  },
+  {
+    "id": "32019L0790",
+    "celex": "32019L0790",
+    "kind": "legislation",
+    "title": "Directive (EU) 2019/790 — Copyright in the Digital Single Market",
+    "source_url": "https://eur-lex.europa.eu/eli/dir/2019/790/oj",
+    "text": "Articles 3 and 4 provide exceptions for text and data mining. The Directive concerns copyright; it does not address international personal-data transfers.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "research organisations benefit from a text and data mining exception"
+      ]
+    }
+  },
+
+  {
+    "id": "draft-dpa-atlas",
+    "celex": null,
+    "kind": "draft",
+    "title": "Draft — Data Processing Agreement, Project Atlas",
+    "source_url": "case://atlas/dpa",
+    "text": "3.2 Liability. The aggregate liability of each party is capped at 50% of the fees paid in the 12 months preceding the claim.\n\n7.1 International transfers. Personal data may be transferred to the supplier's US affiliates; the parties agree such transfers are permissible without additional safeguards.\n\n9. Governing law. This agreement is governed by the laws of the State of New York.",
+    "clauses": {
+      "liability": "Aggregate liability capped at 50% of trailing-12-month fees.",
+      "data_transfer": "Transfers to US affiliates permitted without additional safeguards.",
+      "governing_law": "Governed by the laws of the State of New York."
+    },
+    "planted_defects": [
+      {"type": "non_supporting_citation", "clause_ref": "7.1 International transfers"},
+      {"type": "precedent_deviation", "clause_ref": "3.2 Liability"},
+      {"type": "precedent_deviation", "clause_ref": "9 Governing law"}
+    ],
+    "ground_truth": {}
+  },
+  {
+    "id": "draft-govlaw-atlas",
+    "celex": null,
+    "kind": "draft",
+    "title": "Draft — Governing Law & Jurisdiction clause, Project Atlas",
+    "source_url": "case://atlas/govlaw",
+    "text": "11. Governing law and jurisdiction. The parties may select the governing law of this agreement. The courts of England & Wales have exclusive jurisdiction.",
+    "clauses": {
+      "governing_law": "Parties may select the governing law; English courts have exclusive jurisdiction."
+    },
+    "planted_defects": [
+      {"type": "fabricated_citation", "clause_ref": "11 Governing law"},
+      {"type": "multi_run_disagreement", "clause_ref": "11 Governing law"}
+    ],
+    "ground_truth": {}
+  },
+  {
+    "id": "draft-recital-atlas",
+    "celex": null,
+    "kind": "draft",
+    "title": "Draft — Background recital summary, Project Atlas",
+    "source_url": "case://atlas/recital",
+    "text": "Recital A. The parties have collaborated since 2021 and wish to record the commercial background to this agreement. No operative obligations arise from this recital.",
+    "clauses": {"recital": "Non-operative background recital."},
+    "planted_defects": [],
+    "ground_truth": {"clean": true}
+  },
+  {
+    "id": "draft-confidentiality-atlas",
+    "celex": null,
+    "kind": "draft",
+    "title": "Draft — Confidentiality clause, Project Atlas",
+    "source_url": "case://atlas/confidentiality",
+    "text": "14. Confidentiality. Each party shall keep the other's confidential information secret. These obligations survive for three years after termination.",
+    "clauses": {"confidentiality": "Mutual confidentiality surviving three years post-termination."},
+    "planted_defects": [],
+    "ground_truth": {"clean": true}
+  }
+]

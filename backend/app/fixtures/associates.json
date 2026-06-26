@@ -1,0 +1,5 @@
+[
+  {"id": "assoc-amara", "name": "Amara Okafor", "practice_area": "Commercial / Data Protection", "current_load": 2, "capacity": 5},
+  {"id": "assoc-ben", "name": "Ben Schultz", "practice_area": "Disputes / Jurisdiction", "current_load": 1, "capacity": 4},
+  {"id": "assoc-chen", "name": "Chen Wei", "practice_area": "Corporate / Commercial", "current_load": 3, "capacity": 5}
+]
