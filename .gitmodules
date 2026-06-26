@@ -1,0 +1,3 @@
+[submodule ".claude/skills/setup"]
+	path = .claude/skills/setup
+	url = git@github.com:Raphael2908/setup.git
