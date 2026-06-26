@@ -1,0 +1,10 @@
+{
+  "Rules": [
+    {
+      "ID": "expire-intermediate-artifacts",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "uploads/" },
+      "Expiration": { "Days": 90 }
+    }
+  ]
+}
