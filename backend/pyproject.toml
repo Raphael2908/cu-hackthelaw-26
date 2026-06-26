@@ -1,0 +1,41 @@
+[project]
+name = "legal-drafting-copilot"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "gunicorn>=23.0",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "celery>=5.4",
+    "redis>=5.2",
+    "httpx>=0.28",
+    "supabase>=2.10",
+    "pyjwt[crypto]>=2.10",
+    "boto3>=1.35",
+    "python-json-logger>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "ruff>=0.8"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# B008: FastAPI relies on calling Depends()/Header() in argument defaults — idiomatic, not a bug.
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["app/tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
