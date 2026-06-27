@@ -30,13 +30,24 @@ the checker that touches Cellar. Both opt-in (`CELLAR_ENABLED`), default off, su
   stay un-grounded to bound tool-call cost.
 - Tests stay offline: `test_cellar.py` now drives `HttpCellarConnector` with a path-routing
   `MockTransport` (content vs SPARQL) — XHTML parse, Formex parse, malformed→regex fallback, SPARQL
-  title precedence + type→kind refinement, SPARQL failure swallowed, status mapping — plus worker
-  tests (source_lookup caches into the corpus; the tool is offered only when enabled). `make test`
-  green (39, was 32), `make lint` clean.
+  title precedence + type→kind refinement, English-language filter, junk-filename-title discard,
+  SPARQL failure swallowed, status mapping — plus worker tests (source_lookup caches into the corpus;
+  the tool is offered only when enabled). `make test` green (41), `make lint` clean.
+
+**Verified against the LIVE EU Cellar API** (real `curl`s + the actual connector, not mocks):
+- Content negotiation `GET /resource/celex/{CELEX}` with `Accept: application/xhtml+xml` returns a
+  **303 → 200** to the cellar manifestation (`follow_redirects` handles it). Both modern
+  (`32016R0679`, 351 KB) and **pre-2014** (`31990L0314`) docs come back as **XHTML** — the Pub Office
+  converts old Formex via CONVEX — so one `ElementTree` walk parses everything; the DOCTYPE is
+  harmless. A bogus CELEX (`99999X9999`) → `None` (absence), so fabrication detection holds.
+- `62018CJ0311` (Schrems II) correctly resolves as **`case_law`** with the right English title.
+- Two fixes the live test surfaced, now in: (1) the XHTML `<title>` is the internal OJ **filename**
+  (`L_2016119EN.01000101.xml`), not a title → discarded via `_human_title`, real title comes from
+  SPARQL; (2) the SPARQL title must be **filtered by language** — without it `LIMIT 1` returned
+  *Croatian* for an English request → added an ISO-639-1 → Pub-Office language-authority map and an
+  `expression_uses_language` filter. Both public endpoints; **no auth** needed.
 
 **What's next**
-- Confirm the exact SPARQL query + `Accept` headers with live `curl`s before `CELLAR_ENABLED=true`
-  (the one external unknown, isolated to `HttpCellarConnector`).
 - Still open: tune the `plan_case`/`review_document` prompts + harden structured-output parsing
   (`max_tokens` already raised). Perplexity web search; real SSO/JWKS auth.
 

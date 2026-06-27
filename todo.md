@@ -75,6 +75,8 @@ cut from the bottom if time runs short.
       false fabrication (architecture §7.1/§9/§14.1). Uses the **official CELLAR API** (REST content
       negotiation for XHTML/Formex + SPARQL metadata), not HTML scraping. The **worker** also grounds
       citations against real Cellar sources while drafting via Anthropic tool-use (`fetch_eu_source`).
+      **Verified against the live API** (303→XHTML for modern + pre-2014 docs; case-law detected;
+      bogus CELEX → absent; English-language SPARQL title; no auth).
 - [ ] Real auth (SSO/JWKS); per-firm process-doc + standard management. (No Postgres/Supabase —
       SQLite is the production store.)
 

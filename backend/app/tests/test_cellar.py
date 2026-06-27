@@ -228,6 +228,29 @@ def test_http_connection_error_raises_retryable():
         _http(content=content).fetch_by_celex("32008R0593")
 
 
+def test_http_sparql_query_filters_to_english():
+    # Verified live: without a language filter, LIMIT 1 returns an arbitrary language. The query
+    # must pin the title to the requested language's authority URI.
+    seen = {}
+
+    def sparql(request: httpx.Request) -> httpx.Response:
+        seen["query"] = request.url.params.get("query", "")
+        return httpx.Response(200, json=_NO_META)
+
+    _http(
+        content=lambda r: httpx.Response(200, text="<html><body><p>text</p></body></html>"),
+        sparql=sparql,
+    ).fetch_by_celex("32008R0593")
+    assert "authority/language/ENG" in seen["query"]
+
+
+def test_http_junk_filename_title_is_discarded():
+    # The XHTML <title> is the internal OJ filename, not a human title — drop it (no SPARQL here).
+    xhtml = "<html><head><title>L_2016119EN.01000101.xml</title></head><body><p>x</p></body></html>"
+    doc = _http(content=lambda r: httpx.Response(200, text=xhtml)).fetch_by_celex("32016R0679")
+    assert doc is not None and doc["title"] == "EU document 32016R0679"
+
+
 def test_http_sparql_failure_is_swallowed():
     # Metadata is non-essential: a SPARQL error must not fail the fetch — content still returns.
     doc = _http(

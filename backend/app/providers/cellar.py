@@ -37,6 +37,26 @@ def _refine_kind(celex: str, type_uri: str | None) -> str:
     return _celex_kind(celex)
 
 
+# ISO 639-1 → Publications Office language-authority code (the 24 official EU languages). Used to
+# filter the SPARQL title to the requested language — without it, LIMIT 1 returns an arbitrary
+# language version (verified live: it returned Croatian for an English request).
+_EU_LANG = {
+    "bg": "BUL", "cs": "CES", "da": "DAN", "de": "DEU", "el": "ELL", "en": "ENG", "es": "SPA",
+    "et": "EST", "fi": "FIN", "fr": "FRA", "ga": "GLE", "hr": "HRV", "hu": "HUN", "it": "ITA",
+    "lt": "LIT", "lv": "LAV", "mt": "MLT", "nl": "NLD", "pl": "POL", "pt": "POR", "ro": "RON",
+    "sk": "SLK", "sl": "SLV", "sv": "SWE",
+}
+_LANG_AUTHORITY = "http://publications.europa.eu/resource/authority/language/"
+
+
+def _human_title(title: str | None) -> str | None:
+    """The XHTML <title> is the internal OJ filename (e.g. 'L_2016119EN.01000101.xml'), not a human
+    title — verified live. Keep it only if it actually looks like prose."""
+    if title and " " in title and not title.lower().endswith(".xml"):
+        return title
+    return None
+
+
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"[ \t\f\v]+")
 _BLANKLINES_RE = re.compile(r"\n\s*\n\s*\n+")
@@ -114,6 +134,7 @@ class HttpCellarConnector(CellarConnector):
         self._timeout = settings.CELLAR_TIMEOUT
         self._sparql = f"{self._base}{settings.CELLAR_SPARQL_PATH}"
         self._ua = settings.CELLAR_USER_AGENT
+        self._lang_uri = _LANG_AUTHORITY + _EU_LANG.get(self._lang.lower(), self._lang.upper())
         self._client = client  # tests inject an httpx.Client backed by MockTransport
 
     def _get_client(self):
@@ -136,7 +157,8 @@ class HttpCellarConnector(CellarConnector):
             f'FILTER(STR(?celex) = "{celex}") '
             "OPTIONAL { ?work cdm:work_has_resource-type ?type . } "
             "OPTIONAL { ?exp cdm:expression_belongs_to_work ?work ; "
-            "cdm:expression_title ?title . } "
+            "cdm:expression_title ?title ; "
+            f"cdm:expression_uses_language <{self._lang_uri}> . }} "
             "} LIMIT 1"
         )
         try:
@@ -189,7 +211,7 @@ class HttpCellarConnector(CellarConnector):
         sparql_title, type_uri = self._fetch_metadata(celex)
         return {
             "celex": celex,
-            "title": sparql_title or xml_title or f"EU document {celex}",
+            "title": sparql_title or _human_title(xml_title) or f"EU document {celex}",
             "kind": _refine_kind(celex, type_uri),
             "source_url": url,
             "text": text,
