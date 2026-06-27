@@ -136,6 +136,23 @@ def test_whole_plan_edit_add_remove_reorder(client):
     assert client.post(f"/api/cases/{case['id']}/plan/tasks").status_code == 409
 
 
+def test_flags_carry_both_sides_for_verification(client):
+    """Citation + deviation flags carry a work_ref (the quoting passage in the submitted work)
+    alongside source_ref (the quoted source), so the partner can compare both sides."""
+    case, plan = _new_case_with_plan(client)
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    top = client.get(f"/api/cases/{case['id']}/cockpit").json()["queue"][0]
+    flags = client.get(f"/api/tasks/{top['task']['id']}").json()["flags"]
+
+    cite = next(f for f in flags if f["signal_type"] == "citation_support")
+    dev = next(f for f in flags if f["signal_type"] == "precedent_deviation")
+    for f in (cite, dev):
+        assert f.get("work_ref") and f["work_ref"].get("statement"), f["signal_type"]
+        assert f.get("source_ref")
+    # The citation flag also records the proposition the work attributed to the source.
+    assert cite["work_ref"].get("claim")
+
+
 def test_happy_path_end_to_end(client):
     case, plan = _new_case_with_plan(client)
     plan_id = plan["plan"]["id"]

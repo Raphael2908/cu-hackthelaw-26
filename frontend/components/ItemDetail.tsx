@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { decideTask, getAssociates, getTaskDetail, postMessage, reassignTask } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Associate, Flag, FlagSourceRef, TaskDetail } from "@/lib/types";
+import type { Associate, Flag, TaskDetail } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
 import {
   AssigneeTag,
@@ -44,7 +44,7 @@ export function ItemDetail({
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<FlagSourceRef | null>(null);
+  const [source, setSource] = useState<Flag | null>(null);
   const [role, setRole] = useState<Role>("partner");
 
   const [action, setAction] = useState<Action | null>(null);
@@ -306,7 +306,7 @@ export function ItemDetail({
           ) : (
             <div className="space-y-3">
               {flags.map((flag) => (
-                <FlagCard key={flag.id} flag={flag} onView={() => setSource(flag.source_ref)} />
+                <FlagCard key={flag.id} flag={flag} onView={() => setSource(flag)} />
               ))}
             </div>
           )}
@@ -524,7 +524,11 @@ export function ItemDetail({
         </div>
       </Step>
 
-      <SourceDrawer sourceRef={source} onClose={() => setSource(null)} />
+      <SourceDrawer
+        sourceRef={source?.source_ref ?? null}
+        workRef={source?.work_ref ?? null}
+        onClose={() => setSource(null)}
+      />
     </div>
   );
 }

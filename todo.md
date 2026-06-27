@@ -44,7 +44,7 @@ cut from the bottom if time runs short.
         Frontend: an "Instructions for the planner (optional)" field on the new-case form (+ demo
         fill). Test `test_case_instructions_steer_the_planner`; 52 backend tests green, ruff + tsc
         clean. Pairs with the iterative revise loop (initial steer + follow-up steer).
-- [ ] **Source verification: show BOTH the quoting passage in the work AND the quoted passage in the
+- [x] **Source verification: show BOTH the quoting passage in the work AND the quoted passage in the
       source (backend + frontend).** The source drawer (`components/SourceDrawer.tsx`) today shows
       only the source side — its "DOCUMENT TEXT" is the cited corpus document's text (the authority /
       firm-standard doc via `getCorpusDoc`), with the cited locator clause highlighted. It does **not**
@@ -68,6 +68,13 @@ cut from the bottom if time runs short.
       - **Note:** overlaps the existing "side-by-side source diff for deviation flags" line
         under *Now (depth)* — fold them together. **One rule:** still just surfacing two checkable
         passages for the human to compare; the system never renders the verdict (keep the footer).
+      - **Done.** Checker records a `work_ref` (quoting side) on every citation + deviation flag:
+        citation → work clause_ref + the finding's statement + the `claim` it attributed to the
+        source; deviation → the draft's own clause text. `SourceDrawer` gained a `workRef` prop and
+        renders a sky "In the submitted work" pane (clause + statement + "Claims this source says…")
+        above the relabelled "In the source" section. `Flag.work_ref` + `FlagWorkRef` added to types;
+        `ItemDetail` passes the whole flag. Test `test_flags_carry_both_sides_for_verification`; 53
+        backend tests green, ruff + tsc clean. Verified live on citation + deviation flags.
 - [x] **Iterative planning — the partner critiques the plan and the planner revises (backend +
       frontend).** Today the planner proposes a plan and the partner can only edit task fields
       (assignee/severity) or regenerate from scratch — there's no way to give natural-language

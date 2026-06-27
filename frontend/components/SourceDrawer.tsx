@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import { getCorpusDoc } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { CorpusDoc, FlagSourceRef } from "@/lib/types";
+import type { CorpusDoc, FlagSourceRef, FlagWorkRef } from "@/lib/types";
 import { Spinner } from "./ui";
 
 // One-click source verification. Either resolves a corpus document (and highlights the cited
 // clause/standard key) or — for a fabricated citation — states plainly that no such source exists.
 export function SourceDrawer({
   sourceRef,
+  workRef,
   onClose,
 }: {
   sourceRef: FlagSourceRef | null;
+  workRef?: FlagWorkRef | null;
   onClose: () => void;
 }) {
   const [doc, setDoc] = useState<CorpusDoc | null>(null);
@@ -38,6 +40,9 @@ export function SourceDrawer({
   const locator = sourceRef.clause_ref || sourceRef.standard_key;
   const clauseText =
     doc?.clauses && locator && doc.clauses[locator] ? doc.clauses[locator] : null;
+  // The quoting side — only render it when there's something to show.
+  const work =
+    workRef && (workRef.statement || workRef.clause_ref || workRef.claim) ? workRef : null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -63,6 +68,35 @@ export function SourceDrawer({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
+          {/* The quoting side: the passage in the submitted work that cited this source. */}
+          {work ? (
+            <div className="mb-5 rounded-lg border border-sky-200 bg-sky-50/60 p-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+                In the submitted work
+              </div>
+              {work.clause_ref ? (
+                <div className="mt-1 text-xs font-semibold text-ink">Clause {work.clause_ref}</div>
+              ) : null}
+              {work.statement ? (
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">
+                  {work.statement}
+                </p>
+              ) : null}
+              {work.claim ? (
+                <p className="mt-2 text-xs text-sky-900">
+                  <span className="font-semibold">Claims this source says:</span> &ldquo;
+                  {work.claim}&rdquo;
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {work ? (
+            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+              In the source
+            </div>
+          ) : null}
+
           {fabricated ? (
             <div className="rounded-lg border border-red-200 bg-red-50 p-5">
               <div className="text-sm font-semibold text-red-800">
@@ -122,7 +156,7 @@ export function SourceDrawer({
 
               <div>
                 <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
-                  Document text
+                  Full source text
                 </div>
                 <p className="whitespace-pre-wrap rounded-lg border border-line bg-canvas p-4 text-sm leading-relaxed text-ink-soft">
                   {doc.text}

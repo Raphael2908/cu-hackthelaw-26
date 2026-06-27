@@ -4,6 +4,28 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Source verification shows both sides — quoting passage + quoted source
+
+**Where we are.** The source drawer showed only the source side. A lawyer wanted to see, side by
+side, the exact passage in the submitted work that cited a source AND the part of the source that
+was quoted — so they can directly check "did the work represent the source correctly?". Both sides
+are now surfaced (still two checkable passages to compare; the system never renders the verdict).
+
+**Built**
+- **Backend (`services/checker.py`).** Every citation + deviation flag now carries a `work_ref` (the
+  quoting side) beside `source_ref`: citation flags → the finding's `clause_ref` + `statement` + the
+  `claim` it attributed to the source (`_citation_work_ref`); deviation flags → the draft's own
+  deviating clause text. No schema change (JSON rows).
+- **Frontend.** `SourceDrawer` gained a `workRef` prop and renders a sky **"In the submitted work"**
+  pane (clause + statement + "Claims this source says: …") above the relabelled **"In the source"**
+  section ("Document text" → "Full source text"). `Flag.work_ref` + `FlagWorkRef` added to
+  `lib/types.ts`; `ItemDetail` now passes the whole flag to the drawer (both refs).
+- **Verified.** New `test_flags_carry_both_sides_for_verification`. 53 backend tests green, ruff
+  clean, frontend `tsc` clean. Live: citation flag → WORK clause "7.1" + claim vs SOURCE CELEX;
+  deviation flag → draft "3.2 Liability" text vs the firm-standard `liability` clause.
+
+---
+
 ## Choose the associate for human/hybrid tasks at planning
 
 **Where we are.** Reassignment already existed at review (`ItemDetail`); the partner can now also pick

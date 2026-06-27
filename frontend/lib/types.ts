@@ -121,6 +121,13 @@ export interface FlagSourceRef {
   task_id?: string;
 }
 
+// The quoting side of a flag — the passage in the SUBMITTED WORK that cited the source / deviated.
+export interface FlagWorkRef {
+  clause_ref?: string | null;
+  statement?: string; // what the output asserted / the draft's own clause text
+  claim?: string | null; // citation only: the proposition the work attributed to the source
+}
+
 export interface Flag {
   id: string;
   task_id: string;
@@ -131,6 +138,7 @@ export interface Flag {
   description: string;
   evidence: Record<string, unknown>;
   source_ref: FlagSourceRef;
+  work_ref?: FlagWorkRef;
 }
 
 export interface Finding {
