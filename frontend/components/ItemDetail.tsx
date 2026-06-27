@@ -29,6 +29,8 @@ import {
 import { SourceDrawer } from "./SourceDrawer";
 import { TaskTrace } from "./TaskTrace";
 import { MessageThread } from "./MessageThread";
+import { MarkdownEditor } from "./MarkdownEditor";
+import { Markdown } from "./Markdown";
 
 type Action = "approve" | "amend" | "reject";
 
@@ -167,7 +169,7 @@ export function ItemDetail({
       >
         {submission ? (
           <div>
-            <p className="text-sm text-ink-soft">{submission.summary}</p>
+            <Markdown content={submission.summary} />
 
             {submission.findings.length > 0 ? (
               <div className="mt-4 space-y-2">
@@ -287,12 +289,11 @@ export function ItemDetail({
                 <div className="text-xs font-medium text-ink-soft">
                   Reply to the associate&apos;s question or concern
                 </div>
-                <textarea
+                <MarkdownEditor
                   value={reply}
-                  onChange={(e) => setReply(e.target.value)}
+                  onChange={setReply}
                   rows={2}
                   placeholder="Type your reply — this sends the task back to the associate…"
-                  className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
                 />
                 <Button onClick={sendReply} disabled={replying || !reply.trim()}>
                   {replying ? "Sending…" : "Send reply & return to associate"}
@@ -362,24 +363,22 @@ export function ItemDetail({
 
               {action ? (
                 <div className="mt-3 space-y-2">
-                  <textarea
+                  <MarkdownEditor
                     value={note}
-                    onChange={(e) => setNote(e.target.value)}
+                    onChange={setNote}
                     rows={2}
                     placeholder={
                       action === "reject"
                         ? "What should the associate fix? (sent to them with the task)…"
                         : "Note (recorded with your decision)…"
                     }
-                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
                   />
                   {action === "amend" ? (
-                    <textarea
+                    <MarkdownEditor
                       value={amendment}
-                      onChange={(e) => setAmendment(e.target.value)}
+                      onChange={setAmendment}
                       rows={3}
                       placeholder="Amendment text…"
-                      className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
                     />
                   ) : null}
                   <div className="flex items-center gap-2">

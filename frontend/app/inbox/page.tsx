@@ -15,6 +15,7 @@ import {
   StatusPill,
 } from "@/components/ui";
 import { MessageThread } from "@/components/MessageThread";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 
 export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[] | null>(null);
@@ -185,6 +186,18 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
           </div>
         ) : null}
 
+        {task.assignee_type === "hybrid" && task.human_instruction ? (
+          <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3">
+            <div className="flex items-center gap-2">
+              <OriginTag origin="you" />
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+                Your part
+              </div>
+            </div>
+            <p className="mt-0.5 text-sm text-sky-900">{task.human_instruction}</p>
+          </div>
+        ) : null}
+
         {ai_first_pass ? (
           <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50/60 p-3">
             <div className="flex items-center gap-2">
@@ -249,12 +262,11 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
                   {returned ? "Revise & resubmit" : "Your submission"}
                 </div>
               </div>
-              <textarea
+              <MarkdownEditor
                 value={summary}
-                onChange={(e) => setSummary(e.target.value)}
+                onChange={setSummary}
                 rows={3}
                 placeholder="Summarise your review and conclusion…"
-                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
               />
               {error ? (
                 <div className="mt-2">
@@ -277,12 +289,11 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
                   <div className="text-xs font-medium text-violet-800">
                     Raise a question or concern — this hands the task to them until they reply.
                   </div>
-                  <textarea
+                  <MarkdownEditor
                     value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
+                    onChange={setQuestion}
                     rows={2}
                     placeholder="Ask a question or raise a concern…"
-                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
                   />
                   <div className="flex items-center gap-2">
                     <Button onClick={ask} disabled={askingBusy || !question.trim()}>

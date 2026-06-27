@@ -4,6 +4,37 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Shared markdown editor for all human free-text boxes
+
+**Where we are.** Every human free-text box was a bare `<textarea>` — no formatting, no preview.
+Built one shared rich-text editor and wired it into all five authoring spots, so partners and
+associates can write legibly (headings, emphasis, lists, links). It's a free-text editor for the
+human's own words — never an agent-generated verdict (the one rule holds).
+
+**Built (frontend only)**
+- **`components/MarkdownEditor.tsx` (new, shared).** GitHub-style comment box in the product's *light*
+  visual language (not the GitHub dark widget): a **Write/Preview** segmented toggle (same look as the
+  audit filter + role toggles) and a light formatting toolbar — **H, B, I, link, code, • list, 1.
+  list**. Toolbar buttons wrap the selection (bold/italic/code), insert a link with the `url` portion
+  pre-selected, or prefix the spanned lines (heading/lists); selection is restored after the parent
+  re-renders (`pendingSel` ref + `useEffect` on value). `onMouseDown preventDefault` keeps the
+  textarea selection when a toolbar button is pressed. Preview reuses the shared `Markdown`.
+- **`components/Markdown.tsx` extended.** Now also renders italic (`*…*`), links (`[text](url)`,
+  open-in-new-tab), and **numbered lists** (`1. `, tracked separately from bullets) so Preview is
+  faithful to what the toolbar inserts. Additive — existing bold/code/bullets/headings unchanged.
+- **Wired into five call-sites, one component.** Associate **submission** + **question/concern** box
+  (`app/inbox/page.tsx`); partner **note**, **amendment**, **reply** boxes (`components/ItemDetail.tsx`).
+  Saves unchanged (`submitTask` / `postMessage` / `decideTask`). The submission summary read-back now
+  renders via `Markdown` (light bg) instead of a plain `<p>`.
+- **Verified.** `tsc --noEmit` + production `next build` both clean.
+
+**Deferred.** (1) File attach (click/paste/drag-drop) on the submission — needs the backend seam
+(reuse `POST /cases/{id}/documents`, tag to task). (2) Markdown read-back on **dark** backgrounds —
+the partner's navy message bubble and the audit note sentence — needs a theme-aware `Markdown`
+(colors are hardcoded light); those stay plain for now.
+
+---
+
 ## Associate channel: "question" → "question or concern" (relabel)
 
 **Where we are.** The associate→partner channel was framed narrowly as a *question*, which

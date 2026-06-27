@@ -168,7 +168,7 @@ cut from the bottom if time runs short.
         (the modal is just the entry point, and the partner lands on plan to generate it), or (b) stay
         on the cases page, close the modal, refresh the list, and let the partner open the new case to
         generate its plan. Pick one and keep the create→plan story coherent; don't do both.
-- [ ] **Bring the rich-text editor to the partner's view too.** The partner also types into bare
+- [x] **Bring the rich-text editor to the partner's view too.** The partner also types into bare
       textareas in `components/ItemDetail.tsx`: the decision **note** (`note`, ~lines 366–376), the
       **amendment** text (`amendment`, ~377–385), and the **reply to the associate** (`reply`,
       ~291–297). Give these the same markdown editor as the associate's submission/concern boxes —
@@ -180,6 +180,12 @@ cut from the bottom if time runs short.
       existing `Markdown` component so authoring and display stay consistent. Guardrail: this is a
       free-text editor for the human's own words — it stays the partner's recorded decision/remark,
       never an agent-generated verdict.
+      - **Done (authoring).** All three partner boxes (note, amendment, reply) now use the shared
+        `MarkdownEditor`; saves are unchanged (`decideTask` / `postMessage`). **Remaining:** rendering
+        the saved markdown in the read-back spots that sit on a **dark** background — the partner's
+        navy message bubble in `MessageThread` and the audit note sentence — needs a theme-aware
+        `Markdown` (its colors are hardcoded light), so those stay plain for now. The submission
+        summary read-back (light bg) is rendered via `Markdown`.
 - [ ] **Generalise the associate's "ask the partner a question" box to questions *or* concerns, on
       the rich-text editor.** Today the associate→partner channel is framed narrowly as a *question*
       (`app/inbox/page.tsx`): the button "Ask the partner a question" (~line 238), the box heading
@@ -210,8 +216,7 @@ cut from the bottom if time runs short.
         "Message" (filter still `kind === "question"`, which catches concerns). Shared maps:
         `MessageThread` bubble "Question or concern" / "Reply"; `ui.tsx` status "awaiting reply"; audit
         sentences "raised a question or concern" / "replied to the associate". `tsc --noEmit` clean.
-        **Remaining:** swap both boxes to the shared rich-text editor (blocked on the rich-text-editor
-        item below — the bare textareas stay until then).
+        **Done:** both boxes now use the shared `MarkdownEditor` (see the rich-text-editor item below).
 - [x] **Block debrief generation while tasks are still pending (backend + frontend).** Closing a case
       (`POST /cases/{id}/close`, `backend/app/api/routers/cases.py`) immediately flips it to `closed`
       and generates the debrief with **no guard** — so a partner can produce a "case summary at close"
@@ -284,6 +289,17 @@ cut from the bottom if time runs short.
         so the associate's file lands in the case corpus (tagged to the task), rather than adding a
         new submission-attachment table. Record the attachment in the audit/submission record so it's
         traceable. Keep submissions checkable claims that re-enter the flow — never an auto-decision.
+      - **Partial (editor done; upload deferred).** Built the shared `components/MarkdownEditor.tsx`
+        — Write/Preview segmented toggle (same look as the audit/role toggles) + a light formatting
+        toolbar (H, B, I, link, code, bulleted/numbered list; buttons wrap/prefix the textarea
+        selection and restore it) in the product's light visual language, Preview via the shared
+        `Markdown`. Extended `Markdown` to render italic (`*…*`), links (`[t](url)`), and numbered
+        lists so Preview is faithful to the toolbar. Wired into the associate **submission** + the
+        **question/concern** box (`inbox/page.tsx`) and all three partner boxes (note/amendment/reply,
+        `ItemDetail.tsx`) — one editor, five call-sites. The submission summary read-back renders via
+        `Markdown`. Production build clean. **Remaining:** file attach (click/paste/drag-drop) — needs
+        the backend seam above; dark-bg read-back (message bubbles / audit note) needs theme-aware
+        `Markdown`.
 - [x] **Cut redundant hint/helper text that clutters the view.** Several screens carry long muted
       explainer sentences (the `text-[11px]`/`text-xs text-muted` paragraphs) that restate what the
       adjacent control already makes obvious — visual noise for a time-poor partner. Trim them: keep
