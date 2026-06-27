@@ -7,6 +7,7 @@ import {
   approvePlan,
   createPlan,
   deleteTask,
+  getAssociates,
   getCase,
   getCorpus,
   getPlan,
@@ -15,7 +16,7 @@ import {
   type TaskPatchBody,
 } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { AssigneeType, Case, CorpusDoc, Plan, Severity, Task } from "@/lib/types";
+import type { AssigneeType, Associate, Case, CorpusDoc, Plan, Severity, Task } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
 import { AssigneeTag, Button, ErrorNote, Panel, SeverityBadge, Spinner } from "@/components/ui";
 import { CaseSubNav } from "@/components/CaseSubNav";
@@ -29,6 +30,7 @@ export default function PlanPage() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [corpus, setCorpus] = useState<CorpusDoc[]>([]);
+  const [associates, setAssociates] = useState<Associate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
@@ -48,9 +50,10 @@ export default function PlanPage() {
     try {
       // Case + corpus always load; a missing plan (404) is an expected state for a freshly created
       // case, not an error — leave `plan` null so the empty state offers generation.
-      const [c, corp] = await Promise.all([getCase(id), getCorpus()]);
+      const [c, corp, assoc] = await Promise.all([getCase(id), getCorpus(), getAssociates()]);
       setCaseData(c);
       setCorpus(corp);
+      setAssociates(assoc);
       try {
         const p = await getPlan(id);
         setPlan(p.plan);
@@ -79,6 +82,12 @@ export default function PlanPage() {
     corpus.forEach((d) => m.set(d.id, d));
     return m;
   }, [corpus]);
+
+  const associatesById = useMemo(() => {
+    const m = new Map<string, Associate>();
+    associates.forEach((a) => m.set(a.id, a));
+    return m;
+  }, [associates]);
 
   const approved = plan?.status === "approved";
   const editable = !approved && role === "partner";
@@ -415,8 +424,31 @@ export default function PlanPage() {
                           ) : (
                             <AssigneeTag type={t.assignee_type} />
                           )}
-                          {t.assignee_id ? (
-                            <div className="mt-1 text-[11px] text-muted">{t.assignee_id}</div>
+
+                          {/* Which associate owns the human/hybrid work — editable before approval.
+                              AI-only tasks have no associate. */}
+                          {t.assignee_type !== "ai" ? (
+                            editable ? (
+                              <select
+                                value={t.assignee_id ?? ""}
+                                disabled={savingId === t.id}
+                                onChange={(e) => onPatch(t, { assignee_id: e.target.value })}
+                                className="select mt-1.5 max-w-[13rem]"
+                              >
+                                <option value="">Unassigned (any associate)</option>
+                                {associates.map((a) => (
+                                  <option key={a.id} value={a.id}>
+                                    {a.name} — {a.practice_area} ({a.current_load}/{a.capacity})
+                                  </option>
+                                ))}
+                              </select>
+                            ) : t.assignee_id ? (
+                              <div className="mt-1 text-[11px] text-muted">
+                                {associatesById.get(t.assignee_id)?.name ?? t.assignee_id}
+                              </div>
+                            ) : (
+                              <div className="mt-1 text-[11px] text-muted">Unassigned</div>
+                            )
                           ) : null}
                         </td>
                         <td className="px-4 py-3">

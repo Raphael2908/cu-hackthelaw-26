@@ -4,6 +4,20 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Choose the associate for human/hybrid tasks at planning
+
+**Where we are.** Reassignment already existed at review (`ItemDetail`); the partner can now also pick
+*which* associate owns a human/hybrid task while still in the plan, before approval — alongside the
+existing assignee-type/severity/instruction edits.
+
+**Built (frontend only).** `plan/page.tsx` loads `getAssociates()`, and the Assignee cell now shows
+an associate `<select>` for human/hybrid tasks (editable on a `proposed` plan; saved via
+`patchTask({ assignee_id })`, already supported by `TaskPatch`). AI-only tasks have no associate.
+Read-only mode resolves the id to the associate's name (was the raw id). Frontend `tsc` clean;
+verified live that `PATCH assignee_id` persists.
+
+---
+
 ## Partner instructions at case creation steer the planner
 
 **Where we are.** The partner can now give the planner free-text direction up front ("keep the
