@@ -1,13 +1,20 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from app.core.audit import record_accountability
 from app.core.auth import CurrentUser, get_current_user
 from app.db.repo import get_repo
 from app.db.tables import CORPUS, TASKS
 from app.providers.factory import get_llm_provider
-from app.schemas.models import DecisionCreate, ReassignRequest, SubmissionCreate, TaskPatch
-from app.services import coordinator, views
+from app.schemas.models import (
+    DecisionCreate,
+    MessageCreate,
+    ReassignRequest,
+    SubmissionCreate,
+    TaskPatch,
+)
+from app.services import coordinator, documents, views
 
 router = APIRouter()
 
@@ -29,15 +36,70 @@ def inbox(user: CurrentUser = Depends(get_current_user)) -> list[dict]:
         if t["assignee_type"] in ("human", "hybrid") and t["status"] in (
             "dispatched",
             "in_progress",
+            "returned",  # sent back by the partner for rework
+            "awaiting_clarification",  # waiting on the partner's reply (read-only here)
         ):
             out.append(
                 {
                     "task": t,
                     "target_document": repo.get(CORPUS, t["target_document_id"]),
-                    "ai_first_pass": views.latest_submission(repo, t["id"]),  # hybrid only
+                    "ai_first_pass": views.ai_first_pass(repo, t["id"]),  # hybrid only
+                    "last_submission": views.latest_submission(repo, t["id"]),
+                    "messages": views.messages(repo, t["id"]),
+                    "attachments": views.task_attachments(repo, t["id"]),
                 }
             )
     return out
+
+
+@router.get("/tasks/{task_id}/attachments")
+def list_task_attachments(task_id: str) -> list[dict]:
+    return views.task_attachments(get_repo(), _task_or_404(task_id)["id"])
+
+
+@router.post("/tasks/{task_id}/attachments", status_code=201)
+async def attach_task_documents(
+    task_id: str,
+    files: list[UploadFile] = File(...),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[dict]:
+    """An associate attaches supporting documents to their work on a task. Each file's text is
+    extracted and stored as a case+task-tagged `attachment` corpus document (reachable in the source
+    drawer), and recorded in the accountability audit so the attachment is traceable to the task."""
+    repo = get_repo()
+    task = _task_or_404(task_id)
+    created: list[dict] = []
+    for upload in files:
+        raw = await upload.read()
+        try:
+            text = documents.extract_text(upload.filename or "document", raw)
+        except ValueError as e:
+            raise HTTPException(415, str(e)) from e
+        doc = repo.insert(
+            CORPUS,
+            {
+                "celex": None,
+                "kind": "attachment",
+                "title": upload.filename or "Attachment",
+                "source_url": f"upload://task/{task_id}/{upload.filename}",
+                "text": text,
+                "case_id": task["case_id"],
+                "task_id": task_id,
+                "planted_defects": [],
+                "ground_truth": {},
+            },
+        )
+        created.append({"id": doc["id"], "title": doc["title"]})
+
+    record_accountability(
+        repo,
+        type="documents_attached",
+        actor=user.email,
+        case_id=task["case_id"],
+        task_id=task_id,
+        payload={"document_ids": [d["id"] for d in created], "n": len(created)},
+    )
+    return created
 
 
 @router.get("/tasks/{task_id}")
@@ -55,6 +117,24 @@ def patch_task(task_id: str, body: TaskPatch) -> dict:
         raise HTTPException(409, "Only proposed tasks can be edited; the plan is already approved.")
     fields = {k: v for k, v in body.model_dump().items() if v is not None}
     return repo.update(TASKS, task_id, fields)
+
+
+@router.delete("/tasks/{task_id}", status_code=204)
+def delete_task(task_id: str, user: CurrentUser = Depends(get_current_user)) -> None:
+    """Remove a PROPOSED task from the plan before approval. Recorded for traceability."""
+    repo = get_repo()
+    task = _task_or_404(task_id)
+    if task["status"] != "proposed":
+        raise HTTPException(409, "Only proposed tasks can be removed; the plan is approved.")
+    repo.delete(TASKS, task_id)
+    record_accountability(
+        repo,
+        type="task_removed",
+        actor=user.email,
+        case_id=task["case_id"],
+        task_id=task_id,
+        payload={"title": task["title"]},
+    )
 
 
 @router.post("/tasks/{task_id}/submit")
@@ -108,3 +188,29 @@ def reassign_task(
         actor=user.email,
         provider=get_llm_provider(),
     )
+
+
+@router.post("/tasks/{task_id}/message")
+def post_message(
+    task_id: str, body: MessageCreate, user: CurrentUser = Depends(get_current_user)
+) -> dict:
+    """The partner↔associate back-and-forth on one task. An associate raises a question (it goes to
+    the partner's cockpit); the partner answers (it returns to the associate). Both hops are
+    recorded in the audit trail."""
+    repo = get_repo()
+    task = _task_or_404(task_id)
+    text = body.body.strip()
+    if not text:
+        raise HTTPException(422, "Message cannot be empty.")
+
+    if user.role == "partner":
+        if task["status"] != "awaiting_clarification":
+            raise HTTPException(409, "There is no open question on this task to answer.")
+        return coordinator.answer_clarification(repo, task=task, body=text, actor=user.email)
+
+    # associate
+    if task["assignee_type"] == "ai":
+        raise HTTPException(409, "AI tasks have no associate to raise a question.")
+    if task["status"] not in ("dispatched", "in_progress", "returned"):
+        raise HTTPException(409, "You can only raise a question on a task in your inbox.")
+    return coordinator.request_clarification(repo, task=task, body=text, actor=user.email)

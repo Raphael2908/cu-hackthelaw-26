@@ -10,6 +10,13 @@ export const ROLE_IDENTITY: Record<Role, { email: string; label: string }> = {
   associate: { email: "amara@firm.example", label: "Associate" },
 };
 
+// The landing view for each role. The role toggle is the way you switch views: becoming the
+// associate takes you to their workspace (the inbox); becoming the partner takes you to the cases.
+export const ROLE_HOME: Record<Role, string> = {
+  partner: "/",
+  associate: "/inbox",
+};
+
 export function getRole(): Role {
   if (typeof window === "undefined") return "partner";
   const v = window.localStorage.getItem(KEY);

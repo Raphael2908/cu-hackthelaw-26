@@ -22,6 +22,9 @@ class CaseCreate(BaseModel):
     # Severity is the partner's up-front choice (architecture.md §7.1), never model-inferred. It
     # becomes the default for every task in the plan; the partner can still override per task.
     severity: Severity = "medium"
+    # Free-text direction the partner gives the planner up front ("keep liability review human-led",
+    # "the client is risk-averse on indemnities"). The planner respects it; it never auto-acts.
+    instructions: str = ""
     # Default to the seeded corpus' process doc + firm standard if not supplied.
     process_doc_id: str | None = None
     firm_standard_id: str | None = None
@@ -36,6 +39,17 @@ class TaskPatch(BaseModel):
     assignee_id: str | None = None
     severity: Severity | None = None
     ai_instruction: str | None = None
+    # The associate's half of a hybrid task — editable by the partner before approval, same as
+    # ai_instruction (the planner proposes both).
+    human_instruction: str | None = None
+    # Position in the plan; the partner reorders tasks before approval.
+    order_index: int | None = None
+
+
+class PlanReviseRequest(BaseModel):
+    """The partner's free-text direction for revising a proposed plan (architecture.md §6)."""
+
+    feedback: str
 
 
 class SubmissionCreate(BaseModel):
@@ -57,3 +71,10 @@ class ReassignRequest(BaseModel):
     assignee_type: AssigneeType
     assignee_id: str | None = None
     note: str = ""
+
+
+class MessageCreate(BaseModel):
+    """A note on a task. From an associate it raises a question to the partner; from the partner it
+    answers an open question and hands the task back to the associate."""
+
+    body: str

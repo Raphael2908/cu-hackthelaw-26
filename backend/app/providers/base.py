@@ -95,14 +95,31 @@ class LLMProvider(ABC):
         process_doc: dict,
         drafts: list[dict],
         associates: list[dict],
+        instructions: str = "",
     ) -> list[dict]:
         """Scope a goal into a proposed task list — RAW scoping only (title, description,
-        task_type, assignee_type, target_document_id, input_brief_slice, ai_instruction). The
-        planner service applies the partner's severity, the process-section label, a default
-        assignee and ordering. A proposal; nothing dispatches until the partner approves."""
+        task_type, assignee_type, target_document_id, input_brief_slice, ai_instruction,
+        human_instruction for hybrid tasks, and a one-line rationale). `instructions` is the
+        partner's free-text direction up front, which the provider should respect. The planner
+        service applies the partner's severity, the process-section label, a default assignee and
+        ordering. A
+        proposal; nothing dispatches until the partner approves."""
+
+    def revise_plan(
+        self, *, case: dict, current_tasks: list[dict], feedback: str
+    ) -> list[dict]:
+        """Revise the current proposed task list given the partner's free-text direction. Returns
+        FULL task dicts (same shape as the stored tasks, so partner edits are preserved), which the
+        planner service re-stamps onto a fresh proposed plan. Default: a no-op returning the current
+        tasks unchanged — providers that can interpret the feedback override this. Still a proposal;
+        nothing dispatches until the partner approves."""
+        return [dict(t) for t in current_tasks]
 
     @abstractmethod
-    def generate_debrief(
+    def debrief_carry_forward(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
-    ) -> str:
-        """Templated debrief markdown from the case record."""
+    ) -> list[str]:
+        """Carry-forward items the partner should action before the next matter relies on this work
+        — derived from the flags raised and the partner's amendments. Observations, never a verdict.
+        The structured issue/cleared composition is done by the debrief service from the joined
+        records; the provider supplies only these notes."""

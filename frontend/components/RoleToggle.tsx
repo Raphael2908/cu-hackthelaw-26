@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRole, setRole, subscribeRole, type Role, ROLE_IDENTITY } from "@/lib/role";
+import { useRouter } from "next/navigation";
+import { getRole, setRole, subscribeRole, type Role, ROLE_HOME, ROLE_IDENTITY } from "@/lib/role";
 
 export function RoleToggle() {
+  const router = useRouter();
   const [role, setLocal] = useState<Role>("partner");
 
   useEffect(() => {
@@ -11,9 +13,13 @@ export function RoleToggle() {
     return subscribeRole(() => setLocal(getRole()));
   }, []);
 
+  // Switching role is switching view: route to that role's home so the toggle — not a nav link — is
+  // how you enter the associate's workspace.
   const choose = (r: Role) => {
+    if (r === role) return;
     setRole(r);
     setLocal(r);
+    router.push(ROLE_HOME[r]);
   };
 
   return (

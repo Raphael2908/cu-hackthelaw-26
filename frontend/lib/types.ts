@@ -11,9 +11,24 @@ export type TaskStatus =
   | "submitted"
   | "checked"
   | "in_review"
+  | "returned"
+  | "awaiting_clarification"
   | "signed_off"
   | "escalated"
   | "cleared";
+
+export type MessageKind = "return" | "question" | "answer";
+
+export interface TaskMessage {
+  id: string;
+  task_id: string;
+  case_id: string;
+  author_role: "partner" | "associate";
+  author: string;
+  kind: MessageKind;
+  body: string;
+  created_at: string;
+}
 
 export type SignalType =
   | "citation_support"
@@ -33,6 +48,7 @@ export interface Case {
   brief_text: string;
   goal: string;
   severity: Severity;
+  instructions?: string;
   process_doc_id: string;
   firm_standard_id: string;
   status: CaseStatus;
@@ -77,6 +93,8 @@ export interface Task {
   input_brief_slice: string;
   input_process_section: string;
   ai_instruction: string | null;
+  human_instruction: string | null; // the associate's half of a hybrid task
+  rationale: string | null; // one-line planner reasoning, for the partner to verify
   status: TaskStatus;
   order_index: number;
 }
@@ -103,6 +121,13 @@ export interface FlagSourceRef {
   task_id?: string;
 }
 
+// The quoting side of a flag — the passage in the SUBMITTED WORK that cited the source / deviated.
+export interface FlagWorkRef {
+  clause_ref?: string | null;
+  statement?: string; // what the output asserted / the draft's own clause text
+  claim?: string | null; // citation only: the proposition the work attributed to the source
+}
+
 export interface Flag {
   id: string;
   task_id: string;
@@ -113,6 +138,7 @@ export interface Flag {
   description: string;
   evidence: Record<string, unknown>;
   source_ref: FlagSourceRef;
+  work_ref?: FlagWorkRef;
 }
 
 export interface Finding {
@@ -139,6 +165,7 @@ export interface Card {
   risk: Risk | null;
   top_flag: Flag | null;
   flag_count: number;
+  messages?: TaskMessage[]; // attached for needs_reply cards (the open question thread)
 }
 
 export interface Plan {
@@ -154,6 +181,13 @@ export interface PlanResponse {
   tasks: Task[];
 }
 
+export interface PendingSummary {
+  total: number;
+  awaiting_decision: number; // submitted / checked / in_review — awaiting the partner's decision
+  with_associate: number; // dispatched / in_progress / returned / awaiting_clarification
+  not_run: number; // proposed / approved — planned but not yet started
+}
+
 export interface Cockpit {
   queue: Card[];
   auto_clear_lane: Card[];
@@ -161,19 +195,30 @@ export interface Cockpit {
   decided: Card[];
   escalated: Card[];
   awaiting_human: Card[];
+  needs_reply: Card[];
+  pending: PendingSummary;
 }
 
+export interface Attachment {
+  id: string; // corpus document id — openable in the source drawer
+  title: string;
+}
 export interface TaskDetail {
   task: Task;
   submission: Submission | null;
   flags: Flag[];
   risk: Risk | null;
+  messages: TaskMessage[];
+  attachments: Attachment[];
 }
 
 export interface InboxItem {
   task: Task;
   target_document: CorpusDoc;
   ai_first_pass: Submission | null;
+  last_submission: Submission | null;
+  messages: TaskMessage[];
+  attachments: Attachment[];
 }
 
 export interface AuditEvent {
@@ -211,9 +256,46 @@ export interface ApproveResult {
   dispatched: number;
 }
 
+// The debrief is an issue-centric structured payload composed server-side (no markdown parsing).
+export interface DebriefFlag {
+  signal_type: SignalType;
+  hard: boolean;
+  title: string;
+  description: string;
+  source_ref?: FlagSourceRef;
+  work_ref?: FlagWorkRef;
+}
+export interface DebriefDecision {
+  action: "approve" | "amend" | "reject";
+  note: string;
+  amendment?: string | null;
+}
+export interface DebriefIssue {
+  task_title: string;
+  severity: Severity;
+  status: TaskStatus;
+  assignee_type: AssigneeType;
+  flags: DebriefFlag[];
+  decision: DebriefDecision | null;
+}
+export interface DebriefContent {
+  case_title: string;
+  goal: string;
+  summary: {
+    tasks: number;
+    needs_attention: number;
+    cleared: number;
+    hard_flags: number;
+    rejected: number;
+    carry_forward: number;
+  };
+  issues: DebriefIssue[];
+  cleared: { task_title: string; severity: Severity; status: TaskStatus }[];
+  carry_forward: string[];
+}
 export interface DebriefDoc {
   case_id: string;
-  content: string;
+  content: DebriefContent;
   id?: string;
   created_at?: string;
 }

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from app.config import settings
 from app.core.audit import record_accountability
 from app.db.repo import Repo
-from app.db.tables import DECISIONS, PLANS, SUBMISSIONS, TASKS
+from app.db.tables import DECISIONS, PLANS, SUBMISSIONS, TASK_MESSAGES, TASKS
 from app.providers.base import LLMProvider
 from app.services import checker, ranker, worker
 
@@ -178,11 +178,32 @@ def submit_human_work(
     return {"submission": submission, "risk": risk}
 
 
+def _post_message(
+    repo: Repo, *, task: dict, author_role: str, author: str, kind: str, body: str
+) -> dict:
+    """Append one entry to a task's partner↔associate thread (the ping-pong record)."""
+    return repo.insert(
+        TASK_MESSAGES,
+        {
+            "task_id": task["id"],
+            "case_id": task["case_id"],
+            "author_role": author_role,
+            "author": author,
+            "kind": kind,
+            "body": body,
+        },
+    )
+
+
 def record_decision(
     repo: Repo, *, task: dict, action: str, note: str, amendment: str | None, actor: str
 ) -> dict:
     """approve / amend / reject. Writes an immutable, signed (hash-chained) accountability record.
-    The agent never decides — only the human does (architecture.md §14.1)."""
+    The agent never decides — only the human does (architecture.md §14.1).
+
+    A reject on human/hybrid work is not a dead end: it is *returned* to the associate for rework,
+    carrying the partner's note as a message. (Escalation toward a human is permitted — §14.6.) A
+    reject on AI-only work has no associate to receive it, so it escalates for partner handling."""
     decision = repo.insert(
         DECISIONS,
         {
@@ -207,9 +228,58 @@ def record_decision(
             "decision_id": decision["id"],
         },
     )
-    status = "signed_off" if action in ("approve", "amend") else "escalated"
+    if action in ("approve", "amend"):
+        status = "signed_off"
+    elif task["assignee_type"] in ("human", "hybrid"):
+        status = "returned"
+        _post_message(
+            repo,
+            task=task,
+            author_role="partner",
+            author=actor,
+            kind="return",
+            body=note or "Returned for rework.",
+        )
+    else:
+        status = "escalated"
     repo.update(TASKS, task["id"], {"status": status})
     return decision
+
+
+def request_clarification(repo: Repo, *, task: dict, body: str, actor: str) -> dict:
+    """Associate → partner. The associate raises a question on a task in their inbox; the task moves
+    to the partner's cockpit awaiting a reply. Recorded for traceability."""
+    msg = _post_message(
+        repo, task=task, author_role="associate", author=actor, kind="question", body=body
+    )
+    record_accountability(
+        repo,
+        type="clarification_requested",
+        actor=f"associate:{actor}",
+        case_id=task["case_id"],
+        task_id=task["id"],
+        payload={"message_id": msg["id"]},
+    )
+    repo.update(TASKS, task["id"], {"status": "awaiting_clarification"})
+    return msg
+
+
+def answer_clarification(repo: Repo, *, task: dict, body: str, actor: str) -> dict:
+    """Partner → associate. The partner answers an open question and hands the task back to the
+    associate to continue."""
+    msg = _post_message(
+        repo, task=task, author_role="partner", author=actor, kind="answer", body=body
+    )
+    record_accountability(
+        repo,
+        type="clarification_answered",
+        actor=actor,
+        case_id=task["case_id"],
+        task_id=task["id"],
+        payload={"message_id": msg["id"]},
+    )
+    repo.update(TASKS, task["id"], {"status": "returned"})
+    return msg
 
 
 def reassign(
