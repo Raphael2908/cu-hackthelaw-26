@@ -4,6 +4,35 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Debrief reshaped into an issue-centric memo
+
+**Where we are.** The debrief was laid out by the system's data-model tables (Tasks / Flags /
+Decisions as parallel lists), so one issue was shattered across three sections and a decision pointed
+at its task by a truncated UUID. Reshaped to read like a memo — the cockpit's figure/ground +
+exceptions-over-routine lens applied at close — by composing the join server-side. Recomposition and
+ordering only; never a verdict (the one rule holds).
+
+**Built**
+- **Backend.** `services/debrief.py` now composes a typed payload instead of a markdown blob: per
+  needs-attention task it joins the task + its flags + the partner's decision into ONE `issue`
+  (real titles; each flag keeps `source_ref`/`work_ref`), sorted **worst-first** (hard flag →
+  severity → flag count); routine tasks collapse to `cleared`; a `summary` carries the counts. The
+  provider method `generate_debrief` → `debrief_carry_forward` (notes only): mock derives them from
+  the flags/amendments actually present, real re-prompts for a JSON list. `DebriefDoc.content` is now
+  the structured dict (JSON row, no migration).
+- **Frontend.** `DebriefReport` rebuilt around the payload — the markdown `parseSections`/regex
+  card-parsing and `splitDebrief` are gone. Layout: a **synthesis line** in the letterhead
+  (`N tasks · N hard flags · N rejected · N to carry forward`), **needs-attention issue cards**
+  (task + flags with a one-click source drawer + the partner's decision, together), a collapsed
+  **cleared** lane, and a prominent **carry-forward** list. Printable letterhead + honesty footer
+  kept. `DebriefContent`/`DebriefIssue`/… added to `lib/types.ts`; `DESIGN.md` documents the lens.
+- **Verified.** Happy-path test now asserts the structured shape (amended issue carries both its
+  flags and the amendment in one record). 53 backend tests green, ruff clean, frontend `tsc` clean.
+  Live: 4 tasks → 2 needs-attention (top = DPA review with 3 flags + amend decision joined), 2
+  cleared, 3 carry-forward.
+
+---
+
 ## Source verification shows both sides — quoting passage + quoted source
 
 **Where we are.** The source drawer showed only the source side. A lawyer wanted to see, side by

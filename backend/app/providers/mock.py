@@ -220,33 +220,21 @@ class MockLLMProvider(LLMProvider):
 
         return tasks
 
-    def generate_debrief(
+    def debrief_carry_forward(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
-    ) -> str:
-        lines = [
-            f"# Case debrief — {case['title']}",
-            "",
-            f"**Goal:** {case['goal']}",
-            "",
-            f"## Tasks ({len(tasks)})",
-        ]
-        for t in tasks:
-            lines.append(
-                f"- **{t['title']}** — {t['assignee_type']}, severity {t['severity']}, "
-                f"status {t['status']}"
+    ) -> list[str]:
+        # Deterministic, offline carry-forward notes derived from what was actually flagged/amended.
+        notes: list[str] = []
+        if any(f["signal_type"] == "precedent_deviation" for f in flags):
+            notes.append(
+                "Confirm liability-cap and governing-law deviations are resolved before signing."
             )
-        lines += ["", f"## Flags raised ({len(flags)})"]
-        for f in flags:
-            hard = " (hard)" if f.get("hard") else ""
-            lines.append(f"- [{f['signal_type']}]{hard} {f['title']}")
-        lines += ["", f"## Partner decisions ({len(decisions)})"]
-        for d in decisions:
-            amend = f" — amendment: {d['amendment']}" if d.get("amendment") else ""
-            lines.append(f"- **{d['action']}** on task {d['task_id']}: {d.get('note', '')}{amend}")
-        lines += [
-            "",
-            "## Carry forward",
-            "- Confirm the liability-cap and governing-law deviations are resolved before signing.",
-            "- Re-verify any non-supporting citation before the next matter relies on it.",
-        ]
-        return "\n".join(lines)
+        if any(f["signal_type"] == "citation_support" for f in flags):
+            notes.append(
+                "Re-verify any non-supporting citation before the next matter relies on it."
+            )
+        if any(d.get("action") == "amend" for d in decisions):
+            notes.append(
+                "Fold the partner's amendments into the firm's standard wording where they recur."
+            )
+        return notes or ["No outstanding items — the matter closed clean."]

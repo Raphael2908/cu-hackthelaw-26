@@ -197,17 +197,18 @@ class AnthropicLLMProvider(LLMProvider):
             user += f"\n\nPARTNER INSTRUCTIONS: {instructions.strip()}"
         return self._complete_json(sys, user).get("tasks", [])
 
-    def generate_debrief(
+    def debrief_carry_forward(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
-    ) -> str:
-        sys = "Write a concise markdown debrief of the matter from the record provided."
+    ) -> list[str]:
+        sys = (
+            "From the case record, list the concrete CARRY-FORWARD items the partner should action "
+            "before the next matter relies on this work — derived from the flags raised and the "
+            'partner\'s amendments. Return STRICT JSON {"carry_forward": [str, ...]}. Observations '
+            "only, never a verdict."
+        )
         user = json.dumps(
             {"case": case, "tasks": tasks, "flags": flags, "decisions": decisions}, default=str
         )
-        msg = self._client.messages.create(
-            model=self._model,
-            max_tokens=32768,
-            system=sys,
-            messages=[{"role": "user", "content": user}],
-        )
-        return "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+        data = self._complete_json(sys, user)
+        cf = data.get("carry_forward", [])
+        return [str(x) for x in cf] if isinstance(cf, list) else []

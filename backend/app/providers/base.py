@@ -116,7 +116,10 @@ class LLMProvider(ABC):
         return [dict(t) for t in current_tasks]
 
     @abstractmethod
-    def generate_debrief(
+    def debrief_carry_forward(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
-    ) -> str:
-        """Templated debrief markdown from the case record."""
+    ) -> list[str]:
+        """Carry-forward items the partner should action before the next matter relies on this work
+        — derived from the flags raised and the partner's amendments. Observations, never a verdict.
+        The structured issue/cleared composition is done by the debrief service from the joined
+        records; the provider supplies only these notes."""

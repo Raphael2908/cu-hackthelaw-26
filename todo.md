@@ -337,7 +337,7 @@ cut from the bottom if time runs short.
         removed the duplicate "a steer for where to look — you decide" + "each links to its source"
         in `ItemDetail.tsx` (kept the step-3 "none is a verdict" hint and the step-4 decision
         framing), and tightened three cockpit lane captions. All load-bearing one-rule text kept.
-- [ ] **Reshape the case debrief into an issue-centric memo (backend + frontend).** A senior partner
+- [x] **Reshape the case debrief into an issue-centric memo (backend + frontend).** A senior partner
       found the debrief unnatural: it's laid out by the system's data-model entity types — four flat,
       parallel sections **Tasks / Flags raised / Partner decisions / Carry forward** (one per SQLite
       table + a footer) — not the way a lawyer reads a closed matter. The partner thinks *per issue*
@@ -376,6 +376,15 @@ cut from the bottom if time runs short.
         Never fuse them into an agent pass/fail. Worst-first ordering is a sort, not a judgment.
       - **Docs:** note the debrief reshape in `frontend/DESIGN.md` (same figure/ground + exceptions-
         over-routine rationale as the cockpit) and log it in `current_progress.md`.
+      - **Done.** `DebriefDoc.content` is now a typed payload (`{ case_title, goal, summary, issues[],
+        cleared[], carry_forward[] }`) composed server-side in `services/debrief.py`: per needs-
+        attention task it joins flags + the partner's decision into ONE issue (real titles, each flag
+        keeping `source_ref`/`work_ref`), sorted worst-first; routine tasks → `cleared`. The provider
+        method became `debrief_carry_forward` (notes only; mock derives from flags/amendments, real
+        re-prompts as JSON). Frontend: `DebriefReport` rebuilt around the payload (markdown parsing +
+        `splitDebrief` deleted), synthesis line in the letterhead, composed issue cards with one-click
+        source drawer, collapsed cleared lane, prominent carry-forward. DESIGN.md updated. Test
+        `test_flags…`/happy-path assert the structured shape; 53 backend tests green, ruff + tsc clean.
 - [x] **Declutter the partner cockpit with Gestalt grouping.** A senior partner found the cockpit
       unreadable — too many competing sections and overloaded cards. Reduce visual load and make the
       per-item review read as a clear process, without hiding any signal (the one rule holds; see

@@ -55,7 +55,7 @@ export default function DebriefPage() {
   };
 
   const closed = caseData?.status === "closed";
-  const parsed = debrief ? splitDebrief(debrief.content) : null;
+  const report = debrief?.content ?? null;
   const generatedAt = debrief?.created_at ?? caseData?.closed_at;
   // Block close/regenerate until every task is resolved — a debrief from an in-flight record would
   // misrepresent the matter. The backend enforces this too (409); this just disables the button.
@@ -113,7 +113,7 @@ export default function DebriefPage() {
 
         {loading ? (
           <Spinner label="Loading debrief…" />
-        ) : debrief && parsed ? (
+        ) : debrief && report ? (
           <Panel className="overflow-hidden">
             {/* Letterhead */}
             <header className="border-b border-line bg-canvas px-8 py-7">
@@ -137,14 +137,25 @@ export default function DebriefPage() {
                 </span>
               </div>
 
-              {parsed.goal ? (
+              {report.goal ? (
                 <div className="mt-4 rounded-lg border border-line bg-paper px-4 py-3">
                   <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">
                     Goal
                   </div>
-                  <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">{parsed.goal}</p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">{report.goal}</p>
                 </div>
               ) : null}
+
+              {/* Synthesis line — the bottom line at a glance. Counts, never a verdict. */}
+              <div className="mt-4 text-sm text-ink-soft">
+                <Stat n={report.summary.tasks} /> tasks{" · "}
+                <Stat n={report.summary.hard_flags} alert={report.summary.hard_flags > 0} /> hard
+                flags{" · "}
+                <Stat n={report.summary.rejected} alert={report.summary.rejected > 0} /> rejected
+                {" · "}
+                <Stat n={report.summary.carry_forward} warn={report.summary.carry_forward > 0} /> to
+                carry forward
+              </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
                 {generatedAt ? <span>Generated {fmtDate(generatedAt)}</span> : null}
@@ -155,7 +166,7 @@ export default function DebriefPage() {
 
             {/* Body */}
             <div className="bg-canvas/40 px-8 py-7">
-              <DebriefReport content={parsed.body} />
+              <DebriefReport report={report} />
             </div>
 
             {/* Honesty footer — the debrief is a summary, not a sign-off. */}
@@ -203,23 +214,10 @@ function pendingReason(p: PendingSummary): string {
   )}). Resolve them in the cockpit before closing.`;
 }
 
-// Lift the title (H1) and Goal out of the markdown so they can headline the letterhead; the rest of
-// the document renders normally. Robust to content that omits them (e.g. free-form real output).
-function splitDebrief(raw: string): { goal: string | null; body: string } {
-  const lines = raw.replace(/\r\n/g, "\n").split("\n");
-  let goal: string | null = null;
-  const kept: string[] = [];
-  for (const line of lines) {
-    if (/^#\s+/.test(line)) continue; // drop the top-level title; shown in the letterhead
-    const g = line.match(/^\*\*Goal:\*\*\s*(.*)$/);
-    if (g) {
-      goal = g[1].trim();
-      continue;
-    }
-    kept.push(line);
-  }
-  while (kept.length && kept[0].trim() === "") kept.shift();
-  return { goal, body: kept.join("\n") };
+// One bold count in the synthesis line. `alert`/`warn` tint a non-zero figure that warrants notice.
+function Stat({ n, alert, warn }: { n: number; alert?: boolean; warn?: boolean }) {
+  const cls = alert ? "text-red-700" : warn ? "text-amber-700" : "text-ink";
+  return <span className={`font-semibold ${cls}`}>{n}</span>;
 }
 
 function fmtDate(iso: string): string {

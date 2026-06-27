@@ -217,7 +217,14 @@ def test_happy_path_end_to_end(client):
     _resolve_remaining(client, case["id"])
     closed = client.post(f"/api/cases/{case['id']}/close")
     assert closed.status_code == 200
-    assert "Case debrief" in closed.json()["content"]
+    # The debrief is an issue-centric structured payload: each needs-attention task joins its flags
+    # and the partner's decision in ONE entry; routine work collapses to a count.
+    report = closed.json()["content"]
+    assert report["goal"] and report["summary"]["tasks"] >= 1
+    amended = next(
+        i for i in report["issues"] if i["decision"] and i["decision"]["action"] == "amend"
+    )
+    assert amended["flags"] and amended["decision"]["amendment"]  # the join, in one record
 
 
 def test_close_blocked_while_tasks_pending(client):

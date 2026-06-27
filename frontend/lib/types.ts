@@ -250,9 +250,46 @@ export interface ApproveResult {
   dispatched: number;
 }
 
+// The debrief is an issue-centric structured payload composed server-side (no markdown parsing).
+export interface DebriefFlag {
+  signal_type: SignalType;
+  hard: boolean;
+  title: string;
+  description: string;
+  source_ref?: FlagSourceRef;
+  work_ref?: FlagWorkRef;
+}
+export interface DebriefDecision {
+  action: "approve" | "amend" | "reject";
+  note: string;
+  amendment?: string | null;
+}
+export interface DebriefIssue {
+  task_title: string;
+  severity: Severity;
+  status: TaskStatus;
+  assignee_type: AssigneeType;
+  flags: DebriefFlag[];
+  decision: DebriefDecision | null;
+}
+export interface DebriefContent {
+  case_title: string;
+  goal: string;
+  summary: {
+    tasks: number;
+    needs_attention: number;
+    cleared: number;
+    hard_flags: number;
+    rejected: number;
+    carry_forward: number;
+  };
+  issues: DebriefIssue[];
+  cleared: { task_title: string; severity: Severity; status: TaskStatus }[];
+  carry_forward: string[];
+}
 export interface DebriefDoc {
   case_id: string;
-  content: string;
+  content: DebriefContent;
   id?: string;
   created_at?: string;
 }

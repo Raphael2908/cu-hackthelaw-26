@@ -115,6 +115,25 @@ still hold; this is re-grouping and progressive disclosure, never a fused verdic
 - **Common region (checks).** The three checks (the steer) and the flags (the concrete things to
   verify) merge into one "What to check" region, since they answer the same question together.
 
+### Issue-centric debrief — the same lens at close
+The first debrief was laid out by the system's data-model tables — Tasks / Flags raised / Partner
+decisions as three parallel lists — so a single issue ("the liability cap") was shattered across
+three sections and the reader had to mentally re-join them (and the decision pointed at a task by a
+truncated UUID). The reshape applies the cockpit's figure/ground + exceptions-over-routine lens to
+the close-of-matter view, *without* fusing anything into a verdict:
+
+- **Compose the join server-side.** The debrief service builds one *issue* per needs-attention task —
+  the task + its flags + the partner's own decision, together — so the reader never re-joins tables.
+  Stored as a typed payload, not markdown the frontend has to regex back apart.
+- **Synthesis first (figure).** A one-line bottom-line in the letterhead (N tasks · N hard flags ·
+  N rejected · N to carry forward) — counts, never a judgment.
+- **Exceptions over routine.** Needs-attention issues lead, ordered worst-first (the same severity /
+  hard-flag sort the cockpit uses); routine *cleared* work collapses to a count (progressive
+  disclosure). Carry-forward stays prominent as the action list.
+- **Still checkable.** Each flag keeps its `source_ref`/`work_ref`, so the source (and the quoting
+  passage) is one click away in the debrief too. The decision stays the partner's own recorded
+  decision; the honesty footer stays.
+
 ---
 
 ## Part B — Cognitive walkthrough: senior partner, traceability task
