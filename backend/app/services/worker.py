@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.config import settings
+from app.core.stream import publish_delta
 from app.db.repo import Repo
 from app.db.tables import CORPUS, SUBMISSIONS
 from app.providers.base import LLMProvider
@@ -48,7 +49,19 @@ def run_review(
         raise ValueError(f"Target document {task.get('target_document_id')} not found.")
 
     source_lookup = _make_source_lookup(repo, cellar) if settings.CELLAR_ENABLED else None
-    result = provider.run_task(**spec.run_kwargs(run_index=0, source_lookup=source_lookup))
+    # Relay the model's thinking to the cockpit's "With AI" lane only when we're running off-request
+    # (a real Celery worker with Redis); inline/offline dispatch stays callback-free. Best-effort
+    # and transient — never persisted into the submission or the audit record (architecture.md §14).
+    on_delta = (
+        (lambda text: publish_delta(task["id"], {"type": "delta", "text": text}))
+        if settings.ASYNC_DISPATCH
+        else None
+    )
+    result = provider.run_task(
+        **spec.run_kwargs(run_index=0, source_lookup=source_lookup), on_delta=on_delta
+    )
+    if on_delta is not None:
+        publish_delta(task["id"], {"type": "done"})  # closes the SSE stream cleanly
     submission = {
         "task_id": task["id"],
         "produced_by": produced_by,

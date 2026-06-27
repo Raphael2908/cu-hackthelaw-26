@@ -75,21 +75,37 @@ class AnthropicLLMProvider(LLMProvider):
         self._client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         self._model = settings.ANTHROPIC_MODEL
 
-    def _complete_json(self, system: str, user: str) -> dict:
+    def _complete_json(self, system: str, user: str, on_delta=None) -> dict:
         import anthropic
 
         try:
-            msg = self._client.messages.create(
-                model=self._model,
-                max_tokens=32768,
-                system=system,
-                messages=[{"role": "user", "content": user}],
-            )
+            if on_delta is None:
+                msg = self._client.messages.create(
+                    model=self._model,
+                    max_tokens=32768,
+                    system=system,
+                    messages=[{"role": "user", "content": user}],
+                )
+                text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+            else:
+                # Stream the model's output so the cockpit's "With AI" lane shows it live as it is
+                # produced (architecture.md §8). The deltas are transient UX only — the worker
+                # relays them to Redis, never the repo/audit (§14). The accumulated text is parsed
+                # exactly as the non-streaming path below.
+                with self._client.messages.stream(
+                    model=self._model,
+                    max_tokens=32768,
+                    system=system,
+                    messages=[{"role": "user", "content": user}],
+                ) as stream:
+                    for chunk in stream.text_stream:
+                        on_delta(chunk)
+                    final = stream.get_final_message()
+                text = "".join(b.text for b in final.content if getattr(b, "type", None) == "text")
         except anthropic.RateLimitError as e:  # pragma: no cover - real-mode only
             raise RetryableError(str(e)) from e
         except anthropic.APIStatusError as e:  # pragma: no cover
             raise (RetryableError if e.status_code >= 500 else FatalError)(str(e)) from e
-        text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
         try:
             return json.loads(text)
         except json.JSONDecodeError as e:  # pragma: no cover
@@ -155,6 +171,7 @@ class AnthropicLLMProvider(LLMProvider):
         checklist=None,
         run_index: int = 0,
         source_lookup=None,
+        on_delta=None,
     ) -> TaskResult:
         # System = the partner's task instruction + the fixed checkable-claims envelope (with the
         # per-kind payload schema). User = the documents, the optional reference, the checklist.
@@ -173,7 +190,9 @@ class AnthropicLLMProvider(LLMProvider):
         user = "\n\n".join(parts)
 
         if source_lookup is None:
-            data = self._complete_json(system, user)
+            # Live-stream the worker's first pass when a sink is supplied. The grounded (tool-use)
+            # path stays non-streaming to bound its cost (architecture.md §9).
+            data = self._complete_json(system, user, on_delta=on_delta)
         else:  # pragma: no cover - real-mode only
             data = self._complete_json_grounded(system, user, source_lookup)
 

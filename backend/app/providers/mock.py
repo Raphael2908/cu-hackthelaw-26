@@ -52,6 +52,7 @@ class MockLLMProvider(LLMProvider):
         checklist=None,
         run_index: int = 0,
         source_lookup=None,  # ignored: the mock is deterministic and offline
+        on_delta=None,  # ignored: the mock returns its result whole, with nothing to stream
     ) -> TaskResult:
         # Deterministic replay keyed off the target document — instruction/kind/checklist don't
         # change the offline fixture, but the output carries the requested `kind` + its payload.

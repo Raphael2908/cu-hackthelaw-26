@@ -62,6 +62,34 @@ def task_attachments(repo: Repo, task_id: str) -> list[dict]:
     return [{"id": d["id"], "title": d["title"]} for d in docs]
 
 
+# A task is "in flight" (pre-review) when it is between dispatch and the partner's review queue.
+_PRE_REVIEW = frozenset({"dispatched", "in_progress", "submitted", "checked"})
+
+
+def _holder(repo: Repo, card: dict) -> str | None:
+    """Who is actually holding an in-flight task right now: ``'ai'`` (the supervision pipeline is
+    running) or ``'human'`` (it sits in the associate's inbox). ``None`` if the task isn't in an
+    in-flight/pre-review state. Lanes must look at ``assignee_type``, not status alone — a running
+    AI task is ``in_progress`` but is NOT "with a person" (architecture.md §8)."""
+    t = card["task"]
+    status, at = t["status"], t["assignee_type"]
+    if at == "human":
+        return "human" if status in ("dispatched", "in_progress", "returned") else None
+    if at == "ai":
+        return "ai" if status in _PRE_REVIEW else None
+    # hybrid: the AI first pass is "with AI"; once that pass exists and the task is parked for the
+    # associate, or it was returned for rework, it is "with a person". The AI first-pass submission
+    # is the discriminator, because a hybrid task is in_progress BOTH while the AI drafts AND after,
+    # while awaiting the associate (coordinator._run_and_route).
+    if status == "returned":
+        return "human"
+    if status in _PRE_REVIEW:
+        if status == "in_progress" and ai_first_pass(repo, t["id"]):
+            return "human"
+        return "ai"
+    return None
+
+
 def task_card(repo: Repo, task: dict) -> dict:
     """A queue row: the task + its risk breakdown + the single most salient flag."""
     flags = repo.list(FLAGS, task_id=task["id"])
@@ -110,7 +138,11 @@ def cockpit(repo: Repo, case_id: str) -> dict:
     # fail-safe pipeline failure) is the partner's most urgent attention, not a footnote next to
     # signed-off work (architecture.md §8, §14.6).
     escalated = [c for c in cards if c["task"]["status"] == "escalated"]
-    inbox = [c for c in cards if c["task"]["status"] in ("dispatched", "in_progress", "returned")]
+    # Partition in-flight work by who's actually holding it (assignee_type), not status alone: AI/
+    # hybrid tasks running the pipeline get their own "With AI" lane instead of being mislabelled as
+    # "with a person" or falling into no lane while submitted/checked (architecture.md §8).
+    with_ai = [c for c in cards if _holder(repo, c) == "ai"]
+    inbox = [c for c in cards if _holder(repo, c) == "human"]
     needs_reply = [c for c in cards if c["task"]["status"] == "awaiting_clarification"]
     for c in needs_reply:
         c["messages"] = messages(repo, c["task"]["id"])
@@ -120,6 +152,7 @@ def cockpit(repo: Repo, case_id: str) -> dict:
         "sampled_into_queue": [c for c in queue if c["risk"] and c["risk"].get("sampled")],
         "decided": decided,
         "escalated": escalated,
+        "with_ai": with_ai,
         "awaiting_human": inbox,
         "needs_reply": needs_reply,
         # Complete pending count across ALL statuses (incl. proposed/approved/submitted/checked that
