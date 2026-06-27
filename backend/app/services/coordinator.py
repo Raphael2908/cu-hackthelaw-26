@@ -114,6 +114,10 @@ def dispatch_task(repo: Repo, task: dict, provider: LLMProvider) -> dict:
         payload={"assignee_type": task["assignee_type"]},
     )
     if task["assignee_type"] in ("ai", "hybrid"):
+        # Server-authoritative run start, so the cockpit's elapsed timer measures from dispatch (not
+        # from when the poller first saw the task). Re-stamped on every (re)dispatch — a reassign
+        # re-enters here, so a redo gets a fresh clock.
+        started = {"run_started_at": _now()}
         if settings.ASYNC_DISPATCH:
             # Mark it as working so the cockpit shows progress, then enqueue to Celery so the slow
             # pipeline runs off the request path on a durable worker (architecture.md §8). Only the
@@ -121,9 +125,10 @@ def dispatch_task(repo: Repo, task: dict, provider: LLMProvider) -> dict:
             # to avoid an import cycle (tasks.py imports this module).
             from app.core.tasks import run_dispatch_task
 
-            repo.update(TASKS, task["id"], {"status": "in_progress"})
+            repo.update(TASKS, task["id"], {"status": "in_progress", **started})
             run_dispatch_task.delay(task["id"])
             return {"status": "dispatching"}
+        repo.update(TASKS, task["id"], started)
         return _run_and_route(repo, task["id"], provider)
     # human: sits in the inbox awaiting submission.
     repo.update(TASKS, task["id"], {"status": "dispatched"})

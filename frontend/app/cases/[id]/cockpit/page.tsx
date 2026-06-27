@@ -1,10 +1,10 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { getCase, getCockpit } from "@/lib/api";
-import { ApiError } from "@/lib/apiClient";
-import type { Card, Case, Cockpit } from "@/lib/types";
+import { ApiError, API_BASE_URL } from "@/lib/apiClient";
+import type { Card, Case, Cockpit, TaskStatus } from "@/lib/types";
 import {
   HardSoftChip,
   Panel,
@@ -160,6 +160,10 @@ export default function CockpitPage() {
                     </ul>
                   )}
                 </CollapsibleLane>
+
+                {/* Directly under "With a person": the answer to "did anything happen after I
+                    approved?". Alive while non-empty — pulsing dot, running count, live timers. */}
+                <WithAiLane cards={data.with_ai} />
 
                 <CollapsibleLane
                   title="You've decided"
@@ -411,6 +415,173 @@ function CollapsibleLane({
 
 function LaneEmpty({ text }: { text: string }) {
   return <div className="px-1 py-1 text-xs text-muted">{text}</div>;
+}
+
+// How long an AI task may sit in a pre-review state before the lane hints "taking longer than
+// expected" — a UX reassurance only (not a verdict, not load-bearing). Client-side: the timer
+// itself is derived from the server-authoritative run_started_at.
+const STALL_AFTER_S = 90;
+
+// Plain words for the pipeline stage, mapped from the task status. Status, never a verdict.
+function stageLabel(status: TaskStatus): string {
+  if (status === "submitted") return "self-checking";
+  if (status === "checked") return "ranking";
+  return "drafting"; // dispatched / in_progress
+}
+
+// Live elapsed seconds since the server stamped run_started_at, re-rendering once a second.
+function useElapsed(startedAt?: string | null): number | null {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!startedAt) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [startedAt]);
+  if (!startedAt) return null;
+  const secs = Math.floor((now - Date.parse(startedAt)) / 1000);
+  return secs >= 0 ? secs : 0;
+}
+
+function mmss(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// The "With AI" lane: AI/hybrid tasks the pipeline is working on right now. Alive while non-empty
+// (pulsing dot + running count, auto-expanded); a reassuring empty state otherwise. On completion a
+// task drops out of here (the 3s poll) and reappears in the review queue / auto-clear / escalations.
+function WithAiLane({ cards }: { cards: Card[] }) {
+  if (cards.length === 0) {
+    return (
+      <CollapsibleLane title="With AI" count={0}>
+        <LaneEmpty text="No AI work running. Approved AI tasks appear here while they draft and self-check, then move to your review." />
+      </CollapsibleLane>
+    );
+  }
+  return (
+    <section className="rounded-xl border border-emerald-200 bg-emerald-50/40 shadow-sm">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          </span>
+          <span className="text-sm font-semibold text-ink">With AI</span>
+          <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+            {cards.length} running
+          </span>
+        </div>
+        <span className="text-[11px] text-emerald-700/80">drafting &amp; self-checking…</span>
+      </div>
+      <ul className="space-y-1.5 border-t border-emerald-200/70 px-3 py-2.5">
+        {cards.map((card) => (
+          <WithAiRow key={card.task.id} card={card} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function WithAiRow({ card }: { card: Card }) {
+  const { task } = card;
+  const [open, setOpen] = useState(false);
+  const elapsed = useElapsed(task.run_started_at);
+  const stalled = elapsed !== null && elapsed > STALL_AFTER_S;
+  return (
+    <li>
+      <details
+        open={open}
+        onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+        className="group rounded-lg"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-white/70 [&::-webkit-details-marker]:hidden">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />
+            <span className="truncate text-sm text-ink">{task.title}</span>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {elapsed !== null ? (
+              <span className="font-mono text-[11px] tabular-nums text-emerald-700">
+                {mmss(elapsed)}
+              </span>
+            ) : null}
+            {stalled ? (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200">
+                taking longer than expected
+              </span>
+            ) : (
+              <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                {stageLabel(task.status)}
+              </span>
+            )}
+            <svg
+              className="h-3.5 w-3.5 text-muted transition-transform group-open:rotate-180"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+            >
+              <path d="M6 8l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </summary>
+        {open ? <ThoughtStream taskId={task.id} /> : null}
+      </details>
+    </li>
+  );
+}
+
+// Subscribes to the task's live thinking stream (SSE) while the row is expanded. Transient UX only —
+// these tokens are never the audit record; the partner verifies the final checkable claims (§14).
+function ThoughtStream({ taskId }: { taskId: string }) {
+  const [text, setText] = useState("");
+  const [closed, setClosed] = useState(false);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const es = new EventSource(`${API_BASE_URL}/tasks/${taskId}/stream`);
+    es.onmessage = (e) => {
+      try {
+        const ev = JSON.parse(e.data) as { type?: string; text?: string };
+        if (ev.type === "delta" && typeof ev.text === "string") {
+          setText((cur) => (cur + ev.text).slice(-8000)); // cap the client buffer
+        } else if (ev.type === "done" || ev.type === "end") {
+          setClosed(true);
+          es.close();
+        }
+      } catch {
+        /* ignore malformed event */
+      }
+    };
+    es.onerror = () => {
+      es.close();
+      setClosed(true);
+    };
+    return () => es.close();
+  }, [taskId]);
+
+  useEffect(() => {
+    if (boxRef.current) boxRef.current.scrollTop = boxRef.current.scrollHeight;
+  }, [text]);
+
+  return (
+    <div className="mx-2 mb-1.5 mt-1 rounded-lg border border-emerald-200/70 bg-white/80 p-2.5">
+      <div
+        ref={boxRef}
+        className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-ink-soft"
+      >
+        {text || (
+          <span className="text-muted">
+            {closed ? "No live output for this run." : "Waiting for the model…"}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 border-t border-emerald-200/60 pt-1.5 text-[10px] leading-snug text-muted">
+        Live thinking — not saved. The partner verifies the final checkable claims, never a verdict.
+      </p>
+    </div>
+  );
 }
 
 function SpotCheckTag() {

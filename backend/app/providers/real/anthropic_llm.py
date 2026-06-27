@@ -117,19 +117,24 @@ class AnthropicLLMProvider(LLMProvider):
         self._client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         self._model = settings.ANTHROPIC_MODEL
 
-    def _complete_json(self, system: str, user: str) -> dict:
+    def _complete_json(self, system: str, user: str, on_delta=None) -> dict:
         import anthropic
 
         try:
-            # Stream: the SDK refuses non-streaming requests it estimates may exceed
-            # ~10 minutes at this max_tokens. get_final_message() reassembles the
-            # complete Message so the rest of this method is unchanged.
+            # Stream: the SDK refuses non-streaming requests it estimates may exceed ~10 minutes at
+            # this max_tokens. When a delta sink is supplied, also relay the text deltas live to the
+            # cockpit's "With AI" lane (architecture.md §8) — transient UX only, never the repo/
+            # audit (§14). get_final_message() reassembles the complete Message so the parse below
+            # is unchanged either way.
             with self._client.messages.stream(
                 model=self._model,
                 max_tokens=32768,
                 system=system,
                 messages=[{"role": "user", "content": user}],
             ) as stream:
+                if on_delta is not None:
+                    for chunk in stream.text_stream:
+                        on_delta(chunk)
                 msg = stream.get_final_message()
         except anthropic.RateLimitError as e:  # pragma: no cover - real-mode only
             raise RetryableError(str(e)) from e
@@ -197,6 +202,7 @@ class AnthropicLLMProvider(LLMProvider):
         checklist=None,
         run_index: int = 0,
         source_lookup=None,
+        on_delta=None,
     ) -> TaskResult:
         # System = the partner's task instruction + the fixed checkable-claims envelope (with the
         # per-kind payload schema). User = the documents, the optional reference, the checklist.
@@ -215,7 +221,9 @@ class AnthropicLLMProvider(LLMProvider):
         user = "\n\n".join(parts)
 
         if source_lookup is None:
-            data = self._complete_json(system, user)
+            # Live-stream the worker's first pass when a sink is supplied. The grounded (tool-use)
+            # path stays non-streaming to bound its cost (architecture.md §9).
+            data = self._complete_json(system, user, on_delta=on_delta)
         else:  # pragma: no cover - real-mode only
             data = self._complete_json_grounded(system, user, source_lookup)
 

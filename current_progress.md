@@ -4,6 +4,103 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Live "With AI" cockpit lane — shipped (is-alive stream + elapsed timer)
+
+**Where we are.** The headline post-approval confusion is fixed. The cockpit now partitions in-flight
+work by **who actually holds it** (not status alone), so an AI/hybrid task running the
+`worker → checker → ranker` pipeline shows in a dedicated, *alive* **"With AI"** lane instead of being
+mislabelled "With a person" or vanishing in `submitted`/`checked`. Each running task shows a
+server-authoritative elapsed timer + a plain stage chip; expanding a row streams the worker model's
+thinking token-by-token. Built in one pass against `ASYNC_DISPATCH=true` (real Celery worker + Redis);
+the offline/mock path is unchanged (it ignores the stream). All §14 guardrails held.
+
+**Built**
+- **Assignee-aware lanes (`services/views.py`).** New `_holder(repo, card)` classifies an in-flight
+  task as `ai` (pipeline running) or `human` (in the associate's inbox) from `assignee_type` + status.
+  `cockpit` returns a new **`with_ai`** lane and narrows `awaiting_human` to genuinely human-held work.
+  Hybrid rule: the AI first pass shows under "With AI"; once that pass exists (the discriminator is the
+  AI first-pass submission, since a hybrid task is `in_progress` both while drafting *and* after) or it
+  was returned, it moves to "With a person". `pending_summary` is computed from status and is
+  unchanged, so the debrief close-gate stays correct.
+- **Server-authoritative timer (`services/coordinator.py`).** `dispatch_task` stamps `run_started_at`
+  on every (re)dispatch of an AI/hybrid task (both the async and inline branches), so the cockpit timer
+  measures from dispatch, not from when the poller first saw the task. A reassign re-stamps a fresh
+  clock.
+- **Transient thought-stream (`core/stream.py` new + provider + worker).** A best-effort, TTL'd Redis
+  **list** keyed by task (`stream:task:{id}`) — chosen over bare pub/sub so a partner expanding a row
+  mid-run replays what already streamed. The worker builds an `on_delta` callback (mirroring the
+  existing `source_lookup` pattern — the provider never touches Redis/repo), gated on `ASYNC_DISPATCH`
+  so inline/tests stay callback-free; the real Anthropic provider switches to `messages.stream()` on
+  the non-grounded path and emits text deltas; the mock ignores it. A `done` sentinel closes the
+  stream. New `STREAM_TTL_SECONDS` config (600s).
+- **SSE relay (`api/routers/tasks.py`).** `GET /tasks/{id}/stream` → `StreamingResponse`
+  (`text/event-stream`) tailing the Redis buffer via an async generator (`core.stream.iter_deltas`,
+  `redis.asyncio`). Unauthenticated like `GET /tasks/{id}` (and EventSource can't send the `X-User-*`
+  headers).
+- **Frontend (`cockpit/page.tsx` + `lib/types.ts`).** A `WithAiLane` directly under "With a person":
+  a pulsing live dot + running count, auto-expanded while non-empty, a reassuring empty state
+  otherwise. Per-row: a live `mm:ss` timer (`useElapsed` from `run_started_at`), a stage chip
+  (drafting / self-checking / ranking), a stall hint past 90s, and an expand → `EventSource`
+  thought-stream panel (capped 8 KB buffer, auto-scroll, transient-only caption). `Cockpit.with_ai` +
+  `Task.run_started_at` added to types.
+- Tests: new `test_with_ai_lane.py` (lane partitioning across ai/human/hybrid×status incl. the
+  hybrid-with-submission discriminator; `pending.total` unchanged; `run_started_at` stamped on
+  dispatch; `publish_delta` best-effort without a broker; mock `run_task` accepts/ignores `on_delta`).
+  `make test` green (78, was 74), `make lint` clean, frontend `tsc --noEmit` clean.
+
+**Guardrail (§14).** Streamed thoughts live only in the TTL'd Redis buffer — never read into the repo
+or the hash-chained audit record (decisions + checkable evidence only). Stage chips + timer are
+status, never a verdict; the stream is an aliveness signal, not a finding.
+
+**What's next.** Pulled current Anthropic streaming docs (Context7) for `messages.stream()`; tune the
+real streamed-thought UX on a live run. Deferred: streaming on the grounded tool-use path (bounded-cost
+opt-in, stays non-streaming); an offline-mock scripted delta sequence (explicitly out of scope this
+pass). Verify end-to-end on the real stack (`docker compose up` + `PROVIDER_MODE=real`).
+
+---
+
+## Planned: a live "With AI" cockpit lane — is-alive stream + elapsed timer
+
+**Where we are (the confusion to fix).** In real mode the partner approves the plan, the AI/hybrid
+tasks dispatch to the Celery `worker → checker → ranker` pipeline (§8), and… the cockpit shows
+nothing moving. The partner who just "approved everything" reads the still cockpit as *broken* or
+*ignored*. There is no aliveness signal for the seconds-to-minutes those pipelines run.
+
+**Diagnosis (root cause, confirmed in code).** `services/views.py::cockpit` builds its lanes
+**purely from task status and never consults `assignee_type`**:
+- A running **AI/hybrid** task is in `in_progress`, which falls into `awaiting_human` — so it renders
+  under **"With a person"**. AI work is actively *mislabelled as human*.
+- The mid-pipeline statuses **`submitted` and `checked`** (worker finished → checker → ranker) match
+  **no lane at all** — the function's own comment flags "submitted/checked that no lane shows".
+
+So approved AI work is either misfiled or invisible until it surfaces in the review queue / auto-clear
+lane. The fix is a dedicated, *alive* lane plus the missing assignee-aware partitioning.
+
+**Plan (tracked in `todo.md` → Frontend / UX, top item).**
+- **Backend.** Add a `with_ai` lane partitioned by `assignee_type` ∈ {ai,hybrid} **and** pre-review
+  status (`dispatched`/`in_progress`/`submitted`/`checked`); narrow `awaiting_human` to genuinely
+  human-held work; persist a `run_started_at` for a server-authoritative elapsed timer; detect stalls
+  past a threshold; and **stream the worker model's thinking/output** by publishing deltas to Redis
+  (keyed by `task_id`) with a backend **SSE** relay the cockpit subscribes to (mock emits a scripted
+  delta sequence so it demos offline). Pull current Anthropic streaming/extended-thinking + Next.js
+  route-handler docs via Context7 when building.
+- **Frontend.** A **"With AI"** lane directly **under "With a person"** in `cockpit/page.tsx`, alive
+  while non-empty (pulsing dot, running count). Per-task row: live `mm:ss` **elapsed timer** + a plain
+  **stage chip** (drafting / self-checking) + a pulsing dot; expand to watch the **streamed thoughts**
+  token-by-token (the is-alive proof). On completion the task moves to the review queue as today.
+- Folds in the existing "async-dispatch health / stalled tasks", "cockpit worker-task progress", and
+  the cockpit half of "live progress for slow AI processes" backlog items.
+
+**Guardrail (§14).** Streamed thoughts are **transient UX only** — never persisted as or into the
+audit record (decisions + checkable evidence only); stage chips and the timer are status, never a
+verdict. This stays consistent with the "raw chain-of-thought never stored/presented as the audit
+record" cut.
+
+**What's next.** Spec only — no code yet. Build the backend lane split + `run_started_at` first
+(cheap, immediately removes the mislabelling), then layer the SSE thought-stream on top.
+
+---
+
 ## Docs: reconcile architecture §8 to Celery/Redis (thread pool retired)
 
 **Where we are.** Closed the open item the README-refresh pass flagged: `architecture.md` §8 still

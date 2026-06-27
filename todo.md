@@ -23,6 +23,83 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [x] **Show running AI work as a live "With AI" lane — is-alive stream + elapsed timer (backend +
+      frontend).** _(Done — see `current_progress.md` top section.)_ `views.cockpit` now partitions
+      in-flight work by `_holder` (assignee_type + status) into a new `with_ai` lane and a narrowed
+      `awaiting_human` (hybrid AI-first-pass → With AI, discriminated by the AI submission; returned →
+      With a person); `pending` unchanged. `coordinator.dispatch_task` stamps `run_started_at`. A
+      best-effort TTL'd Redis list (`core/stream.py`) relays the worker model's thinking: `on_delta`
+      threads through the provider (real → `messages.stream()`, mock ignores), gated on
+      `ASYNC_DISPATCH`; `GET /tasks/{id}/stream` SSE relays it. Frontend `WithAiLane` (pulsing dot,
+      live `mm:ss` timer, stage chip, stall hint, EventSource thought panel). Streamed thoughts stay
+      transient — never the audit record (§14). Test `test_with_ai_lane.py`; 78 backend tests green,
+      ruff + tsc clean. Built against `ASYNC_DISPATCH=true`; offline-mock streaming deliberately out of
+      scope. _Follow-ups: grounded tool-use streaming; offline scripted mock deltas._ Original spec ↓
+      After the partner approves the plan, AI/hybrid tasks dispatch to the Celery
+      `worker → checker → ranker` pipeline (architecture §8) and churn for tens of seconds in real
+      mode — but the cockpit gives **no signal that anything is happening**, so a partner who just
+      "approved everything" sees a cockpit that looks empty or stuck and concludes the system did
+      nothing. This is the headline confusion to fix.
+      - **Root cause (it's worse than "no signal").** Cockpit lanes in `services/views.py::cockpit`
+        are **status-only — they never look at `assignee_type`**. So a running **AI/hybrid** task
+        sits in `in_progress` and is rendered under **"With a person"** (`awaiting_human` =
+        `dispatched`/`in_progress`/`returned`) — actively mislabelled. And the mid-pipeline statuses
+        **`submitted` and `checked`** (worker done → checker → ranker) match **no lane at all** — the
+        code already admits this ("submitted/checked that no lane shows"). Net: approved AI work is
+        either misfiled as human or invisible until it lands in the review queue / auto-clear.
+      - **Backend — partition by who's actually holding the task.**
+        - Add a **`with_ai`** lane to `views.cockpit`: cards whose `assignee_type` ∈ {`ai`,`hybrid`}
+          **and** whose status is a pre-review pipeline state (`dispatched`/`in_progress`/`submitted`/
+          `checked`). Narrow **`awaiting_human`** ("With a person") to genuinely human-held work
+          (assignee_type `human`/`hybrid` in the human-owned states: `dispatched`/`in_progress`/
+          `returned`). Decide the hybrid rule explicitly: a hybrid task in its **AI first pass** shows
+          under "With AI"; once it returns to the associate it moves to "With a person". Keep the
+          `pending` count (debrief gate) correct after the split.
+        - **Per-task elapsed time.** Persist a run-start timestamp when the coordinator dispatches an
+          AI task (e.g. `dispatched_at`/`run_started_at` on the task) and expose it on the card so the
+          timer is server-authoritative, not just "first time the poller saw it".
+        - **Stalled detection.** Flag AI tasks sitting in a pre-review state past a threshold so the UI
+          can say "taking longer than expected" — distinct from the AI-pipeline failure that already
+          fail-safes to escalation, and distinct from a *fetch* failure. (Folds in the standalone
+          "Surface async-dispatch health / stalled tasks" item below.)
+        - **Stream the worker's thoughts/outputs (the is-alive signal).** The worker already calls
+          Anthropic via `messages.stream()` (real mode), but it runs in the **Celery worker process**,
+          so deltas must cross to the browser: have the worker publish thinking/text deltas to **Redis**
+          keyed by `task_id` (pub/sub or a short capped/TTL'd list — already a dependency), and add a
+          backend **SSE route** the cockpit subscribes to per task (EventSource / `ReadableStream`),
+          relaying deltas live. Mock mode should emit a short scripted delta sequence so the is-alive
+          UX is demoable offline.
+        - When implementing the streaming + SSE, pull current docs with Context7
+          (`~/.claude/skills/context7-mcp`): Anthropic Messages **streaming + extended thinking**, and
+          **Next.js App Router** route handlers / streaming responses.
+      - **Frontend — a "With AI" lane directly under "With a person" in the cockpit**
+        (`app/cases/[id]/cockpit/page.tsx`), backed by `data.with_ai`:
+        - Place it as the sibling lane immediately **below "With a person"** in the secondary-lane
+          stack. Unlike the other collapsed lanes, it should read as **alive while non-empty** — a
+          pulsing "live" dot in the header and a running count — because it's the direct answer to
+          "did anything happen after I approved?". (Keep it collapsible, but consider auto-expanding
+          while work is in flight.)
+        - **Per-AI-task row:** title · a **live elapsed timer** ticking `mm:ss` (1s interval, derived
+          from the server `run_started_at`) · a **stage chip** mapping status → plain words
+          (`dispatched/in_progress` → "drafting", `submitted/checked` → "self-checking / ranking") ·
+          a pulsing dot. Past the stall threshold, swap in an amber "taking longer than expected" hint.
+        - **Expand a row → the streamed thoughts/output** rendering token-by-token via EventSource —
+          the worker model's thinking + partial draft, auto-scrolling, with a capped client buffer.
+          This is the "is-alive" proof; it is **transient UX only**.
+        - On completion the task leaves "With AI" and reappears in the review queue / auto-clear /
+          escalations exactly as today (the poll already does this); a brief "moved to your review"
+          transition helps the partner follow the hand-off.
+        - **Empty state that reassures rather than alarms:** e.g. "No AI work running. Approved AI
+          tasks appear here while they draft and self-check, then move to your review."
+      - **Guardrail (architecture §14, and the explicitly-cut item at the bottom of this file):**
+        streamed thoughts are **transient UX only** — never persist the raw chain-of-thought as (or
+        into) the audit record, which stays decisions + checkable evidence. The stage chips and timer
+        are status, never a verdict; the stream is an aliveness signal, not a finding.
+      - **Folds in / supersedes:** the standalone *"Surface async-dispatch health / stalled tasks in
+        the cockpit"*, *"Cockpit worker-task progress: elapsed timer + streamed thoughts"*, and the
+        **cockpit portion** of *"Live progress for slow AI processes"* items below — implement them as
+        this one lane. (Plan-generation and debrief progress from that last item remain separate
+        surfaces, tracked there.)
 - [x] **Let the partner add free-text instructions when creating a case — and feed them to the
       planner (backend + frontend).** The new-case form (`app/page.tsx`) captures the matter's
       structured fields (title, goal, uploaded documents) but gives the partner no place to write
@@ -428,7 +505,9 @@ cut from the bottom if time runs short.
       - **Docs:** add a short "Gestalt grouping" subsection to `frontend/DESIGN.md`. Guardrail: every
         signal stays individually visible with its number — re-grouping and progressive disclosure
         only, never a fused verdict.
-- [ ] **Surface async-dispatch health / stalled tasks in the cockpit.** Dispatch now runs on a
+- [x] **Surface async-dispatch health / stalled tasks in the cockpit.** _(Done as part of the "With AI"
+      live-lane item — the lane shows a per-task elapsed timer and an amber "taking longer than
+      expected" hint past a threshold.)_ Dispatch now runs on a
       separate Celery worker over Redis (architecture §8), not the in-process pool. The cockpit only
       polls every 3s and shows an error if the *fetch* fails — it can't tell "still working" from
       "the worker or Redis is down / the task is stuck." Add a frontend signal: detect tasks sitting
@@ -465,13 +544,17 @@ cut from the bottom if time runs short.
         partner's name) then reloads. Copy reinforces the one rule ("re-dispatches under your name and
         is recorded in the audit log — never reassigned automatically"). `tsc` + `next build` clean;
         `/api/associates` verified live.
-- [ ] **Cockpit worker-task progress: elapsed timer + streamed thoughts.** In the cockpit,
+- [x] **Cockpit worker-task progress: elapsed timer + streamed thoughts.** _(Done as part of the
+      "With AI" live-lane item — elapsed timer + token-by-token streamed thoughts per task.)_ In the cockpit,
       while a `worker→checker→ranker` task runs, show (a) a live **elapsed timer** per task and
       (b) **stream the worker model's thinking** into the task view as it's produced. Scope of
       the broader streaming item below, applied to the cockpit's per-task worker runs.
       **Guardrail (architecture §14):** streamed thoughts are transient UX only — never persist
       them as the audit record (decisions + checkable evidence only).
-- [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
+- [ ] **Live progress for slow AI processes.** _(Cockpit per-task portion DONE in the "With AI"
+      live-lane item — elapsed timer + SSE-streamed thoughts. Remaining: plan-generation + debrief
+      progress, which are separate surfaces.)_
+      Real-model runs take tens of seconds, so every AI
       process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
       (a) an **elapsed timer** while it runs, and (b) **stream the model's thinking live** into the
       UI via the Anthropic streaming API (`stream=True`), surfaced to the frontend (SSE /

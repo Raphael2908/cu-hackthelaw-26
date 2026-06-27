@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
 
+    # --- Live worker stream (architecture.md §8/§14) --- TTL (seconds) for the transient Redis
+    # buffer that relays the worker model's thinking deltas to the cockpit's "With AI" lane. UX only
+    # — never persisted into the repo or the audit record. Best-effort; no broker → no live stream.
+    STREAM_TTL_SECONDS: int = 600
+
     # --- LLM (Anthropic) --- blank = mock mode
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-opus-4-8"

@@ -103,6 +103,9 @@ export interface Task {
   rationale: string | null; // one-line planner reasoning, for the partner to verify
   status: TaskStatus;
   order_index: number;
+  // When the coordinator dispatched this AI/hybrid task — server-authoritative, so the cockpit's
+  // "With AI" lane can show a live elapsed timer that doesn't reset on poll. Absent until dispatch.
+  run_started_at?: string | null;
 }
 
 export interface Risk {
@@ -209,6 +212,7 @@ export interface Cockpit {
   sampled_into_queue: Card[];
   decided: Card[];
   escalated: Card[];
+  with_ai: Card[]; // AI/hybrid tasks running the worker→checker→ranker pipeline right now
   awaiting_human: Card[];
   needs_reply: Card[];
   pending: PendingSummary;

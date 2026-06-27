@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
 from app.core.audit import record_accountability
 from app.core.auth import CurrentUser, get_current_user
+from app.core.stream import iter_deltas
 from app.db.repo import get_repo
 from app.db.tables import CORPUS, TASKS
 from app.providers.factory import get_llm_provider
@@ -100,6 +104,26 @@ async def attach_task_documents(
         payload={"document_ids": [d["id"] for d in created], "n": len(created)},
     )
     return created
+
+
+@router.get("/tasks/{task_id}/stream")
+async def stream_task(task_id: str) -> StreamingResponse:
+    """Relay the worker model's live thinking deltas for a running AI/hybrid task (Server-Sent
+    Events). Backs the cockpit's "With AI" is-alive stream. Transient UX only — the deltas live in a
+    short-lived Redis buffer and are NEVER written to the repo or the hash-chained audit record,
+    which stays decisions + checkable evidence (architecture.md §14). Unauthenticated, like GET
+    /tasks/{id} (EventSource can't send the X-User-* headers); it exposes no decision surface."""
+
+    async def gen():
+        async for event in iter_deltas(task_id):
+            yield f"data: {json.dumps(event)}\n\n"
+        yield 'data: {"type": "end"}\n\n'
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/tasks/{task_id}")

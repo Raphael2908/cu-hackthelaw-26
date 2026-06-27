@@ -10,6 +10,11 @@ from dataclasses import dataclass, field
 # on a hit, None on absence. The worker owns the implementation (and the corpus caching).
 SourceLookup = Callable[[str], "dict | None"]
 
+# A sink the worker can hand to run_task so the provider can emit the model's text deltas live as it
+# works (the cockpit's "With AI" is-alive stream). A plain callable — the provider never touches
+# Redis or the repo; the worker owns where the deltas go. Transient UX only, never persisted (§14).
+DeltaSink = Callable[[str], None]
+
 
 class ProviderError(Exception):
     """Base for provider failures."""
@@ -87,13 +92,15 @@ class LLMProvider(ABC):
         checklist: list[str] | None = None,
         run_index: int = 0,
         source_lookup: SourceLookup | None = None,
+        on_delta: DeltaSink | None = None,
     ) -> TaskResult:
         """Execute one delegated task: follow `instruction` over `documents`, optionally comparing
         to `reference` (a firm standard or scaffold) and satisfying `checklist`, returning the
         `kind`'s structured output. Returns checkable claims (`findings`, each with an optional
         citation) + a type-specific `payload` + an audit trail — never a verdict (architecture.md
         §14.1). With `source_lookup`, a capable provider may ground citations via tool-use; a
-        provider without tool-use ignores it."""
+        provider without tool-use ignores it. With `on_delta`, a streaming provider emits text
+        deltas as it works (the cockpit's aliveness stream); a non-streaming provider ignores it."""
 
     def review_document(
         self,
