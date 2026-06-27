@@ -190,8 +190,7 @@ export default function CasesPage() {
                 ))}
               </select>
               <span className="mt-1 block text-[11px] leading-snug text-muted">
-                Your up-front risk call for this matter — applied to every task. Higher severity
-                keeps more work in the review queue. You can adjust per task in the plan.
+                Your up-front risk call — higher severity keeps more work in the review queue.
               </span>
             </Field>
             <Field label="Documents (optional)">
@@ -212,7 +211,7 @@ export default function CasesPage() {
                 </ul>
               ) : (
                 <span className="mt-1 block text-[11px] leading-snug text-muted">
-                  PDF, DOCX, PowerPoint, or text. The planner scopes tasks over what you upload.
+                  PDF, DOCX, PowerPoint, or text.
                 </span>
               )}
             </Field>
@@ -225,8 +224,7 @@ export default function CasesPage() {
                   : "Create case"}
             </Button>
             <p className="text-[11px] leading-snug text-muted">
-              Creating a case takes you to its plan, where you generate and review the proposed
-              tasks. Nothing is dispatched until you approve the plan.
+              Nothing is dispatched until you approve the plan.
             </p>
           </form>
         </Panel>

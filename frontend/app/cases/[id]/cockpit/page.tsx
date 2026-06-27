@@ -63,7 +63,7 @@ export default function CockpitPage() {
                 <section className="rounded-xl border border-violet-200 bg-violet-50/50 p-3">
                   <SectionHeader
                     title="Questions from associates"
-                    caption="An associate needs an answer before they can finish. Reply to send the task back to them."
+                    caption="Reply to send the task back so they can finish."
                     count={data.needs_reply.length}
                   />
                   <ul className="space-y-2">
@@ -83,7 +83,7 @@ export default function CockpitPage() {
               <section>
                 <SectionHeader
                   title="Needs your review"
-                  caption="Grouped by how pressing it is. Start at the top."
+                  caption="Grouped by how pressing it is."
                   count={data.queue.length}
                   prominent
                 />
@@ -119,7 +119,7 @@ export default function CockpitPage() {
               <div className="space-y-2.5">
                 <CollapsibleLane
                   title="Cleared automatically"
-                  caption="Low-risk work, cleared and recorded. A random few are spot-checked, like a financial audit."
+                  caption="Low-risk work, cleared and recorded. A random few are spot-checked."
                   count={data.auto_clear_lane.length}
                 >
                   {data.auto_clear_lane.length === 0 ? (

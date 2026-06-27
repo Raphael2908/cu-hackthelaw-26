@@ -212,7 +212,6 @@ export function ItemDetail({
               <span className={`font-semibold ${TONE_TEXT[overallReading(risk.uncertainty).tone]}`}>
                 {overallReading(risk.uncertainty).text}
               </span>
-              . A steer for where to look — you decide.
             </p>
 
             <div className="space-y-2">
@@ -249,7 +248,7 @@ export function ItemDetail({
         {/* The concrete things to verify, each linking to its source */}
         <div className={risk ? "mt-4 border-t border-line pt-4" : ""}>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
-            Things to verify ({flags.length}) — each links to its source
+            Things to verify ({flags.length})
           </div>
           {flags.length === 0 ? (
             <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">

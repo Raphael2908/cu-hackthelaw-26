@@ -287,8 +287,7 @@ export default function PlanPage() {
             </Panel>
 
             <p className="mt-3 text-xs text-muted">
-              Severity is a deliberate policy choice set up front from the process document — not an
-              AI inference. You can override it here before approving.
+              Severity is a policy choice from the process document — not an AI inference.
             </p>
           </>
         )}

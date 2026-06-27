@@ -39,7 +39,7 @@ cut from the bottom if time runs short.
         so the associate's file lands in the case corpus (tagged to the task), rather than adding a
         new submission-attachment table. Record the attachment in the audit/submission record so it's
         traceable. Keep submissions checkable claims that re-enter the flow — never an auto-decision.
-- [ ] **Cut redundant hint/helper text that clutters the view.** Several screens carry long muted
+- [x] **Cut redundant hint/helper text that clutters the view.** Several screens carry long muted
       explainer sentences (the `text-[11px]`/`text-xs text-muted` paragraphs) that restate what the
       adjacent control already makes obvious — visual noise for a time-poor partner. Trim them: keep
       a hint only where it carries information the UI can't show on its own; delete the rest, or fold
@@ -55,6 +55,11 @@ cut from the bottom if time runs short.
         "nothing is dispatched until you approve", the debrief honesty footer, the "uncertainty is
         measured, not self-reported" notes). Those stay. Remove redundancy and decoration, never the
         checkable-claim/never-a-verdict messaging.
+      - **Done:** trimmed the severity/upload/create blurbs in `page.tsx` (kept "nothing is dispatched
+        until you approve"), shortened the `plan/page.tsx` severity note (kept "not an AI inference"),
+        removed the duplicate "a steer for where to look — you decide" + "each links to its source"
+        in `ItemDetail.tsx` (kept the step-3 "none is a verdict" hint and the step-4 decision
+        framing), and tightened three cockpit lane captions. All load-bearing one-rule text kept.
 - [ ] **Reshape the case debrief into an issue-centric memo (backend + frontend).** A senior partner
       found the debrief unnatural: it's laid out by the system's data-model entity types — four flat,
       parallel sections **Tasks / Flags raised / Partner decisions / Carry forward** (one per SQLite

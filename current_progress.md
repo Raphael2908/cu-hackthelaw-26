@@ -4,6 +4,30 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Hint-text declutter — trim redundant helper copy
+
+**Where we are.** A partner-facing readability pass: several screens carried long muted explainer
+sentences that restated what the adjacent control already showed — visual noise for a time-poor
+partner. Trimmed the redundancy while keeping every load-bearing one-rule statement (the product's
+honesty messaging is not decoration).
+
+**Cut**
+- `app/page.tsx`: severity blurb 3 sentences → 1; upload hint dropped the "planner scopes tasks"
+  clause → just the accepted formats; create helper dropped the navigation explainer — **kept**
+  "Nothing is dispatched until you approve the plan".
+- `app/cases/[id]/plan/page.tsx`: severity note 2 sentences → 1 — **kept** "not an AI inference".
+- `components/ItemDetail.tsx`: removed "A steer for where to look — you decide" (duplicated the
+  Step 3 hint) and "— each links to its source" (the View-source buttons make it obvious) — **kept**
+  the Step 3 "none is a verdict" hint and the whole Step 4 decision framing.
+- `app/cases/[id]/cockpit/page.tsx`: tightened three lane captions; dropped "like a financial audit"
+  (still in the spot-check tag's tooltip) — **kept** the spot-check disclosure itself.
+
+**Guardrail held.** Removed redundancy and decoration only; every "points to check, not verdicts" /
+"nothing dispatched until you approve" / "not an AI inference" claim stays. Typecheck clean
+(`tsc --noEmit`).
+
+---
+
 ## Cockpit declutter, numbered review path, and plan-flow fixes
 
 **Where we are.** Continuing the partner-facing pass on `feat/frontend-mockup`. A senior partner
