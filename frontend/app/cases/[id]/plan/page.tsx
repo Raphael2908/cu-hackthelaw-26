@@ -218,10 +218,74 @@ export default function PlanPage() {
                     const doc = corpusById.get(t.target_document_id);
                     return (
                       <tr key={t.id} className="border-b border-line last:border-0 align-top">
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-ink">{t.title}</div>
-                          <div className="mt-0.5 max-w-md text-xs text-muted">{t.description}</div>
-                          {t.ai_instruction ? (
+                        <td className="max-w-md px-4 py-3">
+                          {editable ? (
+                            <EditableText
+                              value={t.title}
+                              onSave={(v) => onPatch(t, { title: v })}
+                              disabled={savingId === t.id}
+                              className="font-medium text-ink"
+                              placeholder="Task title"
+                            />
+                          ) : (
+                            <div className="font-medium text-ink">{t.title}</div>
+                          )}
+                          {editable ? (
+                            <EditableText
+                              value={t.description}
+                              onSave={(v) => onPatch(t, { description: v })}
+                              disabled={savingId === t.id}
+                              rows={2}
+                              className="mt-1 text-xs text-muted"
+                              placeholder="Description"
+                            />
+                          ) : (
+                            <div className="mt-0.5 text-xs text-muted">{t.description}</div>
+                          )}
+
+                          {/* Planner rationale — the partner verifies the reasoning; read-only. */}
+                          {t.rationale ? (
+                            <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-muted">
+                              <span className="mt-px shrink-0 font-semibold uppercase tracking-wide text-slate-400">
+                                Why
+                              </span>
+                              <span className="italic">{t.rationale}</span>
+                            </div>
+                          ) : null}
+
+                          {/* The AI / associate split. Both halves editable on a hybrid task. */}
+                          {t.assignee_type === "hybrid" ? (
+                            <div className="mt-2 space-y-1.5">
+                              <InstructionField
+                                label="AI does"
+                                tone="brand"
+                                value={t.ai_instruction}
+                                editable={editable}
+                                saving={savingId === t.id}
+                                onSave={(v) => onPatch(t, { ai_instruction: v })}
+                                placeholder="What the AI does as a first pass…"
+                              />
+                              <InstructionField
+                                label="Associate does"
+                                tone="sky"
+                                value={t.human_instruction}
+                                editable={editable}
+                                saving={savingId === t.id}
+                                onSave={(v) => onPatch(t, { human_instruction: v })}
+                                placeholder="What the associate owns and decides…"
+                              />
+                            </div>
+                          ) : editable ? (
+                            <InstructionField
+                              label="AI instruction"
+                              tone="brand"
+                              value={t.ai_instruction}
+                              editable
+                              saving={savingId === t.id}
+                              onSave={(v) => onPatch(t, { ai_instruction: v })}
+                              placeholder="Optional AI instruction…"
+                            />
+                          ) : t.ai_instruction ? (
                             <div className="mt-1.5 rounded-md bg-brand-soft px-2 py-1 text-[11px] text-brand">
                               AI instruction: {t.ai_instruction}
                             </div>
@@ -304,6 +368,89 @@ export default function PlanPage() {
         }
         .select:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-soft); }
       `}</style>
+    </div>
+  );
+}
+
+// An inline-editable text field that commits on blur (one PATCH per edit, not per keystroke). Local
+// state is kept in sync with the saved value so an external update re-syncs without clobbering a
+// mid-edit field.
+function EditableText({
+  value,
+  onSave,
+  disabled,
+  rows = 1,
+  placeholder,
+  className,
+}: {
+  value: string | null;
+  onSave: (v: string) => void;
+  disabled?: boolean;
+  rows?: number;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [v, setV] = useState(value ?? "");
+  useEffect(() => setV(value ?? ""), [value]);
+  const commit = () => {
+    const next = v.trim();
+    if (next !== (value ?? "")) onSave(next);
+  };
+  return (
+    <textarea
+      value={v}
+      rows={rows}
+      disabled={disabled}
+      placeholder={placeholder}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={commit}
+      className={`w-full resize-none rounded-md border border-line bg-white px-2 py-1 leading-snug outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft disabled:opacity-50 ${className ?? ""}`}
+    />
+  );
+}
+
+// One half of the AI/associate split: a labelled instruction, editable when the plan is still
+// proposed, read-only otherwise.
+function InstructionField({
+  label,
+  tone,
+  value,
+  editable,
+  saving,
+  onSave,
+  placeholder,
+}: {
+  label: string;
+  tone: "brand" | "sky";
+  value: string | null;
+  editable: boolean;
+  saving: boolean;
+  onSave: (v: string) => void;
+  placeholder?: string;
+}) {
+  const toneCls =
+    tone === "sky"
+      ? "bg-sky-50 text-sky-700 ring-sky-200"
+      : "bg-brand-soft text-brand ring-brand/20";
+  return (
+    <div>
+      <span
+        className={`mb-0.5 inline-block rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${toneCls}`}
+      >
+        {label}
+      </span>
+      {editable ? (
+        <EditableText
+          value={value}
+          onSave={onSave}
+          disabled={saving}
+          rows={2}
+          placeholder={placeholder}
+          className="text-[11px] text-ink-soft"
+        />
+      ) : (
+        <div className="text-[11px] leading-snug text-ink-soft">{value || "—"}</div>
+      )}
     </div>
   );
 }

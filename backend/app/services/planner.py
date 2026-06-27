@@ -73,6 +73,10 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
                     "input_process_section": t.get("input_process_section")
                     or task_types.get(task_type, {}).get("label", task_type),
                     "ai_instruction": t.get("ai_instruction"),
+                    # The associate's half of a hybrid task, and a one-line rationale the partner
+                    # can sanity-check. Both are proposals the partner can edit before approval.
+                    "human_instruction": t.get("human_instruction"),
+                    "rationale": t.get("rationale"),
                     "status": "proposed",
                     "order_index": t.get("order_index", i),
                 },

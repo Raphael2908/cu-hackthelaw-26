@@ -97,9 +97,10 @@ class LLMProvider(ABC):
         associates: list[dict],
     ) -> list[dict]:
         """Scope a goal into a proposed task list — RAW scoping only (title, description,
-        task_type, assignee_type, target_document_id, input_brief_slice, ai_instruction). The
-        planner service applies the partner's severity, the process-section label, a default
-        assignee and ordering. A proposal; nothing dispatches until the partner approves."""
+        task_type, assignee_type, target_document_id, input_brief_slice, ai_instruction,
+        human_instruction for hybrid tasks, and a one-line rationale). The planner service applies
+        the partner's severity, the process-section label, a default assignee and ordering. A
+        proposal; nothing dispatches until the partner approves."""
 
     @abstractmethod
     def generate_debrief(

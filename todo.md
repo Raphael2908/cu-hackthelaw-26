@@ -76,7 +76,12 @@ cut from the bottom if time runs short.
           saved via `patchTask`); make `ai_instruction` editable here too, not just displayed.
         - **Downstream.** Surface `human_instruction` to the associate in the inbox (pairs with the
           "make the AI/associate division of labour explicit" item below).
-- [ ] **Add a short justification to each planner output (for verifiability).** The planner proposes
+        - **Partial (split authoring done).** Backend `human_instruction` field (model + planner +
+          mock fixture + `TaskPatch`) and the editable two-part "AI does / Associate does" UI on the
+          plan page are in. **Remaining:** the natural-language revise loop (parent item), and
+          surfacing the `human_instruction` *text* in the associate inbox (the attribution item below
+          marks the AI/You split but doesn't yet show the human_instruction wording).
+- [x] **Add a short justification to each planner output (for verifiability).** The planner proposes
       tasks (title, assignee type, severity) with no stated reasoning, so the partner can't quickly
       sanity-check *why* — why this is AI vs human, why this severity, why this task exists. Have the
       planner emit a one-line `rationale` per task (and optionally a plan-level summary), surfaced in
@@ -86,6 +91,9 @@ cut from the bottom if time runs short.
       `plan/page.tsx`, quiet/secondary. **One rule:** the rationale is a checkable explanation to aid
       the partner's judgement, never a verdict or a licence to auto-act — the partner still edits and
       approves.
+      - **Done.** Planner now emits a per-task `rationale` (mock fixture + `planner.py` passthrough,
+        `base.py` docstring); the plan page shows it as a quiet read-only "Why" line per row. Real
+        prompt enhancement deferred (real provider returns `None` until its prompt is updated).
 - [ ] **Editable plan at both individual-task and whole-plan granularity.** Plan editing today is
       limited to per-task assignee/severity selects on `plan/page.tsx`. Make the proposed plan fully
       editable before approval at two levels:
@@ -96,7 +104,11 @@ cut from the bottom if time runs short.
         endpoints + `order_index` in `TaskPatch`) — plus the natural-language revise loop above.
       Keep the edit-on-`proposed` gating and the approval gate throughout; nothing dispatches until
       the partner approves.
-- [ ] **Make the AI/associate division of labour explicit per task in the associate view.** In the
+      - **Partial (individual-task done).** `plan/page.tsx` now inline-edits title, description,
+        `ai_instruction`, and `human_instruction` (commit-on-blur via `patchTask`; `human_instruction`
+        added to `TaskPatch`), on top of the existing assignee/severity selects, all gated on
+        `proposed`. **Remaining:** whole-plan add/remove/reorder (backend endpoints + `order_index`).
+- [x] **Make the AI/associate division of labour explicit per task in the associate view.** In the
       inbox (`app/inbox/page.tsx`) a hybrid task already shows several blocks — the "AI instruction"
       (indigo), the "AI first-pass review (you remain the owner)" (violet), the brief slice, and the
       associate's own submission box — but nothing frames *which parts are the AI's work and which are
@@ -112,6 +124,11 @@ cut from the bottom if time runs short.
       - **Reinforce the one rule:** the AI first pass is a *draft of checkable claims the associate
         owns and must verify*, never finished work and never a verdict. Keep "you remain the owner"
         framing prominent. No backend change — this is labelling/attribution in the associate UI.
+      - **Done.** `inbox/page.tsx`: an `OriginTag` chip (violet "AI" / sky "You") marks the AI
+        instruction, AI first-pass, and submission blocks; a per-task banner keyed off `assignee_type`
+        states the division of labour (hybrid vs human); the one-rule "draft you own and verify, never
+        a verdict" caption reinforces the first-pass block. (Surfacing the `human_instruction` *text*
+        here is tracked under the hybrid-split sub-item above.)
 - [ ] **Separate "new case" from the case list with a foreground modal.** On the partner's cases page
       (`app/page.tsx`) the New-case form is a persistent left column (`Panel`, `lg:col-span-1`) always
       competing with the case list (`lg:col-span-2`) — the create form is on screen even when the

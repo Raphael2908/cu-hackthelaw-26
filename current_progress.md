@@ -4,6 +4,38 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Plan as a working surface + associate-view attribution (Cluster A, increment 1)
+
+**Where we are.** Starting "Cluster A" — making the plan a real working/negotiation surface — with
+the associate-view attribution built in parallel (a background subagent on `inbox/page.tsx`, disjoint
+files). This increment lands the planner-output enrichments and per-task editing; the natural-language
+revise loop and whole-plan add/remove/reorder are the next increments.
+
+**Built**
+- **Planner output enriched.** Each task now carries a one-line `rationale` (why this task / assignee
+  / severity — for the partner to verify) and, for hybrid tasks, a `human_instruction` (the
+  associate's half, alongside the existing `ai_instruction`). Wired through `mock_plan.json`,
+  `planner.py` passthrough, and the `base.py` docstring. Storage needs no migration (rows are JSON
+  blobs). Real provider returns `None` for the new fields until its prompt is updated (deferred).
+- **Plan page editing (`plan/page.tsx`).** New `EditableText` (commit-on-blur, one PATCH per edit)
+  and `InstructionField` helpers. On a `proposed` plan the partner now inline-edits title,
+  description, `ai_instruction`, and `human_instruction` — hybrid rows show a two-part **"AI does /
+  Associate does"** split — on top of the existing assignee/severity selects. The `rationale` shows as
+  a quiet read-only "Why" line. `human_instruction` added to `TaskPatch` + the frontend
+  `TaskPatchBody`/`Task` types.
+- **Associate-view attribution (`inbox/page.tsx`, parallel subagent).** An `OriginTag` chip (violet
+  "AI" / sky "You") marks each contribution block; a per-task banner keyed off `assignee_type` states
+  the division of labour; the AI first-pass block reinforces "a draft you own and verify, never a
+  verdict".
+- **Verified.** 27 backend tests green, ruff clean, frontend `tsc` clean. Live: plan API returns
+  `rationale` (all tasks) + `human_instruction` (hybrid); `PATCH human_instruction` persists.
+
+**Next (Cluster A).** Iterative planning — partner gives natural-language direction and the planner
+revises (`/plan/revise` + provider `revise_plan`); whole-plan add/remove/reorder (endpoints +
+`order_index` in `TaskPatch`); surface the `human_instruction` text in the associate inbox.
+
+---
+
 ## Gate case close on a fully-resolved record
 
 **Where we are.** Closing a case generated the debrief with no guard, so a partner could produce a

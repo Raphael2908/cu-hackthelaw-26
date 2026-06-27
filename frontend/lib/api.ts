@@ -52,6 +52,7 @@ export type TaskPatchBody = Partial<{
   assignee_id: string | null;
   severity: Task["severity"];
   ai_instruction: string;
+  human_instruction: string;
 }>;
 export const patchTask = (taskId: string, body: TaskPatchBody) =>
   apiFetch<Task>(`/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(body) });

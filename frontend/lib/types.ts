@@ -92,6 +92,8 @@ export interface Task {
   input_brief_slice: string;
   input_process_section: string;
   ai_instruction: string | null;
+  human_instruction: string | null; // the associate's half of a hybrid task
+  rationale: string | null; // one-line planner reasoning, for the partner to verify
   status: TaskStatus;
   order_index: number;
 }

@@ -36,6 +36,9 @@ class TaskPatch(BaseModel):
     assignee_id: str | None = None
     severity: Severity | None = None
     ai_instruction: str | None = None
+    # The associate's half of a hybrid task — editable by the partner before approval, same as
+    # ai_instruction (the planner proposes both).
+    human_instruction: str | None = None
 
 
 class SubmissionCreate(BaseModel):
