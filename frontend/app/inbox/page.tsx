@@ -118,7 +118,7 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
       setAsking(false);
       onSubmitted();
     } catch (e) {
-      setError(e instanceof ApiError ? e.detail : "Could not send the question.");
+      setError(e instanceof ApiError ? e.detail : "Could not send your message.");
     } finally {
       setAskingBusy(false);
     }
@@ -239,7 +239,7 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
         <div className="mt-4 border-t border-line pt-4">
           {waiting ? (
             <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
-              Your question is with the partner. The task will return here with their answer.
+              Your message is with the partner. The task will return here with their reply.
             </div>
           ) : (
             <>
@@ -267,7 +267,7 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
                 </Button>
                 {!asking ? (
                   <Button variant="secondary" onClick={() => setAsking(true)} disabled={!canWork}>
-                    Ask the partner a question
+                    Message the partner
                   </Button>
                 ) : null}
               </div>
@@ -275,18 +275,18 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
               {asking ? (
                 <div className="mt-3 space-y-2 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
                   <div className="text-xs font-medium text-violet-800">
-                    Question for the partner — this hands the task to them until they reply.
+                    Raise a question or concern — this hands the task to them until they reply.
                   </div>
                   <textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     rows={2}
-                    placeholder="What do you need clarified before you can finish?…"
+                    placeholder="Ask a question or raise a concern…"
                     className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
                   />
                   <div className="flex items-center gap-2">
                     <Button onClick={ask} disabled={askingBusy || !question.trim()}>
-                      {askingBusy ? "Sending…" : "Send question"}
+                      {askingBusy ? "Sending…" : "Send to partner"}
                     </Button>
                     <Button variant="ghost" onClick={() => setAsking(false)}>
                       Cancel

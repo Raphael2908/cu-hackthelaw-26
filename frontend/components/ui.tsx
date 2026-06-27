@@ -64,7 +64,7 @@ const STATUS_STYLES: Partial<Record<TaskStatus, string>> = {
 // Partner-facing wording for statuses that don't read naturally as "snake case".
 const STATUS_LABEL: Partial<Record<TaskStatus, string>> = {
   returned: "sent back",
-  awaiting_clarification: "question raised",
+  awaiting_clarification: "awaiting reply",
 };
 
 export function StatusPill({ status }: { status: TaskStatus }) {

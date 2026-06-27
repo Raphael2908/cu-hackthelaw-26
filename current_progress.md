@@ -4,6 +4,35 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Associate channel: "question" → "question or concern" (relabel)
+
+**Where we are.** The associate→partner channel was framed narrowly as a *question*, which
+discouraged an associate from raising a concern/flag before submitting. Relabelled it to a generic
+"question or concern" consistently across both sides. **No backend change** — the message `kind`
+stays `"question"` semantically (concerns route through the same `postMessage` /
+`awaiting_clarification` path), so this is purely UI copy.
+
+**Built (frontend only)**
+- **Associate (`app/inbox/page.tsx`).** Button "Ask the partner a question" → "Message the partner";
+  heading → "Raise a question or concern…"; placeholder → "Ask a question or raise a concern…"; send
+  → "Send to partner"; waiting banner and error copy generalised to "message".
+- **Partner (`components/ItemDetail.tsx`).** "Answer the associate's question" → "Reply to the
+  associate's question or concern"; button → "Send reply & return to associate"; pill "question
+  awaiting your reply" → "message awaiting your reply"; step-4 hint generalised.
+- **Cockpit (`app/cases/[id]/cockpit/page.tsx`).** Lane title "Questions from associates" → "Questions
+  & concerns from associates"; row chip "Question" → "Message". Filter stays `m.kind === "question"`
+  (still catches concerns).
+- **Shared maps.** `MessageThread` bubble labels "Question"→"Question or concern", "Answer"→"Reply";
+  `ui.tsx` status `awaiting_clarification` "question raised" → "awaiting reply"; audit sentences
+  "asked the partner a question"→"raised a question or concern", "answered the associate's
+  question"→"replied to the associate".
+- **Verified.** Frontend `tsc --noEmit` clean.
+
+**Deferred.** Swapping both boxes to the shared rich-text editor (blocked on the rich-text-editor
+backlog item — bare textareas stay until that lands).
+
+---
+
 ## Iterative planning — partner critiques, the planner revises (Cluster A, increment 2)
 
 **Where we are.** The plan is now a conversation, not a one-shot proposal: the partner gives

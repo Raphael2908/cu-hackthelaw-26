@@ -272,7 +272,7 @@ export function ItemDetail({
               <h3 className="text-sm font-semibold text-ink">Conversation with the associate</h3>
               {awaitingClar ? (
                 <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
-                  question awaiting your reply
+                  message awaiting your reply
                 </span>
               ) : returned ? (
                 <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">
@@ -285,17 +285,17 @@ export function ItemDetail({
             {awaitingClar && isPartner ? (
               <div className="mt-4 space-y-2 border-t border-line pt-4">
                 <div className="text-xs font-medium text-ink-soft">
-                  Answer the associate&apos;s question
+                  Reply to the associate&apos;s question or concern
                 </div>
                 <textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   rows={2}
-                  placeholder="Type your answer — this sends the task back to the associate…"
+                  placeholder="Type your reply — this sends the task back to the associate…"
                   className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
                 />
                 <Button onClick={sendReply} disabled={replying || !reply.trim()}>
-                  {replying ? "Sending…" : "Send answer & return to associate"}
+                  {replying ? "Sending…" : "Send reply & return to associate"}
                 </Button>
               </div>
             ) : awaitingClar && !isPartner ? (
@@ -323,8 +323,8 @@ export function ItemDetail({
             </div>
           ) : awaitingClar ? (
             <p className="text-xs text-muted">
-              The associate has a question (above). Answer it to hand the task back — you&apos;ll
-              sign off once they resubmit.
+              The associate has raised a question or concern (above). Reply to hand the task back —
+              you&apos;ll sign off once they resubmit.
             </p>
           ) : !isPartner ? (
             <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">

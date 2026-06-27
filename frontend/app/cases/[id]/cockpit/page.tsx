@@ -62,7 +62,7 @@ export default function CockpitPage() {
               {data.needs_reply.length > 0 ? (
                 <section className="rounded-xl border border-violet-200 bg-violet-50/50 p-3">
                   <SectionHeader
-                    title="Questions from associates"
+                    title="Questions & concerns from associates"
                     caption="Reply to send the task back so they can finish."
                     count={data.needs_reply.length}
                   />
@@ -354,7 +354,7 @@ function QuestionRow({
       >
         <div className="flex items-center justify-between gap-2">
           <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
-            Question
+            Message
           </span>
           <SeverityBadge severity={card.task.severity} />
         </div>

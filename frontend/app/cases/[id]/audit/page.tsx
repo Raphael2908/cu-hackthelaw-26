@@ -395,9 +395,9 @@ function describe(ev: AuditEvent, taskTitle?: string): Described {
       return mk(glyph, cls, `${who} ${verb} the work${onTask}${note ? ` — “${note}”` : "."}`);
     }
     case "clarification_requested":
-      return mk("?", "amber", `${who} asked the partner a question${onTask}.`);
+      return mk("?", "amber", `${who} raised a question or concern with the partner${onTask}.`);
     case "clarification_answered":
-      return mk("↩", "brand", `${who} answered the associate's question${onTask}.`);
+      return mk("↩", "brand", `${who} replied to the associate${onTask}.`);
     case "task_reassigned":
       return mk("⟳", "brand", `${who} reassigned the task${onTask}.`);
     case "debrief_generated":

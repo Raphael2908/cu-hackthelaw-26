@@ -4,12 +4,12 @@ import type { TaskMessage } from "@/lib/types";
 
 // The partner<->associate conversation on one task. Partner messages align right (navy), associate
 // messages align left (sky), so the back-and-forth reads like a chat. Each bubble names what kind of
-// message it is (a return for rework, a question, an answer).
+// message it is (a return for rework, a question or concern, a reply).
 
 const KIND_LABEL: Record<TaskMessage["kind"], string> = {
   return: "Sent back for rework",
-  question: "Question",
-  answer: "Answer",
+  question: "Question or concern",
+  answer: "Reply",
 };
 
 export function MessageThread({ messages }: { messages: TaskMessage[] }) {

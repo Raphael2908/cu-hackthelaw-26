@@ -200,6 +200,18 @@ cut from the bottom if time runs short.
         plus the partner reply wording in `ItemDetail.tsx` ("Answer the associate's question"). Decide
         whether `kind` stays `"question"` semantically (just relabelled in the UI) or broadens — don't
         leave the two sides describing the channel differently.
+      - **Partial (relabel done).** Decision: `kind` **stays `"question"` semantically** (no backend
+        change — concerns route through the same channel/`postMessage`/`awaiting_clarification`); the
+        UI is relabelled consistently on both sides. Associate (`inbox/page.tsx`): button "Message the
+        partner", heading "Raise a question or concern…", placeholder "Ask a question or raise a
+        concern…", send "Send to partner", waiting/error copy. Partner (`ItemDetail.tsx`): "Reply to
+        the associate's question or concern", "Send reply & return…", pill "message awaiting your
+        reply", step-4 hint. Cockpit lane "Questions & concerns from associates" + the row chip
+        "Message" (filter still `kind === "question"`, which catches concerns). Shared maps:
+        `MessageThread` bubble "Question or concern" / "Reply"; `ui.tsx` status "awaiting reply"; audit
+        sentences "raised a question or concern" / "replied to the associate". `tsc --noEmit` clean.
+        **Remaining:** swap both boxes to the shared rich-text editor (blocked on the rich-text-editor
+        item below — the bare textareas stay until then).
 - [x] **Block debrief generation while tasks are still pending (backend + frontend).** Closing a case
       (`POST /cases/{id}/close`, `backend/app/api/routers/cases.py`) immediately flips it to `closed`
       and generates the debrief with **no guard** — so a partner can produce a "case summary at close"
