@@ -1,9 +1,9 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { decideTask, getTaskDetail, postMessage } from "@/lib/api";
+import { decideTask, getAssociates, getTaskDetail, postMessage, reassignTask } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Flag, FlagSourceRef, TaskDetail } from "@/lib/types";
+import type { Associate, Flag, FlagSourceRef, TaskDetail } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
 import {
   AssigneeTag,
@@ -54,6 +54,14 @@ export function ItemDetail({
   const [reply, setReply] = useState("");
   const [replying, setReplying] = useState(false);
 
+  // Reassign — a partner-only delegation action, separate from sign-off.
+  const [reassigning, setReassigning] = useState(false);
+  const [raType, setRaType] = useState<"human" | "ai" | "hybrid">("human");
+  const [raAssignee, setRaAssignee] = useState<string>("");
+  const [raNote, setRaNote] = useState("");
+  const [raBusy, setRaBusy] = useState(false);
+  const [associates, setAssociates] = useState<Associate[] | null>(null);
+
   useEffect(() => {
     setRole(getRole());
     return subscribeRole(() => setRole(getRole()));
@@ -77,7 +85,46 @@ export function ItemDetail({
     setNote("");
     setAmendment("");
     setReply("");
+    setReassigning(false);
+    setRaType("human");
+    setRaAssignee("");
+    setRaNote("");
   }, [load, taskId]);
+
+  // Lazily load the associate registry the first time the partner opens the reassign panel.
+  const openReassign = async () => {
+    setAction(null);
+    setReassigning(true);
+    if (associates === null) {
+      try {
+        setAssociates(await getAssociates());
+      } catch {
+        setAssociates([]);
+      }
+    }
+  };
+
+  const doReassign = async () => {
+    setRaBusy(true);
+    setError(null);
+    try {
+      await reassignTask(taskId, {
+        assignee_type: raType,
+        // AI work has no associate; a human/hybrid reassign may leave it unassigned (empty → omit).
+        assignee_id: raType === "ai" || !raAssignee ? undefined : raAssignee,
+        note: raNote,
+      });
+      setReassigning(false);
+      setRaNote("");
+      setRaAssignee("");
+      await load();
+      onDecided();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not reassign the task.");
+    } finally {
+      setRaBusy(false);
+    }
+  };
 
   const sendReply = async () => {
     if (!reply.trim()) return;
@@ -397,6 +444,78 @@ export function ItemDetail({
               ) : null}
             </>
           )}
+
+          {/* Reassign — partner-only delegation, separate from sign-off. Available until the work
+              is accepted (signed off). Re-dispatches under the partner's name; never automatic. */}
+          {isPartner && task.status !== "signed_off" ? (
+            <div className="mt-4 border-t border-line pt-3">
+              {!reassigning ? (
+                <button
+                  onClick={openReassign}
+                  className="text-xs font-semibold text-brand hover:underline"
+                >
+                  Reassign this work…
+                </button>
+              ) : (
+                <div className="space-y-2.5 rounded-lg border border-line bg-canvas p-3">
+                  <p className="text-xs text-muted">
+                    Move this work to a person or the AI. It re-dispatches under your name and is
+                    recorded in the audit log — never reassigned automatically.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-ink-soft">
+                      To
+                      <select
+                        value={raType}
+                        onChange={(e) => {
+                          setRaType(e.target.value as "human" | "ai" | "hybrid");
+                          if (e.target.value === "ai") setRaAssignee("");
+                        }}
+                        className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                      >
+                        <option value="human">A person (human)</option>
+                        <option value="hybrid">Hybrid (AI first pass → person)</option>
+                        <option value="ai">The AI</option>
+                      </select>
+                    </label>
+                    {raType !== "ai" ? (
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-ink-soft">
+                        Associate
+                        <select
+                          value={raAssignee}
+                          onChange={(e) => setRaAssignee(e.target.value)}
+                          className="max-w-[16rem] truncate rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                        >
+                          <option value="">Unassigned (any associate)</option>
+                          {(associates ?? []).map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name} — {a.practice_area} ({a.current_load}/{a.capacity})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+                  </div>
+                  <textarea
+                    value={raNote}
+                    onChange={(e) => setRaNote(e.target.value)}
+                    rows={2}
+                    placeholder="Why are you reassigning? (recorded in the audit log)…"
+                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button onClick={doReassign} disabled={raBusy}>
+                      {raBusy ? "Reassigning…" : "Confirm reassign"}
+                    </Button>
+                    <Button variant="ghost" onClick={() => setReassigning(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+
           {error ? (
             <div className="mt-3">
               <ErrorNote message={error} />

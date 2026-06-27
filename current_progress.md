@@ -4,6 +4,30 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Reassign action wired into the cockpit
+
+**Where we are.** The backend reassign path (`POST /tasks/{id}/reassign` → `coordinator.reassign`,
+`task_reassigned` audit event) and the `reassignTask()` / `getAssociates()` API-client helpers
+already existed, but nothing called them — a partner couldn't move work between a person and the AI,
+or hand it to a different associate. Now wired into the per-item review. It's a delegation action, so
+it goes through an explicit partner click and writes to the accountability log (the one rule).
+
+**Built (frontend only)**
+- **`components/ItemDetail.tsx`.** A partner-only **"Reassign this work…"** control in the decision
+  step (step 4), gated `isPartner && task.status !== "signed_off"` — available for actionable and
+  **escalated** tasks (the redo path), hidden once work is accepted. Expands to: a **To** select
+  (a person / hybrid / the AI), an **Associate** select loaded lazily from `getAssociates()` on first
+  open (name · practice area · current_load/capacity; hidden when target is the AI; an "Unassigned"
+  option → `assignee_id: undefined`), and an optional note. Confirm → `reassignTask()` then `load()` +
+  `onDecided()`. Opening it collapses any in-progress approve/amend/reject form; all reassign state
+  resets on task change.
+- **Guardrail copy.** "Move this work to a person or the AI. It re-dispatches under your name and is
+  recorded in the audit log — never reassigned automatically." No verdict semantics.
+- **Verified.** `tsc --noEmit` + production `next build` clean; `/api/associates` returns the registry
+  live (Amara / Ben / Chen).
+
+---
+
 ## Whole-plan editing + human_instruction in the inbox (Cluster A, increment 3)
 
 **Where we are.** The plan is now fully editable before approval, and the associate sees their

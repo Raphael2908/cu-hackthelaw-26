@@ -404,13 +404,23 @@ cut from the bottom if time runs short.
         existing `task` state (`"all"` ⇄ `null`), composing with the existing filter predicate, the
         URL deep-link seed, and `clearFilters`. Replaced the passive "Following: …" chip; no backend,
         no new API calls, no new state. `tsc --noEmit` clean.
-- [ ] **Wire the reassign action into the cockpit.** The backend exposes `POST /tasks/{id}/reassign`
+- [x] **Wire the reassign action into the cockpit.** The backend exposes `POST /tasks/{id}/reassign`
       (and a `task_reassigned` audit event), and `reassignTask()` + `getAssociates()` already exist in
       `lib/api.ts` — but no component calls them, so a partner can't move work between a person and the
       AI, or hand it to a different associate. Add a partner-only reassign control in `ItemDetail` (pick
       assignee type → associate from `getAssociates()` → optional note), routed through the coordinator.
       It's a delegation action, so it must write to the accountability audit log; never auto-dispatch
       without the explicit partner action (the one rule holds).
+      - **Done.** `ItemDetail.tsx` now has a partner-only **"Reassign this work…"** control in the
+        decision step (step 4), gated `isPartner && status !== "signed_off"` — so it's available for
+        actionable and **escalated** tasks (the redo path) but hidden once work is accepted. It expands
+        to: a **To** select (a person / hybrid / the AI), an **Associate** select populated lazily from
+        `getAssociates()` (name · practice area · load/capacity; hidden when target is the AI; an
+        "Unassigned" option maps to `assignee_id: undefined`), and an optional note. Confirm calls
+        `reassignTask()` → `coordinator.reassign` (records `task_reassigned`, re-dispatches under the
+        partner's name) then reloads. Copy reinforces the one rule ("re-dispatches under your name and
+        is recorded in the audit log — never reassigned automatically"). `tsc` + `next build` clean;
+        `/api/associates` verified live.
 - [ ] **Cockpit worker-task progress: elapsed timer + streamed thoughts.** In the cockpit,
       while a `worker→checker→ranker` task runs, show (a) a live **elapsed timer** per task and
       (b) **stream the worker model's thinking** into the task view as it's produced. Scope of
