@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.config import settings
-from app.db.tables import CASES, DECISIONS, TASKS
+from app.db.tables import CASES, DECISIONS, FLAGS, TASKS
 from app.services import track_record
 
 MAP_A = "process-doc-review"
@@ -84,6 +84,49 @@ def test_aggregate_marks_adverse_history_not_clean(in_memory_repo):
     assert section["adverse"] == 1
     assert section["amended"] == 1
     assert section["clean"] is False
+
+
+def test_section_carries_flag_breakdown_lessons_and_cases(in_memory_repo):
+    """Beyond the outcome counts, each section surfaces the feedback detail a partner reads: flags
+    by checker signal (hard/soft), the carry-forward lesson (the partner's own words), and the
+    matters the section ran in."""
+    case = in_memory_repo.insert(
+        CASES, {"process_doc_id": MAP_B, "status": "closed", "title": "Atlas review"}
+    )
+    task = in_memory_repo.insert(
+        TASKS,
+        {
+            "case_id": case["id"],
+            "task_type": "review_binding_obligation",
+            "assignee_type": "ai",
+            "status": "signed_off",
+            "title": "binding obligation",
+            "input_process_section": "Binding obligation",
+        },
+    )
+    in_memory_repo.insert(
+        DECISIONS,
+        {"task_id": task["id"], "action": "amend", "amendment": "Raise liability cap to 100%."},
+    )
+    in_memory_repo.insert(
+        FLAGS,
+        {"task_id": task["id"], "signal_type": "citation_support", "hard": True, "title": "Fab"},
+    )
+    in_memory_repo.insert(
+        FLAGS,
+        {"task_id": task["id"], "signal_type": "precedent_deviation", "hard": False, "title": "D"},
+    )
+
+    section = track_record.aggregate(in_memory_repo, process_doc_id=MAP_B)["by_section"][
+        "review_binding_obligation"
+    ]
+    assert section["flags_by_signal"]["citation_support"] == {"count": 1, "hard": 1}
+    assert section["flags_by_signal"]["precedent_deviation"]["count"] == 1
+    assert section["hard_flags"] == 1
+    lesson = section["lessons"][0]
+    assert lesson["action"] == "amend" and "liability cap" in lesson["text"]
+    assert lesson["case_id"] == case["id"] and lesson["case_title"] == "Atlas review"
+    assert section["cases"][0]["case_id"] == case["id"] and section["cases"][0]["adverse"] == 1
 
 
 def test_escalated_task_counts_as_adverse(in_memory_repo):

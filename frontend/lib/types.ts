@@ -335,6 +335,19 @@ export interface ProcessMap {
   task_types: Record<string, ProcessMapSection>;
 }
 
+export interface TrackRecordLesson {
+  case_id: string;
+  case_title: string;
+  action: "amend" | "reject";
+  text: string; // the partner's own amendment / rejection words
+}
+export interface TrackRecordSectionCase {
+  case_id: string;
+  title: string;
+  status: CaseStatus;
+  completed: number;
+  adverse: number;
+}
 export interface TrackRecordSection {
   label: string;
   completed: number;
@@ -345,6 +358,12 @@ export interface TrackRecordSection {
   escalated: number;
   adverse: number;
   clean: boolean;
+  // Feedback detail (per section): flags by checker signal (hard/soft), the partner's carry-forward
+  // notes, and the matters the section ran in. Counts + recorded words + flags, never a verdict.
+  flags_by_signal: Record<SignalType, { count: number; hard: number }>;
+  hard_flags: number;
+  lessons: TrackRecordLesson[];
+  cases: TrackRecordSectionCase[];
 }
 
 export interface TrackRecordLogItem {

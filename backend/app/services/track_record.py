@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from app.config import settings
 from app.db.repo import Repo
-from app.db.tables import CASES, DECISIONS, TASKS
+from app.db.tables import CASES, DECISIONS, FLAGS, TASKS
 
 # A completed agentic task is in one of these terminal states (architecture.md §5).
 _TERMINAL = {"signed_off", "cleared", "escalated"}
 # Only AI/hybrid work builds an AI track record — we never grade purely human work (§14).
 _AGENTIC = {"ai", "hybrid"}
+# The three independent checker signals (architecture.md §7.2), in display order.
+_SIGNALS = ("citation_support", "precedent_deviation", "multi_run_disagreement")
 
 
-def _outcome(repo: Repo, task: dict) -> str:
+def _outcome(task: dict, last_decision: dict | None) -> str:
     """Reduce a completed agentic task to a single outcome the log can show and the planner can
     count. `clean` = the AI work stood (auto-cleared, or signed off without amendment); `adverse` =
     a human had to amend it or it was rejected/escalated. Never a verdict — just what happened."""
@@ -20,8 +22,7 @@ def _outcome(repo: Repo, task: dict) -> str:
     if status == "cleared":
         return "clean"
     if status == "signed_off":
-        decisions = repo.list(DECISIONS, task_id=task["id"])
-        action = decisions[-1].get("action") if decisions else None
+        action = last_decision.get("action") if last_decision else None
         return "adverse" if action == "amend" else "clean"
     return "clean"
 
@@ -32,15 +33,22 @@ def aggregate(repo: Repo, *, process_doc_id: str) -> dict:
     Walks every completed AI/hybrid task whose case used `process_doc_id`, bucketed by section
     (`task_type`). The record is scoped to the map — a fresh map is a clean slate; a reused map
     carries history the planner consults to graduate a section to AI (clean record) or pull it back
-    to a human owner (adverse record). Returns per-section counts plus a flat completed-task log."""
-    case_map = {c["id"]: c.get("process_doc_id") for c in repo.list(CASES)}
+    to a human owner (adverse record). Returns per-section counts plus a flat completed-task log.
+
+    Each section also carries the *feedback detail* a partner reads to understand a record: the
+    flags that were raised broken down by the three checker signals (hard/soft), the lessons to
+    carry forward (the partner's own amendment/rejection words), and the matters the section ran in.
+    These stay counts + the partner's recorded words + flags — never a verdict (§1, §14)."""
+    cases = {c["id"]: c for c in repo.list(CASES)}
 
     by_section: dict[str, dict] = {}
+    section_cases: dict[str, dict] = {}  # section -> case_id -> drill-down row
     log: list[dict] = []
     for task in repo.list(TASKS):
         if task.get("assignee_type") not in _AGENTIC or task.get("status") not in _TERMINAL:
             continue
-        if case_map.get(task.get("case_id")) != process_doc_id:
+        case = cases.get(task.get("case_id"), {})
+        if case.get("process_doc_id") != process_doc_id:
             continue
         section = task.get("task_type", "")
         rec = by_section.setdefault(
@@ -54,9 +62,14 @@ def aggregate(repo: Repo, *, process_doc_id: str) -> dict:
                 "amended": 0,
                 "escalated": 0,
                 "adverse": 0,
+                "flags_by_signal": {s: {"count": 0, "hard": 0} for s in _SIGNALS},
+                "hard_flags": 0,
+                "lessons": [],
             },
         )
-        outcome = _outcome(repo, task)
+        decisions = repo.list(DECISIONS, task_id=task["id"])
+        last_decision = decisions[-1] if decisions else None
+        outcome = _outcome(task, last_decision)
         rec["completed"] += 1
         rec[task["assignee_type"]] += 1
         if outcome == "adverse":
@@ -67,6 +80,45 @@ def aggregate(repo: Repo, *, process_doc_id: str) -> dict:
                 rec["amended"] += 1
         else:
             rec["clean_successes"] += 1
+
+        # Flags raised on this AI work, by signal (hard/soft visible separately).
+        for f in repo.list(FLAGS, task_id=task["id"]):
+            bucket = rec["flags_by_signal"].setdefault(
+                f["signal_type"], {"count": 0, "hard": 0}
+            )
+            bucket["count"] += 1
+            if f.get("hard"):
+                bucket["hard"] += 1
+                rec["hard_flags"] += 1
+
+        # The lesson to carry forward — the partner's own words on what had to change.
+        if last_decision and last_decision.get("action") in ("amend", "reject"):
+            text = (last_decision.get("amendment") or last_decision.get("note") or "").strip()
+            if text:
+                rec["lessons"].append(
+                    {
+                        "case_id": task.get("case_id"),
+                        "case_title": case.get("title", task.get("case_id")),
+                        "action": last_decision["action"],
+                        "text": text,
+                    }
+                )
+
+        # Drill-down: the matters this section ran in.
+        crow = section_cases.setdefault(section, {}).setdefault(
+            task.get("case_id"),
+            {
+                "case_id": task.get("case_id"),
+                "title": case.get("title", task.get("case_id")),
+                "status": case.get("status", "open"),
+                "completed": 0,
+                "adverse": 0,
+            },
+        )
+        crow["completed"] += 1
+        if outcome == "adverse":
+            crow["adverse"] += 1
+
         log.append(
             {
                 "task_id": task["id"],
@@ -80,8 +132,13 @@ def aggregate(repo: Repo, *, process_doc_id: str) -> dict:
             }
         )
 
-    for rec in by_section.values():
+    for section, rec in by_section.items():
         rec["clean"] = rec["completed"] >= settings.AI_TRACK_RECORD_MIN and rec["adverse"] == 0
+        rec["cases"] = sorted(
+            section_cases.get(section, {}).values(),
+            key=lambda r: r["adverse"],
+            reverse=True,
+        )
 
     log.sort(key=lambda r: r["seq"], reverse=True)
     return {"process_doc_id": process_doc_id, "by_section": by_section, "log": log}
