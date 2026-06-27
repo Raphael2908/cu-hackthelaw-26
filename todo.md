@@ -165,7 +165,7 @@ cut from the bottom if time runs short.
         states the division of labour (hybrid vs human); the one-rule "draft you own and verify, never
         a verdict" caption reinforces the first-pass block. (Surfacing the `human_instruction` *text*
         here is tracked under the hybrid-split sub-item above.)
-- [ ] **Separate "new case" from the case list with a foreground modal.** On the partner's cases page
+- [x] **Separate "new case" from the case list with a foreground modal.** On the partner's cases page
       (`app/page.tsx`) the New-case form is a persistent left column (`Panel`, `lg:col-span-1`) always
       competing with the case list (`lg:col-span-2`) — the create form is on screen even when the
       partner just wants to scan existing cases. Replace it with an on-demand foreground:
@@ -184,6 +184,12 @@ cut from the bottom if time runs short.
         (the modal is just the entry point, and the partner lands on plan to generate it), or (b) stay
         on the cases page, close the modal, refresh the list, and let the partner open the new case to
         generate its plan. Pick one and keep the create→plan story coherent; don't do both.
+      - **Done — chose (a).** The persistent form column is gone; the case list is full-width and a
+        **"+ New case"** button (page header, top-right) opens the form in a `Modal` over a dimmed
+        backdrop (`bg-ink/30`), built from the existing `Panel`/`Field`/`.input` chrome. On create it
+        routes to the new case's plan page (the modal unmounts) — the established split-creation flow.
+        The `Modal` handles Esc, backdrop-click, a Tab focus-trap, body-scroll lock, initial focus,
+        and restores focus to the trigger on close; a ✕ also closes. Frontend `tsc` clean.
 - [x] **Bring the rich-text editor to the partner's view too.** The partner also types into bare
       textareas in `components/ItemDetail.tsx`: the decision **note** (`note`, ~lines 366–376), the
       **amendment** text (`amendment`, ~377–385), and the **reply to the associate** (`reply`,

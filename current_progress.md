@@ -4,6 +4,22 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## New case moved into a foreground modal
+
+**Where we are.** The new-case form was a persistent left column always competing with the case
+list. It's now an on-demand foreground modal, so the list is the default full-width view and the
+form appears only when the partner wants it.
+
+**Built (frontend only, `app/page.tsx`).** A **"+ New case"** button in the page header opens the
+form in a `Modal` over a dimmed backdrop (`bg-ink/30`); the case list is full-width behind it. The
+modal is built from the product's own chrome (`Panel`/`Field`/`.input`, `brand` tokens) — not generic
+modal styling — and handles the basics: Esc to close, backdrop-click to dismiss, a Tab focus-trap,
+body-scroll lock, initial focus on open, focus restored to the trigger on close, plus a ✕ button.
+On successful create it routes to the new case's plan page (option (a) — the modal is the entry
+point; the established split-creation → plan flow is unchanged). `tsc` clean; page renders.
+
+---
+
 ## Debrief reshaped into an issue-centric memo
 
 **Where we are.** The debrief was laid out by the system's data-model tables (Tasks / Flags /

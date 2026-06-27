@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createCase, createPlan, getCockpit, listCases, uploadCaseDocuments } from "@/lib/api";
@@ -50,6 +50,7 @@ export default function CasesPage() {
   const [severity, setSeverity] = useState<Severity>("medium");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
 
   const load = () =>
     listCases()
@@ -120,13 +121,18 @@ export default function CasesPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Cases</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted">
-          Delegate legal review to human and AI workers under your approval, then supervise the
-          completed output. Agents surface checkable claims — they never render a verdict, and
-          nothing is auto-approved.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Cases</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Delegate legal review to human and AI workers under your approval, then supervise the
+            completed output. Agents surface checkable claims — they never render a verdict, and
+            nothing is auto-approved.
+          </p>
+        </div>
+        <Button onClick={() => setShowNew(true)} className="shrink-0">
+          + New case
+        </Button>
       </div>
 
       {error ? (
@@ -135,125 +141,16 @@ export default function CasesPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* New case */}
-        <Panel className="lg:col-span-1">
-          <form onSubmit={onCreate} className="space-y-4 p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-ink">New case</h2>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setTitle(DEMO.title);
-                  setBrief(DEMO.brief_text);
-                  setGoal(DEMO.goal);
-                  setInstructions(DEMO.instructions);
-                }}
-                className="!px-2 !py-1 !text-xs"
-              >
-                Demo case
-              </Button>
-            </div>
-
-            <Field label="Title">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Matter title"
-                className="input"
-              />
-            </Field>
-            <Field label="Brief">
-              <textarea
-                value={brief}
-                onChange={(e) => setBrief(e.target.value)}
-                rows={3}
-                placeholder="The factual brief…"
-                className="input resize-none"
-              />
-            </Field>
-            <Field label="Goal">
-              <textarea
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                rows={2}
-                placeholder="What outcome do you want?"
-                className="input resize-none"
-              />
-            </Field>
-            <Field label="Instructions for the planner (optional)">
-              <textarea
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                rows={2}
-                placeholder="e.g. keep liability review human-led; focus on the data-transfer clauses…"
-                className="input resize-none"
-              />
-              <span className="mt-1 block text-[11px] leading-snug text-muted">
-                Your direction for how to approach the work. The planner proposes; you still approve.
-              </span>
-            </Field>
-            <Field label="Severity">
-              <select
-                value={severity}
-                onChange={(e) => setSeverity(e.target.value as Severity)}
-                className="input"
-              >
-                {SEVERITIES.map((s) => (
-                  <option key={s} value={s}>
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
-              <span className="mt-1 block text-[11px] leading-snug text-muted">
-                Your up-front risk call — higher severity keeps more work in the review queue.
-              </span>
-            </Field>
-            <Field label="Documents (optional)">
-              <input
-                type="file"
-                multiple
-                accept=".pdf,.docx,.pptx,.txt,.md,.markdown"
-                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-                className="input"
-              />
-              {files.length ? (
-                <ul className="mt-2 space-y-1">
-                  {files.map((f) => (
-                    <li key={f.name} className="truncate text-[11px] text-ink-soft">
-                      {f.name} · {(f.size / 1024).toFixed(0)} KB
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <span className="mt-1 block text-[11px] leading-snug text-muted">
-                  PDF, DOCX, PowerPoint, or text.
-                </span>
-              )}
-            </Field>
-
-            <Button type="submit" disabled={!!busy || !title.trim()} className="w-full">
-              {busy === "upload"
-                ? "Uploading documents…"
-                : busy === "create"
-                  ? "Creating case…"
-                  : "Create case"}
-            </Button>
-            <p className="text-[11px] leading-snug text-muted">
-              Nothing is dispatched until you approve the plan.
-            </p>
-          </form>
-        </Panel>
-
-        {/* List */}
-        <div className="lg:col-span-2">
+      {/* List — full width; the new-case form opens in an on-demand modal (below). */}
+      <div>
           {cases === null ? (
             <Panel className="p-5">
               <Spinner label="Loading cases…" />
             </Panel>
           ) : cases.length === 0 ? (
             <Panel className="p-8 text-center text-sm text-muted">
-              No cases yet. Create one with the form, or use the Demo case quick-fill.
+              No cases yet. Click <span className="font-medium text-ink">+ New case</span> to create
+              one.
             </Panel>
           ) : (
             <ul className="space-y-3">
@@ -321,8 +218,132 @@ export default function CasesPage() {
               ))}
             </ul>
           )}
-        </div>
       </div>
+
+      {showNew ? (
+        <Modal onClose={() => setShowNew(false)} labelledBy="new-case-title">
+          <Panel className="max-h-[85vh] overflow-y-auto">
+            <form onSubmit={onCreate} className="space-y-4 p-5">
+              <div className="flex items-center justify-between">
+                <h2 id="new-case-title" className="text-sm font-semibold text-ink">
+                  New case
+                </h2>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setTitle(DEMO.title);
+                      setBrief(DEMO.brief_text);
+                      setGoal(DEMO.goal);
+                      setInstructions(DEMO.instructions);
+                    }}
+                    className="!px-2 !py-1 !text-xs"
+                  >
+                    Demo case
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setShowNew(false)}
+                    aria-label="Close"
+                    className="rounded-md px-2 py-1 text-sm text-muted hover:bg-canvas hover:text-ink"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <Field label="Title">
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Matter title"
+                  className="input"
+                />
+              </Field>
+              <Field label="Brief">
+                <textarea
+                  value={brief}
+                  onChange={(e) => setBrief(e.target.value)}
+                  rows={3}
+                  placeholder="The factual brief…"
+                  className="input resize-none"
+                />
+              </Field>
+              <Field label="Goal">
+                <textarea
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  rows={2}
+                  placeholder="What outcome do you want?"
+                  className="input resize-none"
+                />
+              </Field>
+              <Field label="Instructions for the planner (optional)">
+                <textarea
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  rows={2}
+                  placeholder="e.g. keep liability review human-led; focus on the data-transfer clauses…"
+                  className="input resize-none"
+                />
+                <span className="mt-1 block text-[11px] leading-snug text-muted">
+                  Your direction for how to approach the work. The planner proposes; you still
+                  approve.
+                </span>
+              </Field>
+              <Field label="Severity">
+                <select
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value as Severity)}
+                  className="input"
+                >
+                  {SEVERITIES.map((s) => (
+                    <option key={s} value={s}>
+                      {s[0].toUpperCase() + s.slice(1)}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-[11px] leading-snug text-muted">
+                  Your up-front risk call — higher severity keeps more work in the review queue.
+                </span>
+              </Field>
+              <Field label="Documents (optional)">
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.docx,.pptx,.txt,.md,.markdown"
+                  onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                  className="input"
+                />
+                {files.length ? (
+                  <ul className="mt-2 space-y-1">
+                    {files.map((f) => (
+                      <li key={f.name} className="truncate text-[11px] text-ink-soft">
+                        {f.name} · {(f.size / 1024).toFixed(0)} KB
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="mt-1 block text-[11px] leading-snug text-muted">
+                    PDF, DOCX, PowerPoint, or text.
+                  </span>
+                )}
+              </Field>
+
+              <Button type="submit" disabled={!!busy || !title.trim()} className="w-full">
+                {busy === "upload"
+                  ? "Uploading documents…"
+                  : busy === "create"
+                    ? "Creating case…"
+                    : "Create case"}
+              </Button>
+              <p className="text-[11px] leading-snug text-muted">
+                Nothing is dispatched until you approve the plan.
+              </p>
+            </form>
+          </Panel>
+        </Modal>
+      ) : null}
 
       <style>{`
         .input {
@@ -337,6 +358,72 @@ export default function CasesPage() {
         }
         .input:focus { border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-soft); }
       `}</style>
+    </div>
+  );
+}
+
+// A foreground modal in the product's own visual language (the children supply the Panel). Dims the
+// list behind it, closes on Esc / backdrop-click, traps Tab focus, and restores focus to the trigger.
+function Modal({
+  onClose,
+  labelledBy,
+  children,
+}: {
+  onClose: () => void;
+  labelledBy?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const restoreTo = document.activeElement as HTMLElement | null;
+    const focusables = () =>
+      Array.from(
+        ref.current?.querySelectorAll<HTMLElement>(
+          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      );
+    focusables()[0]?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "Tab") {
+        const f = focusables();
+        if (f.length === 0) return;
+        const first = f[0];
+        const last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      restoreTo?.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelledBy}
+    >
+      <div className="fixed inset-0 bg-ink/30" onClick={onClose} aria-hidden />
+      <div ref={ref} className="relative z-10 w-full max-w-lg">
+        {children}
+      </div>
     </div>
   );
 }
