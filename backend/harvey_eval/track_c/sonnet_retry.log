@@ -1,0 +1,62 @@
+=== RUN retry3 (sonnet, fresh run-id eu_sonnet2) ===
+{
+  "task": "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
+  "run_id": "eu_sonnet2/summarize-new-gdpr-enforcement-guidance",
+  "severity": "high",
+  "deliverable": "executive-regulatory-brief.docx",
+  "documents_included": [
+    "ap-decision-2025-0042-summary.docx",
+    "edpb-guidelines-03-2024-summary.docx",
+    "novabridge-gdpr-compliance-tracker.xlsx",
+    "novabridge-processing-overview.docx",
+    "outside-counsel-cover-email.eml"
+  ],
+  "n_findings": 15,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.2,
+  "deviation_score": 0.98,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.894,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 15,
+    "input_tokens": 198983,
+    "output_tokens": 25743,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 198983,
+    "total_tokens": 224726,
+    "cost_usd": 0.983094
+  },
+  "n_flags": 18,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 224,726 (15 LLM calls) | in=198,983 out=25,743 cache_read=0 | cost=$0.9831 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet2\summarize-new-gdpr-enforcement-guidance\output\executive-regulatory-brief.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet2\summarize-new-gdpr-enforcement-guidance
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet2/summarize-new-gdpr-enforcement-guidance' --task 'data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance'
+=== GRADE (sonnet) ===
+{
+  "task": "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
+  "run_id": "eu_sonnet2/summarize-new-gdpr-enforcement-guidance",
+  "uncertainty": 0.894,
+  "score": 0.6522,
+  "n_criteria": 46,
+  "n_pass": 30,
+  "n_low_confidence": 1,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 10669,
+    "output_tokens": 8183,
+    "cost_usd": 0.15475
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)
+SONNET RETRY3 DONE
