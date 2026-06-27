@@ -139,6 +139,25 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
           </div>
         </div>
 
+        {/* Who does what — orient the associate before they read the blocks below. */}
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-ink-soft">
+          {task.assignee_type === "hybrid" ? (
+            <>
+              <OriginTag origin="ai" />
+              <span>
+                AI drafted a first pass — you verify, amend, and own the final submission.
+              </span>
+            </>
+          ) : (
+            <>
+              <OriginTag origin="you" />
+              <span>
+                This task is yours — no AI pass. (Automated checks don&apos;t grade human work.)
+              </span>
+            </>
+          )}
+        </div>
+
         {/* The partner sent it back — make the reason impossible to miss. */}
         {returned ? (
           <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
@@ -156,8 +175,11 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
 
         {task.assignee_type === "hybrid" && task.ai_instruction ? (
           <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
-              AI instruction
+            <div className="flex items-center gap-2">
+              <OriginTag origin="ai" />
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+                AI instruction
+              </div>
             </div>
             <p className="mt-0.5 text-sm text-indigo-900">{task.ai_instruction}</p>
           </div>
@@ -165,9 +187,16 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
 
         {ai_first_pass ? (
           <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50/60 p-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">
-              AI first-pass review (you remain the owner)
+            <div className="flex items-center gap-2">
+              <OriginTag origin="ai" />
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-violet-700">
+                AI first-pass review (you remain the owner)
+              </div>
             </div>
+            <p className="mt-1.5 text-[11px] leading-snug text-violet-700">
+              A draft of checkable claims for you to verify and amend — not finished work, and never
+              a verdict. You own the final submission.
+            </p>
             <p className="mt-1 text-sm text-ink-soft">{ai_first_pass.summary}</p>
             {ai_first_pass.findings.length > 0 ? (
               <ul className="mt-2 space-y-1.5">
@@ -214,8 +243,11 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
             </div>
           ) : (
             <>
-              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
-                {returned ? "Revise & resubmit" : "Your submission"}
+              <div className="mb-1 flex items-center gap-2">
+                <OriginTag origin="you" />
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                  {returned ? "Revise & resubmit" : "Your submission"}
+                </div>
               </div>
               <textarea
                 value={summary}
@@ -267,5 +299,21 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
         </div>
       </Panel>
     </li>
+  );
+}
+
+// Quiet "who produced this" marker — makes the AI-vs-human boundary visual, not
+// just a colour. Reuses the rounded chip styling shared with AssigneeTag.
+function OriginTag({ origin }: { origin: "ai" | "you" }) {
+  const map = {
+    ai: "bg-violet-50 text-violet-700 ring-violet-200",
+    you: "bg-sky-50 text-sky-700 ring-sky-200",
+  } as const;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ${map[origin]}`}
+    >
+      {origin === "ai" ? "AI" : "You"}
+    </span>
   );
 }
