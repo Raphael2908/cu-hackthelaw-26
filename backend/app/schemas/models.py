@@ -57,3 +57,10 @@ class ReassignRequest(BaseModel):
     assignee_type: AssigneeType
     assignee_id: str | None = None
     note: str = ""
+
+
+class MessageCreate(BaseModel):
+    """A note on a task. From an associate it raises a question to the partner; from the partner it
+    answers an open question and hands the task back to the associate."""
+
+    body: str

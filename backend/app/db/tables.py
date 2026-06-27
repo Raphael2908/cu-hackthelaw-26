@@ -12,6 +12,7 @@ RISK_SCORES = "risk_scores"
 DECISIONS = "decisions"
 AUDIT_EVENTS = "audit_events"
 DEBRIEFS = "debriefs"
+TASK_MESSAGES = "task_messages"
 
 ALL_TABLES = [
     ASSOCIATES,
@@ -25,4 +26,5 @@ ALL_TABLES = [
     DECISIONS,
     AUDIT_EVENTS,
     DEBRIEFS,
+    TASK_MESSAGES,
 ]

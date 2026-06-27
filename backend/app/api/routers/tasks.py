@@ -6,7 +6,13 @@ from app.core.auth import CurrentUser, get_current_user
 from app.db.repo import get_repo
 from app.db.tables import CORPUS, TASKS
 from app.providers.factory import get_llm_provider
-from app.schemas.models import DecisionCreate, ReassignRequest, SubmissionCreate, TaskPatch
+from app.schemas.models import (
+    DecisionCreate,
+    MessageCreate,
+    ReassignRequest,
+    SubmissionCreate,
+    TaskPatch,
+)
 from app.services import coordinator, views
 
 router = APIRouter()
@@ -29,12 +35,16 @@ def inbox(user: CurrentUser = Depends(get_current_user)) -> list[dict]:
         if t["assignee_type"] in ("human", "hybrid") and t["status"] in (
             "dispatched",
             "in_progress",
+            "returned",  # sent back by the partner for rework
+            "awaiting_clarification",  # waiting on the partner's reply (read-only here)
         ):
             out.append(
                 {
                     "task": t,
                     "target_document": repo.get(CORPUS, t["target_document_id"]),
-                    "ai_first_pass": views.latest_submission(repo, t["id"]),  # hybrid only
+                    "ai_first_pass": views.ai_first_pass(repo, t["id"]),  # hybrid only
+                    "last_submission": views.latest_submission(repo, t["id"]),
+                    "messages": views.messages(repo, t["id"]),
                 }
             )
     return out
@@ -108,3 +118,29 @@ def reassign_task(
         actor=user.email,
         provider=get_llm_provider(),
     )
+
+
+@router.post("/tasks/{task_id}/message")
+def post_message(
+    task_id: str, body: MessageCreate, user: CurrentUser = Depends(get_current_user)
+) -> dict:
+    """The partner↔associate back-and-forth on one task. An associate raises a question (it goes to
+    the partner's cockpit); the partner answers (it returns to the associate). Both hops are
+    recorded in the audit trail."""
+    repo = get_repo()
+    task = _task_or_404(task_id)
+    text = body.body.strip()
+    if not text:
+        raise HTTPException(422, "Message cannot be empty.")
+
+    if user.role == "partner":
+        if task["status"] != "awaiting_clarification":
+            raise HTTPException(409, "There is no open question on this task to answer.")
+        return coordinator.answer_clarification(repo, task=task, body=text, actor=user.email)
+
+    # associate
+    if task["assignee_type"] == "ai":
+        raise HTTPException(409, "AI tasks have no associate to raise a question.")
+    if task["status"] not in ("dispatched", "in_progress", "returned"):
+        raise HTTPException(409, "You can only raise a question on a task in your inbox.")
+    return coordinator.request_clarification(repo, task=task, body=text, actor=user.email)
