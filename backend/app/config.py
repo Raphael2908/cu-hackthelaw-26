@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # --- LLM (Anthropic) --- blank = mock mode
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-opus-4-8"
+    # Output budget per structured call. The default was 2048, which truncated the worker's JSON
+    # mid-string on large real-world documents (e.g. Harvey Labs review tasks) — see todo.md.
+    ANTHROPIC_MAX_TOKENS: int = 32768
 
     # --- Risk signal tuning (architecture.md §7) ---
     SAMPLE_RATE: float = 0.2
