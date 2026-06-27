@@ -66,6 +66,48 @@ _MAX_TOOL_TURNS = 6  # bound the agentic loop so a misbehaving model can't fetch
 _TOOL_RESULT_CHARS = 20000  # cap a fetched source so it can't blow the context window
 
 
+def _parse_json(text: str) -> dict:
+    """Parse model output as JSON, tolerating prose the model wraps around it.
+
+    The prompts ask for STRICT JSON, but Opus 4.8 often prefaces it with a sentence
+    ("Looking at the process doc, I'll decompose..."). Fall back to extracting the
+    first balanced {...} or [...] value and parsing that."""
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    candidates = [i for i in (text.find("{"), text.find("[")) if i != -1]
+    start = min(candidates) if candidates else -1
+    if start != -1:
+        open_ch = text[start]
+        close_ch = "}" if open_ch == "{" else "]"
+        depth = 0
+        in_str = False
+        esc = False
+        for i in range(start, len(text)):
+            c = text[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif c == "\\":
+                    esc = True
+                elif c == '"':
+                    in_str = False
+                continue
+            if c == '"':
+                in_str = True
+            elif c == open_ch:
+                depth += 1
+            elif c == close_ch:
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return json.loads(text[start : i + 1])
+                    except json.JSONDecodeError:
+                        break
+    raise ProviderError(f"Model did not return valid JSON: {text[:200]}")
+
+
 class AnthropicLLMProvider(LLMProvider):
     def __init__(self) -> None:
         if not settings.ANTHROPIC_API_KEY:
@@ -79,37 +121,27 @@ class AnthropicLLMProvider(LLMProvider):
         import anthropic
 
         try:
-            if on_delta is None:
-                msg = self._client.messages.create(
-                    model=self._model,
-                    max_tokens=32768,
-                    system=system,
-                    messages=[{"role": "user", "content": user}],
-                )
-                text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
-            else:
-                # Stream the model's output so the cockpit's "With AI" lane shows it live as it is
-                # produced (architecture.md §8). The deltas are transient UX only — the worker
-                # relays them to Redis, never the repo/audit (§14). The accumulated text is parsed
-                # exactly as the non-streaming path below.
-                with self._client.messages.stream(
-                    model=self._model,
-                    max_tokens=32768,
-                    system=system,
-                    messages=[{"role": "user", "content": user}],
-                ) as stream:
+            # Stream: the SDK refuses non-streaming requests it estimates may exceed ~10 minutes at
+            # this max_tokens. When a delta sink is supplied, also relay the text deltas live to the
+            # cockpit's "With AI" lane (architecture.md §8) — transient UX only, never the repo/
+            # audit (§14). get_final_message() reassembles the complete Message so the parse below
+            # is unchanged either way.
+            with self._client.messages.stream(
+                model=self._model,
+                max_tokens=32768,
+                system=system,
+                messages=[{"role": "user", "content": user}],
+            ) as stream:
+                if on_delta is not None:
                     for chunk in stream.text_stream:
                         on_delta(chunk)
-                    final = stream.get_final_message()
-                text = "".join(b.text for b in final.content if getattr(b, "type", None) == "text")
+                msg = stream.get_final_message()
         except anthropic.RateLimitError as e:  # pragma: no cover - real-mode only
             raise RetryableError(str(e)) from e
         except anthropic.APIStatusError as e:  # pragma: no cover
             raise (RetryableError if e.status_code >= 500 else FatalError)(str(e)) from e
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError as e:  # pragma: no cover
-            raise ProviderError(f"Model did not return valid JSON: {text[:200]}") from e
+        text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+        return _parse_json(text)
 
     def _run_source_tool(self, source_lookup, celex: str) -> str:  # pragma: no cover - real-mode
         """Execute one fetch_eu_source call. A failed lookup never aborts the review — it returns a
@@ -129,13 +161,15 @@ class AnthropicLLMProvider(LLMProvider):
         messages = [{"role": "user", "content": user}]
         for _ in range(_MAX_TOOL_TURNS):  # pragma: no cover - real-mode only
             try:
-                msg = self._client.messages.create(
+                # Stream for the same reason as _complete_json (see note there).
+                with self._client.messages.stream(
                     model=self._model,
                     max_tokens=32768,
                     system=system,
                     tools=[_FETCH_TOOL],
                     messages=messages,
-                )
+                ) as stream:
+                    msg = stream.get_final_message()
             except anthropic.RateLimitError as e:
                 raise RetryableError(str(e)) from e
             except anthropic.APIStatusError as e:
@@ -143,10 +177,7 @@ class AnthropicLLMProvider(LLMProvider):
 
             if msg.stop_reason != "tool_use":
                 text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
-                try:
-                    return json.loads(text)
-                except json.JSONDecodeError as e:
-                    raise ProviderError(f"Model did not return valid JSON: {text[:200]}") from e
+                return _parse_json(text)
 
             messages.append({"role": "assistant", "content": msg.content})
             results = [
