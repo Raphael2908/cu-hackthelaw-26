@@ -202,7 +202,7 @@ cut from the bottom if time runs short.
         navy message bubble in `MessageThread` and the audit note sentence — needs a theme-aware
         `Markdown` (its colors are hardcoded light), so those stay plain for now. The submission
         summary read-back (light bg) is rendered via `Markdown`.
-- [ ] **Generalise the associate's "ask the partner a question" box to questions *or* concerns, on
+- [x] **Generalise the associate's "ask the partner a question" box to questions *or* concerns, on
       the rich-text editor.** Today the associate→partner channel is framed narrowly as a *question*
       (`app/inbox/page.tsx`): the button "Ask the partner a question" (~line 238), the box heading
       "Question for the partner — this hands the task to them until they reply." (~246), the
@@ -305,6 +305,10 @@ cut from the bottom if time runs short.
         so the associate's file lands in the case corpus (tagged to the task), rather than adding a
         new submission-attachment table. Record the attachment in the audit/submission record so it's
         traceable. Keep submissions checkable claims that re-enter the flow — never an auto-decision.
+      - **Partial — editor done, upload remains.** The shared `MarkdownEditor` (Write/Preview +
+        toolbar) shipped and is wired into the submission box (and the question/concern box, and the
+        partner's note/amendment/reply in `ItemDetail`). **Remaining:** only the **attach-files /
+        document-upload** part on submission (the backend-seam decision above).
       - **Partial (editor done; upload deferred).** Built the shared `components/MarkdownEditor.tsx`
         — Write/Preview segmented toggle (same look as the audit/role toggles) + a light formatting
         toolbar (H, B, I, link, code, bulleted/numbered list; buttons wrap/prefix the textarea
@@ -487,7 +491,8 @@ cut from the bottom if time runs short.
 - [ ] Associate inbox: richer task context; show hybrid AI instruction inline with submit.
       _(The hybrid AI-instruction-inline part already ships; remaining: process-guideline +
       target-document excerpt in the inbox card.)_
-- [ ] Debrief: include carry-forward notes derived from flags the partner amended.
+- [x] Debrief: include carry-forward notes derived from flags the partner amended. _(Done in the
+      debrief reshape — `debrief_carry_forward` derives notes from the flags raised + amendments made.)_
 
 ## Production scale-up (next)
 - [x] **PPTX ingestion.** Add `.pptx` to document upload — extract slide text via `python-pptx`,
