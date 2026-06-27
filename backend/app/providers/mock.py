@@ -16,7 +16,13 @@ class MockLLMProvider(LLMProvider):
     across runs so the multi-run-disagreement signal has something real to measure."""
 
     def review_document(
-        self, *, draft: dict, firm_standard: dict, process_section: str, run_index: int = 0
+        self,
+        *,
+        draft: dict,
+        firm_standard: dict,
+        process_section: str,
+        run_index: int = 0,
+        source_lookup=None,  # ignored: the mock is deterministic and offline
     ) -> ReviewResult:
         data = fixtures.mock_reviews().get(draft["id"])
         if not data:

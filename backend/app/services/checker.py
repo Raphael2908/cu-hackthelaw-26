@@ -5,7 +5,8 @@ from app.core.audit import record_supervision
 from app.db.repo import Repo
 from app.db.tables import CORPUS, FLAGS
 from app.fixtures import firm_standard
-from app.providers.base import LLMProvider
+from app.providers.base import LLMProvider, ProviderError
+from app.providers.cellar import CellarConnector, get_cellar
 
 # Thresholds at which a measured signal becomes a flag the partner should see. Tunable.
 DEVIATION_FLAG_THRESHOLD = 0.5
@@ -42,15 +43,55 @@ def _flag(repo: Repo, task: dict, submission: dict, **fields) -> dict:
 # --- Signal 1: citation support rate -------------------------------------------------------------
 
 
-def citation_support(repo: Repo, task: dict, submission: dict, provider: LLMProvider) -> dict:
+def citation_support(
+    repo: Repo,
+    task: dict,
+    submission: dict,
+    provider: LLMProvider,
+    cellar: CellarConnector | None = None,
+) -> dict:
     """For each cited claim, retrieve the source and test whether it supports the claim. A
-    fabricated or non-supporting citation is a HARD signal, surfaced regardless of severity."""
+    fabricated or non-supporting citation is a HARD signal, surfaced regardless of severity.
+
+    Sources are resolved first from the corpus, then — if CELLAR_ENABLED — fetched live from the EU
+    Cellar by CELEX and cached into the corpus. A fetch that authoritatively reports no such CELEX
+    is a genuine fabrication (hard); a fetch that *fails* (network/outage) is NOT — it surfaces a
+    soft "unverifiable" flag and the claim is excluded from the support-rate denominator, so an
+    outage can never masquerade as a fabricated citation (architecture.md §14.1)."""
+    cellar = cellar or get_cellar()
     findings = [f for f in submission["findings"] if f.get("citation")]
     flags: list[dict] = []
     supported = 0
+    unverifiable = 0
     for f in findings:
         cit = f["citation"]
         source = _corpus_by_celex(repo, cit["celex"])
+        if source is None:
+            try:
+                fetched = cellar.fetch_by_celex(cit["celex"])
+            except ProviderError as e:
+                unverifiable += 1
+                flags.append(
+                    _flag(
+                        repo,
+                        task,
+                        submission,
+                        signal_type="citation_support",
+                        hard=False,
+                        title=f"Citation unverifiable: {cit['celex']} (source service unavailable)",
+                        description="The EU Cellar source service could not be reached, so this "
+                        f"citation could not be checked: {e}. Excluded from the support rate.",
+                        evidence={"claim": cit["claim"], "celex": cit["celex"]},
+                        source_ref={
+                            "celex": cit["celex"],
+                            "exists": None,
+                            "clause_ref": f["clause_ref"],
+                        },
+                    )
+                )
+                continue
+            if fetched is not None:
+                source = repo.insert(CORPUS, fetched)  # cache: resolvable via GET /api/corpus/{id}
         if source is None:
             flags.append(
                 _flag(
@@ -93,8 +134,14 @@ def citation_support(repo: Repo, task: dict, submission: dict, provider: LLMProv
                     },
                 )
             )
-    rate = 1.0 if not findings else supported / len(findings)
-    return {"rate": rate, "flags": flags, "n_citations": len(findings)}
+    verifiable = len(findings) - unverifiable
+    rate = 1.0 if verifiable <= 0 else supported / verifiable
+    return {
+        "rate": rate,
+        "flags": flags,
+        "n_citations": len(findings),
+        "n_unverifiable": unverifiable,
+    }
 
 
 # --- Signal 2: precedent deviation ---------------------------------------------------------------
@@ -179,10 +226,16 @@ def multi_run_disagreement(repo: Repo, task: dict, submission: dict, provider: L
     return {"score": score, "flags": flags, "runs": runs}
 
 
-def run_checks(repo: Repo, task: dict, submission: dict, provider: LLMProvider) -> dict:
+def run_checks(
+    repo: Repo,
+    task: dict,
+    submission: dict,
+    provider: LLMProvider,
+    cellar: CellarConnector | None = None,
+) -> dict:
     """Run all three signal generators. Returns the per-signal scores and the flags raised. Never a
     pass/fail."""
-    citation = citation_support(repo, task, submission, provider)
+    citation = citation_support(repo, task, submission, provider, cellar)
     deviation = precedent_deviation(repo, task, submission, provider)
     disagreement = multi_run_disagreement(repo, task, submission, provider)
     all_flags = citation["flags"] + deviation["flags"] + disagreement["flags"]

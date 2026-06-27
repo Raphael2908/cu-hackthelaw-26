@@ -285,6 +285,32 @@ links straight to the cited passage. Live external sources retrieved by agents (
 Perplexity, on the roadmap) are recorded the same way — every fetched source kept with its URL for
 one-click verification, so it stays a checkable claim, never a verdict.
 
+**Live EU Cellar (opt-in, `CELLAR_ENABLED`).** Resolves a cited CELEX against `corpus_documents`
+first; on a miss, if Cellar is enabled, it fetches the document live from the EU Publications Office
+(`providers/cellar.py`, behind a factory like the LLM provider) and **caches it as a
+`corpus_document`**, so checks run against real EU law and the cached source is one-click-openable
+like any other. It uses the **official machine-readable API, not HTML scraping**: the CELLAR REST API
+via HTTP content negotiation (`GET {base}/resource/celex/{CELEX}`, `Accept: application/xhtml+xml` →
+clean XHTML, Formex XML for pre-2014 docs — both parsed by one namespace-agnostic XML walk) for
+content, and the SPARQL endpoint (`{base}/webapi/rdf/sparql`, CDM ontology) for title/type metadata
+(best-effort; `kind` still derives from the CELEX sector as the reliable default). Both are public
+(no auth); the SOAP expert-search service and bulk data dump — which *do* need an EU Login — are not
+used. The connector defaults **off**, so the seeded fixtures remain the network-free fallback and the
+test suite never touches the network.
+
+Two consumers, behind the same seam:
+- **Checker (verification).** The citation-support signal (§7.1) distinguishes a genuine *absence*
+  (no such CELEX → the existing hard "fabricated" flag) from a transient *failure* (outage → a soft
+  "unverifiable" flag, claim excluded from the rate), so an outage can never be mistaken for a
+  fabricated citation (§14.1).
+- **Worker (grounding).** When enabled, the worker hands the model a `fetch_eu_source` **tool**
+  (Anthropic tool-use) so it can pull the real source by CELEX *while drafting* and cite actual law
+  instead of a hallucinated CELEX — cutting fabricated citations at the source. A failed fetch
+  becomes a tool note, never aborting the review; the checker still verifies independently. The
+  worker owns the corpus caching (the provider never touches the repo), so a source the worker
+  fetches is reused by the checker. The checker's multi-run review calls stay un-grounded to bound
+  tool-call cost.
+
 ---
 
 ## 10. Auth
