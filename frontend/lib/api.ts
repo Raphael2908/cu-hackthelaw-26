@@ -78,6 +78,10 @@ export const reassignTask = (
   body: { assignee_type: Task["assignee_type"]; assignee_id?: string; note: string }
 ) => apiFetch<unknown>(`/tasks/${taskId}/reassign`, { method: "POST", body: JSON.stringify(body) });
 
+// Partner<->associate ping-pong. Associate body raises a question; partner body answers it.
+export const postMessage = (taskId: string, body: { body: string }) =>
+  apiFetch<unknown>(`/tasks/${taskId}/message`, { method: "POST", body: JSON.stringify(body) });
+
 // --- Audit & debrief ---
 export const getAudit = (caseId: string) => apiFetch<AuditView>(`/cases/${caseId}/audit`);
 export const closeCase = (caseId: string) =>

@@ -11,9 +11,24 @@ export type TaskStatus =
   | "submitted"
   | "checked"
   | "in_review"
+  | "returned"
+  | "awaiting_clarification"
   | "signed_off"
   | "escalated"
   | "cleared";
+
+export type MessageKind = "return" | "question" | "answer";
+
+export interface TaskMessage {
+  id: string;
+  task_id: string;
+  case_id: string;
+  author_role: "partner" | "associate";
+  author: string;
+  kind: MessageKind;
+  body: string;
+  created_at: string;
+}
 
 export type SignalType =
   | "citation_support"
@@ -139,6 +154,7 @@ export interface Card {
   risk: Risk | null;
   top_flag: Flag | null;
   flag_count: number;
+  messages?: TaskMessage[]; // attached for needs_reply cards (the open question thread)
 }
 
 export interface Plan {
@@ -161,6 +177,7 @@ export interface Cockpit {
   decided: Card[];
   escalated: Card[];
   awaiting_human: Card[];
+  needs_reply: Card[];
 }
 
 export interface TaskDetail {
@@ -168,12 +185,15 @@ export interface TaskDetail {
   submission: Submission | null;
   flags: Flag[];
   risk: Risk | null;
+  messages: TaskMessage[];
 }
 
 export interface InboxItem {
   task: Task;
   target_document: CorpusDoc;
   ai_first_pass: Submission | null;
+  last_submission: Submission | null;
+  messages: TaskMessage[];
 }
 
 export interface AuditEvent {

@@ -350,11 +350,20 @@ function describe(ev: AuditEvent, taskTitle?: string): Described {
     case "decision_recorded": {
       const action = p.action as string;
       const note = (p.note as string)?.trim();
-      const verb = action === "approve" ? "signed off on" : action === "amend" ? "amended" : "rejected";
-      const glyph = action === "approve" ? "✓" : action === "amend" ? "✎" : "✕";
+      const verb =
+        action === "approve"
+          ? "signed off on"
+          : action === "amend"
+            ? "amended"
+            : "rejected and sent back";
+      const glyph = action === "approve" ? "✓" : action === "amend" ? "✎" : "↩";
       const cls = action === "approve" ? "emerald" : action === "amend" ? "amber" : "red";
       return mk(glyph, cls, `${who} ${verb} the work${onTask}${note ? ` — “${note}”` : "."}`);
     }
+    case "clarification_requested":
+      return mk("?", "amber", `${who} asked the partner a question${onTask}.`);
+    case "clarification_answered":
+      return mk("↩", "brand", `${who} answered the associate's question${onTask}.`);
     case "task_reassigned":
       return mk("⟳", "brand", `${who} reassigned the task${onTask}.`);
     case "debrief_generated":

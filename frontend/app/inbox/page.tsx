@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getInbox, submitTask } from "@/lib/api";
+import { getInbox, postMessage, submitTask } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
 import type { InboxItem } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
@@ -12,7 +12,9 @@ import {
   Panel,
   SeverityBadge,
   Spinner,
+  StatusPill,
 } from "@/components/ui";
+import { MessageThread } from "@/components/MessageThread";
 
 export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[] | null>(null);
@@ -77,11 +79,19 @@ export default function InboxPage() {
 }
 
 function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => void }) {
-  const { task, target_document, ai_first_pass } = item;
+  const { task, target_document, ai_first_pass, messages } = item;
   const [summary, setSummary] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+
+  const [asking, setAsking] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [askingBusy, setAskingBusy] = useState(false);
+
+  const returned = task.status === "returned";
+  const waiting = task.status === "awaiting_clarification";
+  const canWork = task.status === "dispatched" || task.status === "in_progress" || returned;
+  const hasThread = (messages?.length ?? 0) > 0;
 
   const submit = async () => {
     if (!summary.trim()) return;
@@ -89,7 +99,7 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
     setError(null);
     try {
       await submitTask(task.id, { summary, findings: [] });
-      setDone(true);
+      setSummary("");
       onSubmitted();
     } catch (e) {
       setError(e instanceof ApiError ? e.detail : "Submission failed.");
@@ -98,19 +108,44 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
     }
   };
 
+  const ask = async () => {
+    if (!question.trim()) return;
+    setAskingBusy(true);
+    setError(null);
+    try {
+      await postMessage(task.id, { body: question });
+      setQuestion("");
+      setAsking(false);
+      onSubmitted();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not send the question.");
+    } finally {
+      setAskingBusy(false);
+    }
+  };
+
   return (
     <li>
       <Panel className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="mb-1.5 flex items-center gap-2">
+            <div className="mb-1.5 flex flex-wrap items-center gap-2">
               <SeverityBadge severity={task.severity} />
               <AssigneeTag type={task.assignee_type} />
+              <StatusPill status={task.status} />
             </div>
             <h2 className="text-base font-semibold text-ink">{task.title}</h2>
             <p className="mt-0.5 text-sm text-muted">{task.description}</p>
           </div>
         </div>
+
+        {/* The partner sent it back — make the reason impossible to miss. */}
+        {returned ? (
+          <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+            The partner sent this back for rework. Read their note in the conversation below, revise
+            your submission, and resubmit.
+          </div>
+        ) : null}
 
         <div className="mt-3 rounded-lg border border-line bg-canvas p-3">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">
@@ -161,17 +196,26 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
           </p>
         </details>
 
-        {/* Submit */}
+        {/* Conversation with the partner */}
+        {hasThread ? (
+          <div className="mt-4 rounded-lg border border-line bg-canvas p-3.5">
+            <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+              Conversation with the partner
+            </div>
+            <MessageThread messages={messages} />
+          </div>
+        ) : null}
+
+        {/* Action area */}
         <div className="mt-4 border-t border-line pt-4">
-          {done ? (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              Submitted. The work is placed by its up-front severity — the checker never grades human
-              product.
+          {waiting ? (
+            <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
+              Your question is with the partner. The task will return here with their answer.
             </div>
           ) : (
             <>
               <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
-                Your submission
+                {returned ? "Revise & resubmit" : "Your submission"}
               </div>
               <textarea
                 value={summary}
@@ -185,11 +229,39 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
                   <ErrorNote message={error} />
                 </div>
               ) : null}
-              <div className="mt-2">
-                <Button onClick={submit} disabled={busy || !summary.trim()}>
-                  {busy ? "Submitting…" : "Submit work"}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button onClick={submit} disabled={busy || !canWork || !summary.trim()}>
+                  {busy ? "Submitting…" : returned ? "Resubmit work" : "Submit work"}
                 </Button>
+                {!asking ? (
+                  <Button variant="secondary" onClick={() => setAsking(true)} disabled={!canWork}>
+                    Ask the partner a question
+                  </Button>
+                ) : null}
               </div>
+
+              {asking ? (
+                <div className="mt-3 space-y-2 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
+                  <div className="text-xs font-medium text-violet-800">
+                    Question for the partner — this hands the task to them until they reply.
+                  </div>
+                  <textarea
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    rows={2}
+                    placeholder="What do you need clarified before you can finish?…"
+                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button onClick={ask} disabled={askingBusy || !question.trim()}>
+                      {askingBusy ? "Sending…" : "Send question"}
+                    </Button>
+                    <Button variant="ghost" onClick={() => setAsking(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </>
           )}
         </div>

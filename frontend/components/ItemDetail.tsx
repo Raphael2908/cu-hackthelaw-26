@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { decideTask, getTaskDetail } from "@/lib/api";
+import { decideTask, getTaskDetail, postMessage } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
 import type { Flag, FlagSourceRef, TaskDetail } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
@@ -28,6 +28,7 @@ import {
 } from "@/lib/plain";
 import { SourceDrawer } from "./SourceDrawer";
 import { TaskTrace } from "./TaskTrace";
+import { MessageThread } from "./MessageThread";
 
 type Action = "approve" | "amend" | "reject";
 
@@ -48,6 +49,8 @@ export function ItemDetail({
   const [note, setNote] = useState("");
   const [amendment, setAmendment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [reply, setReply] = useState("");
+  const [replying, setReplying] = useState(false);
 
   useEffect(() => {
     setRole(getRole());
@@ -71,7 +74,24 @@ export function ItemDetail({
     setAction(null);
     setNote("");
     setAmendment("");
+    setReply("");
   }, [load, taskId]);
+
+  const sendReply = async () => {
+    if (!reply.trim()) return;
+    setReplying(true);
+    setError(null);
+    try {
+      await postMessage(taskId, { body: reply });
+      setReply("");
+      await load();
+      onDecided();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not send the reply.");
+    } finally {
+      setReplying(false);
+    }
+  };
 
   const decide = async () => {
     if (!action) return;
@@ -111,9 +131,13 @@ export function ItemDetail({
   }
   if (!detail) return null;
 
-  const { task, submission, flags, risk } = detail;
+  const { task, submission, flags, risk, messages } = detail;
   const decided = task.status === "signed_off" || task.status === "escalated";
+  const awaitingClar = task.status === "awaiting_clarification";
+  const returned = task.status === "returned";
+  const reviewable = !decided && !awaitingClar && !returned;
   const isPartner = role === "partner";
+  const hasThread = (messages?.length ?? 0) > 0;
 
   return (
     <div className="space-y-4">
@@ -243,15 +267,52 @@ export function ItemDetail({
         )}
       </Panel>
 
-      {/* Decision controls — partner only */}
+      {/* Conversation with the associate — the ping-pong record */}
+      {hasThread || awaitingClar || returned ? (
+        <Panel className="p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-ink">Conversation with the associate</h3>
+            {awaitingClar ? (
+              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+                question awaiting your reply
+              </span>
+            ) : returned ? (
+              <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">
+                with the associate
+              </span>
+            ) : null}
+          </div>
+          <MessageThread messages={messages} />
+
+          {awaitingClar && isPartner ? (
+            <div className="mt-4 space-y-2 border-t border-line pt-4">
+              <div className="text-xs font-medium text-ink-soft">
+                Answer the associate&apos;s question
+              </div>
+              <textarea
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                rows={2}
+                placeholder="Type your answer — this sends the task back to the associate…"
+                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+              />
+              <Button onClick={sendReply} disabled={replying || !reply.trim()}>
+                {replying ? "Sending…" : "Send answer & return to associate"}
+              </Button>
+            </div>
+          ) : awaitingClar && !isPartner ? (
+            <div className="mt-3 rounded-lg border border-line bg-canvas px-4 py-2.5 text-xs text-muted">
+              Waiting on the partner to answer. Switch to Partner in the header to reply.
+            </div>
+          ) : null}
+        </Panel>
+      ) : null}
+
+      {/* Action panel — what the partner can do depends on where the task is */}
       <Panel className="p-5">
         <div className="mb-1 flex items-center gap-2">
           <h3 className="text-sm font-semibold text-ink">Your decision</h3>
         </div>
-        <p className="mb-3 text-xs text-muted">
-          The points above are things to check, not verdicts. The decision is yours — nothing is
-          approved automatically.
-        </p>
 
         {decided ? (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
@@ -259,12 +320,27 @@ export function ItemDetail({
             <span className="font-semibold">{task.status.replace(/_/g, " ")}</span>. This is written
             to the signed, hash-chained accountability log.
           </div>
+        ) : returned ? (
+          <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+            Sent back to the associate for rework. You&apos;ll see it here again — with your note in
+            the thread above — once they resubmit.
+          </div>
+        ) : awaitingClar ? (
+          <p className="text-xs text-muted">
+            The associate has a question (above). Answer it to hand the task back — you&apos;ll
+            sign off once they resubmit.
+          </p>
         ) : !isPartner ? (
           <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">
             Sign-off is partner-only. Switch to Partner in the header to approve, amend, or reject.
           </div>
         ) : (
           <>
+            <p className="mb-3 text-xs text-muted">
+              The points above are things to check, not verdicts. Approve or amend to sign off;{" "}
+              <span className="font-medium text-ink-soft">reject sends it back to the associate</span>{" "}
+              for rework. Nothing is approved automatically.
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={action === "approve" ? "approve" : "secondary"}
@@ -282,7 +358,7 @@ export function ItemDetail({
                 variant={action === "reject" ? "danger" : "secondary"}
                 onClick={() => setAction("reject")}
               >
-                Reject
+                Reject &amp; send back
               </Button>
             </div>
 
@@ -292,7 +368,11 @@ export function ItemDetail({
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
-                  placeholder="Note (recorded with your decision)…"
+                  placeholder={
+                    action === "reject"
+                      ? "What should the associate fix? (sent to them with the task)…"
+                      : "Note (recorded with your decision)…"
+                  }
                   className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
                 />
                 {action === "amend" ? (
@@ -306,7 +386,11 @@ export function ItemDetail({
                 ) : null}
                 <div className="flex items-center gap-2">
                   <Button onClick={decide} disabled={submitting}>
-                    {submitting ? "Recording…" : `Confirm ${action}`}
+                    {submitting
+                      ? "Recording…"
+                      : action === "reject"
+                        ? "Confirm & send back"
+                        : `Confirm ${action}`}
                   </Button>
                   <Button variant="ghost" onClick={() => setAction(null)}>
                     Cancel

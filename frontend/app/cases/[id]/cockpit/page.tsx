@@ -58,6 +58,26 @@ export default function CockpitPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
             {/* Left: queue + lanes */}
             <div className="space-y-6 lg:col-span-5">
+              {data.needs_reply.length > 0 ? (
+                <section>
+                  <SectionHeader
+                    title="Questions from associates"
+                    caption="An associate needs an answer before they can finish. Reply to send the task back to them."
+                    count={data.needs_reply.length}
+                  />
+                  <ul className="space-y-2.5">
+                    {data.needs_reply.map((card) => (
+                      <QuestionRow
+                        key={card.task.id}
+                        card={card}
+                        active={selected === card.task.id}
+                        onClick={() => setSelected(card.task.id)}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
               <section>
                 <SectionHeader
                   title="Needs your review"
@@ -286,6 +306,41 @@ function EscalatedRow({
         <div className="mt-1 text-[11px] text-rose-700/90">
           Returned to a human — awaiting a partner-approved redo.
         </div>
+      </button>
+    </li>
+  );
+}
+
+function QuestionRow({
+  card,
+  active,
+  onClick,
+}: {
+  card: Card;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const last =
+    card.messages?.filter((m) => m.kind === "question").slice(-1)[0] ??
+    card.messages?.slice(-1)[0];
+  return (
+    <li>
+      <button
+        onClick={onClick}
+        className={`w-full rounded-xl border bg-paper p-4 text-left shadow-sm transition-colors ${
+          active ? "border-brand ring-1 ring-brand" : "border-violet-200 hover:border-violet-300"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+            Question
+          </span>
+          <SeverityBadge severity={card.task.severity} />
+        </div>
+        <div className="mt-2 text-sm font-semibold text-ink">{card.task.title}</div>
+        {last ? (
+          <p className="mt-1 line-clamp-2 text-xs italic text-ink-soft">“{last.body}”</p>
+        ) : null}
       </button>
     </li>
   );

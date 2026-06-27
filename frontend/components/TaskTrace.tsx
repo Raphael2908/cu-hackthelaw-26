@@ -28,6 +28,9 @@ function reachedIndex(status: TaskStatus): number {
       return 0;
     case "submitted":
       return 1;
+    case "returned": // sent back to the associate — sits between submit and review
+    case "awaiting_clarification":
+      return 1;
     case "checked":
       return 2;
     case "in_review":

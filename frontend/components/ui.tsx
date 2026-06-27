@@ -53,10 +53,18 @@ const STATUS_STYLES: Partial<Record<TaskStatus, string>> = {
   cleared: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   signed_off: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   escalated: "bg-red-50 text-red-700 ring-red-200",
+  returned: "bg-orange-50 text-orange-700 ring-orange-200",
+  awaiting_clarification: "bg-violet-50 text-violet-700 ring-violet-200",
   dispatched: "bg-slate-100 text-slate-600 ring-slate-200",
   in_progress: "bg-slate-100 text-slate-600 ring-slate-200",
   proposed: "bg-slate-100 text-slate-600 ring-slate-200",
   approved: "bg-blue-50 text-blue-700 ring-blue-200",
+};
+
+// Partner-facing wording for statuses that don't read naturally as "snake case".
+const STATUS_LABEL: Partial<Record<TaskStatus, string>> = {
+  returned: "sent back",
+  awaiting_clarification: "question raised",
 };
 
 export function StatusPill({ status }: { status: TaskStatus }) {
@@ -65,7 +73,7 @@ export function StatusPill({ status }: { status: TaskStatus }) {
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${cls}`}
     >
-      {status.replace(/_/g, " ")}
+      {STATUS_LABEL[status] ?? status.replace(/_/g, " ")}
     </span>
   );
 }
