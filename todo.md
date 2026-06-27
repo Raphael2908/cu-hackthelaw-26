@@ -46,6 +46,11 @@ cut from the bottom if time runs short.
 - [ ] Show each of the three signals as its own row in the flag panel (no fused number).
 
 ## Next (breadth)
+- [x] **Planner delegation guided by the Trust Matrix.** The `plan_case` system prompt reads each
+      task on two task-intrinsic axes — stakes × verifiability — and maps the four quadrants to
+      `assignee_type` (Reserve→human, Augment→hybrid, Monitor→ai, Delegate→ai). Stakes is the task's
+      own consequence-of-error, never the matter's severity (architecture.md §6). Follow-up: eval the
+      prompt on real cases to confirm quadrant placement.
 - [x] **Process maps + per-map agentic track record drive delegation.** Delegation (human/ai/hybrid)
       is the planner agent's judgment of task *nature*, never severity. A selectable/optional *process
       map* (a `process_doc` with sections) is the unit of "clean slate": a fresh map → the

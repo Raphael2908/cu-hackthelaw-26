@@ -149,11 +149,24 @@ split/merge tasks, adjust severity, or reject, then approves. **Only on approval
 coordinator dispatch anything.** This is intentionally a thin state machine — the intelligence that
 matters for this track is in the checker and cockpit, not the routing.
 
-**Delegation is decided by task *nature*, never severity.** The planner agent chooses `assignee_type`
-from what the task *is* — mechanical / low-judgment work (grammar, a first-look data-room triage,
-summarising non-operative recitals) leans AI; work needing legal judgment on binding obligations
-leans human/hybrid. Gating delegation on severity would starve a high/extreme-heavy firm of any AI
-help, so severity stays purely the partner's triage dial (§7), not a routing rule.
+**Delegation is decided by task *nature*, never severity — read through the Trust Matrix.** The
+planner agent chooses `assignee_type` by placing each task on two axes that are properties of the
+task itself (the [Trust Matrix](https://trust-transformed.netlify.app/)): **stakes** (the
+consequence if *this* task's output is wrong) × **verifiability** (how cheaply a human can check
+the output against an objective source — a citation, the firm standard, a document in hand). The
+four quadrants map to the assignee:
+
+| | Low verifiability | High verifiability |
+|---|---|---|
+| **High stakes** | *Reserve* → `human` (human judgement, checked by human judgement) | *Augment* → `hybrid` (AI does the volume, a human verifies, signs off, and owns it) |
+| **Low stakes** | *Monitor* → `ai` (AI runs; quality held by downstream sampling, §7.3) | *Delegate* → `ai` (AI end-to-end within guardrails; errors cheap and easy to catch) |
+
+So mechanical / low-judgment work (grammar, a first-look data-room triage, summarising non-operative
+recitals) leans AI; judgment on binding obligations leans human/hybrid — with the verifiability axis
+deciding `human` vs `hybrid` and AI-with-sampling vs AI-end-to-end. Critically, **stakes is the
+task's own consequence-of-error, not the matter's severity.** Gating delegation on the matter's
+severity would starve a high/extreme-heavy firm of any AI help, so severity stays purely the
+partner's triage dial (§7), not a routing rule.
 
 **Process maps + the agentic track record.** A *process map* is a (optional) `process_doc` the
 partner selects or adds, describing how the firm runs a standard kind of matter as named sections

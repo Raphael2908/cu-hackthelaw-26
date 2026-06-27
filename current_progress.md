@@ -4,6 +4,36 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Planner delegation guided by the Trust Matrix framework
+
+**Where we are.** The planner agent's nature-based delegation (architecture.md §6) is now framed
+explicitly by the **Trust Matrix** (https://trust-transformed.netlify.app/): each task is read on
+two task-intrinsic axes — **stakes** (consequence if *this* task is wrong) × **verifiability** (how
+cheaply a human can check the output against an objective source) — and the four quadrants map to
+the assignee. All §14 guardrails held: stakes is the *task's* consequence-of-error, **not** the
+matter's severity (still the partner's separate up-front triage dial), so a high-severity matter can
+still route mechanical, checkable tasks to AI.
+
+**Built**
+- **Planner system prompt (`providers/real/anthropic_llm.py::plan_case`)** rewritten around the Trust
+  Matrix. The four quadrants → `assignee_type`: high-stakes/low-verifiability → *Reserve* (`human`);
+  high-stakes/high-verifiability → *Augment* (`hybrid`, AI volume under human sign-off who owns it);
+  low-stakes/low-verifiability → *Monitor* (`ai`, quality held by downstream sampling §7.3);
+  low-stakes/high-verifiability → *Delegate* (`ai`, end-to-end within guardrails). Keeps the
+  decompose-by-section instruction, the strict-JSON contract, and the explicit "do NOT route by the
+  matter's severity" guardrail.
+- **`architecture.md` §6** now names the Trust Matrix and adds the stakes×verifiability quadrant
+  table; **`services/planner.py`** docstring points at the matrix.
+- No behaviour change in mock/offline mode (the prompt is real-provider only; mock replays fixtures),
+  so the track-record overlay and all downstream logic are untouched. `make test` green (54),
+  `make lint` clean.
+
+**What's next**
+- Tune + eval the `plan_case` prompt on real cases to confirm the matrix produces sensible
+  quadrant placement; still open: `review_document` prompt tuning, Perplexity web search, SSO/JWKS.
+
+---
+
 ## Process maps + per-map agentic track record driving delegation
 
 **Where we are.** Delegation (human/ai/hybrid) is now decided by the planner agent from the *nature*

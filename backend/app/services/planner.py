@@ -18,8 +18,10 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
     real providers stay symmetric and only need to return raw task scoping.
 
     Delegation (human/ai/hybrid) is the planner agent's judgment of the task's *nature* — not a
-    function of severity (architecture.md §6). On top of that, this service overlays the selected
-    process map's agentic track record: a section AI has a clean record on graduates to AI;
+    function of severity (architecture.md §6). The agent reads each task through the Trust Matrix
+    (stakes x verifiability) to pick the assignee; see the planner system prompt. On top of that,
+    this service overlays the selected process map's agentic track record: a section AI has a clean
+    record on graduates to AI;
     one with an adverse record is pulled back to a human owner. A fresh (or unselected) map is a
     clean slate, so the nature suggestion stands and the partner decides where to insert AI."""
     # Prefer documents the partner uploaded to THIS case; fall back to the seeded demo drafts so the
