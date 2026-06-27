@@ -104,6 +104,7 @@ class MockLLMProvider(LLMProvider):
         process_doc: dict,
         drafts: list[dict],
         associates: list[dict],
+        instructions: str = "",
     ) -> list[dict]:
         # Decompose the matter by walking the process doc's sections IN DOCUMENT ORDER and
         # emitting one task per section, so the plan reflects the process doc, not a fixed list.
@@ -129,6 +130,19 @@ class MockLLMProvider(LLMProvider):
             task = dict(spec)
             task["task_type"] = task_type
             tasks.append(task)
+
+        # Deterministic, offline influence of the partner's up-front instructions: "human-led" gives
+        # the human oversight (AI tasks become hybrid). A real model interprets the instructions
+        # properly; this keeps the steer visible with no network/key. The partner still approves.
+        if "human" in (instructions or "").lower():
+            for t in tasks:
+                if t.get("assignee_type") == "ai":
+                    t["assignee_type"] = "hybrid"
+                    t["ai_instruction"] = (
+                        t.get("ai_instruction") or "Run a first-pass review for the associate."
+                    )
+                    t["human_instruction"] = "Review the AI's first pass and own the conclusion."
+                    t["rationale"] = "Partner asked for human oversight in the case instructions."
         return tasks
 
     def revise_plan(

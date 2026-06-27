@@ -95,11 +95,14 @@ class LLMProvider(ABC):
         process_doc: dict,
         drafts: list[dict],
         associates: list[dict],
+        instructions: str = "",
     ) -> list[dict]:
         """Scope a goal into a proposed task list — RAW scoping only (title, description,
         task_type, assignee_type, target_document_id, input_brief_slice, ai_instruction,
-        human_instruction for hybrid tasks, and a one-line rationale). The planner service applies
-        the partner's severity, the process-section label, a default assignee and ordering. A
+        human_instruction for hybrid tasks, and a one-line rationale). `instructions` is the
+        partner's free-text direction up front, which the provider should respect. The planner
+        service applies the partner's severity, the process-section label, a default assignee and
+        ordering. A
         proposal; nothing dispatches until the partner approves."""
 
     def revise_plan(

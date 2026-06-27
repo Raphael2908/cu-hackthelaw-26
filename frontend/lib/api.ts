@@ -30,6 +30,7 @@ export const createCase = (body: {
   brief_text: string;
   goal: string;
   severity: Severity;
+  instructions?: string;
 }) => apiFetch<Case>("/cases", { method: "POST", body: JSON.stringify(body) });
 
 // Bulk-attach documents (PDF / text / DOCX) for the planner to consider. Multipart, not JSON.

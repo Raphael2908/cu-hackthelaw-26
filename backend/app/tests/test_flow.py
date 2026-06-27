@@ -61,6 +61,20 @@ def test_plan_decomposes_one_task_per_process_section(client):
     assert len(plan["tasks"]) == len(sections)
 
 
+def test_case_instructions_steer_the_planner(client):
+    """The partner's up-front instructions shape the plan: 'human-led' gives AI work human oversight
+    (AI → hybrid). Recorded on the plan_proposed event (the partner authoring the delegation)."""
+    case = client.post(
+        "/api/cases",
+        json={**CASE, "instructions": "Keep all the review human-led."},
+    ).json()
+    plan = client.post(f"/api/cases/{case['id']}/plan").json()
+    assert all(t["assignee_type"] != "ai" for t in plan["tasks"])
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    proposed = next(e for e in audit["accountability"] if e["type"] == "plan_proposed")
+    assert "human-led" in proposed["payload"]["instructions"].lower()
+
+
 def test_plan_carries_rationale_and_hybrid_split(client):
     _, plan = _new_case_with_plan(client)
     # Every task explains its reasoning; the hybrid task carries both halves of the split.

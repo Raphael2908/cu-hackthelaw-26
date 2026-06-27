@@ -31,6 +31,7 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
         process_doc=proc,
         drafts=drafts,
         associates=associates,
+        instructions=case.get("instructions", ""),
     )
 
     plan = repo.insert(
@@ -88,7 +89,12 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
         type="plan_proposed",
         actor=actor,
         case_id=case["id"],
-        payload={"plan_id": plan["id"], "n_tasks": len(tasks)},
+        payload={
+            "plan_id": plan["id"],
+            "n_tasks": len(tasks),
+            # The partner's up-front direction is part of the delegation record.
+            "instructions": case.get("instructions", ""),
+        },
     )
     return {"plan": plan, "tasks": tasks}
 

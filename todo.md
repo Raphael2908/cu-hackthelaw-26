@@ -17,7 +17,7 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
-- [ ] **Let the partner add free-text instructions when creating a case — and feed them to the
+- [x] **Let the partner add free-text instructions when creating a case — and feed them to the
       planner (backend + frontend).** The new-case form (`app/page.tsx`) captures the matter's
       structured fields (title, goal, uploaded documents) but gives the partner no place to write
       their own direction for *how* the work should be approached — e.g. "keep all liability review
@@ -37,6 +37,13 @@ cut from the bottom if time runs short.
       - **Guardrail (the one rule):** this is the human shaping the delegation up front; the planner
         still only proposes and the partner still approves before anything dispatches. The
         instructions never auto-act.
+      - **Done.** `CaseCreate.instructions` persisted on the case; `propose_plan` threads it into
+        `provider.plan_case(..., instructions=...)` and records it on the `plan_proposed` audit
+        event. Mock applies a deterministic steer (instructions mention "human" → AI tasks become
+        hybrid); the real prompt gains a "RESPECT the partner's INSTRUCTIONS" line + the text.
+        Frontend: an "Instructions for the planner (optional)" field on the new-case form (+ demo
+        fill). Test `test_case_instructions_steer_the_planner`; 52 backend tests green, ruff + tsc
+        clean. Pairs with the iterative revise loop (initial steer + follow-up steer).
 - [ ] **Source verification: show BOTH the quoting passage in the work AND the quoted passage in the
       source (backend + frontend).** The source drawer (`components/SourceDrawer.tsx`) today shows
       only the source side — its "DOCUMENT TEXT" is the cited corpus document's text (the authority /

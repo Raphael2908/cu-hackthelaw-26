@@ -22,6 +22,9 @@ class CaseCreate(BaseModel):
     # Severity is the partner's up-front choice (architecture.md §7.1), never model-inferred. It
     # becomes the default for every task in the plan; the partner can still override per task.
     severity: Severity = "medium"
+    # Free-text direction the partner gives the planner up front ("keep liability review human-led",
+    # "the client is risk-averse on indemnities"). The planner respects it; it never auto-acts.
+    instructions: str = ""
     # Default to the seeded corpus' process doc + firm standard if not supplied.
     process_doc_id: str | None = None
     firm_standard_id: str | None = None

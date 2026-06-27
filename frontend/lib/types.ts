@@ -48,6 +48,7 @@ export interface Case {
   brief_text: string;
   goal: string;
   severity: Severity;
+  instructions?: string;
   process_doc_id: string;
   firm_standard_id: string;
   status: CaseStatus;

@@ -4,6 +4,28 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Partner instructions at case creation steer the planner
+
+**Where we are.** The partner can now give the planner free-text direction up front ("keep the
+liability review human-led", "client is risk-averse on indemnities"), completing the
+partner-shapes-the-plan arc: this is the *initial* steer, the iterative revise loop the *follow-up*.
+Still a proposal — nothing dispatches until the partner approves (the one rule).
+
+**Built**
+- **Backend.** `CaseCreate.instructions` (free text) persisted on the case; `propose_plan` threads
+  it into `provider.plan_case(..., instructions=...)` and records it on the `plan_proposed`
+  accountability event (the partner authoring the delegation). `plan_case` gained an `instructions`
+  param across base/mock/real. Mock applies a deterministic, offline steer — instructions mentioning
+  "human" give AI tasks human oversight (AI → hybrid) — so the effect is visible with no key; the
+  real `plan_case` prompt gains a "RESPECT the partner's INSTRUCTIONS" instruction + the text.
+- **Frontend.** An optional "Instructions for the planner" textarea on the new-case form
+  (`app/page.tsx`), sent via `createCase`; `instructions` added to the `Case` type + demo quick-fill.
+- **Verified.** New `test_case_instructions_steer_the_planner`. 52 backend tests green, ruff clean,
+  frontend `tsc` clean. Live: "human-led" instructions → `[hybrid, hybrid, hybrid, human]` vs the
+  control `[ai, hybrid, ai, human]`.
+
+---
+
 ## Reassign action wired into the cockpit
 
 **Where we are.** The backend reassign path (`POST /tasks/{id}/reassign` → `coordinator.reassign`,

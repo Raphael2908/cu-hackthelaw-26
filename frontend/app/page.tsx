@@ -34,6 +34,7 @@ const DEMO = {
   title: "Project Atlas — supplier agreement review",
   brief_text: "Supplier processes customer personal data including via US affiliates.",
   goal: "Review the Project Atlas agreement against the firm standard before signing.",
+  instructions: "Keep the liability and governing-law review human-led; the client is risk-averse.",
 };
 
 export default function CasesPage() {
@@ -45,6 +46,7 @@ export default function CasesPage() {
   const [title, setTitle] = useState("");
   const [brief, setBrief] = useState("");
   const [goal, setGoal] = useState("");
+  const [instructions, setInstructions] = useState("");
   const [severity, setSeverity] = useState<Severity>("medium");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export default function CasesPage() {
     setBusy("create");
     setError(null);
     try {
-      const created = await createCase({ title, brief_text: brief, goal, severity });
+      const created = await createCase({ title, brief_text: brief, goal, severity, instructions });
       // Attach any uploaded documents up front so the planner scopes tasks over them when the
       // partner generates the plan.
       if (files.length) {
@@ -92,6 +94,7 @@ export default function CasesPage() {
       setTitle("");
       setBrief("");
       setGoal("");
+      setInstructions("");
       setSeverity("medium");
       setFiles([]);
       // Plan generation is a separate, explicit step — route to the plan page where the partner
@@ -144,6 +147,7 @@ export default function CasesPage() {
                   setTitle(DEMO.title);
                   setBrief(DEMO.brief_text);
                   setGoal(DEMO.goal);
+                  setInstructions(DEMO.instructions);
                 }}
                 className="!px-2 !py-1 !text-xs"
               >
@@ -176,6 +180,18 @@ export default function CasesPage() {
                 placeholder="What outcome do you want?"
                 className="input resize-none"
               />
+            </Field>
+            <Field label="Instructions for the planner (optional)">
+              <textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                rows={2}
+                placeholder="e.g. keep liability review human-led; focus on the data-transfer clauses…"
+                className="input resize-none"
+              />
+              <span className="mt-1 block text-[11px] leading-snug text-muted">
+                Your direction for how to approach the work. The planner proposes; you still approve.
+              </span>
             </Field>
             <Field label="Severity">
               <select

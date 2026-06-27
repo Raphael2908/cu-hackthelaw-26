@@ -27,6 +27,7 @@ def create_case(body: CaseCreate, user: CurrentUser = Depends(get_current_user))
             "brief_text": body.brief_text,
             "goal": body.goal,
             "severity": body.severity,
+            "instructions": body.instructions,
             "process_doc_id": body.process_doc_id or process_doc()["id"],
             "firm_standard_id": body.firm_standard_id or firm_standard()["id"],
             "status": "open",
