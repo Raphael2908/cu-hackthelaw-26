@@ -30,5 +30,13 @@
     "target_document_id": "draft-confidentiality-atlas",
     "input_brief_slice": "Project Atlas: mutual confidentiality expected.",
     "ai_instruction": null
+  },
+  "extract_obligations": {
+    "title": "Extract operative obligations (Project Atlas schedule)",
+    "description": "Extract the operative obligations from the Project Atlas services schedule. A from-scratch extraction — no firm standard applies, so precedent deviation does not run.",
+    "assignee_type": "ai",
+    "target_document_id": "draft-obligations-atlas",
+    "input_brief_slice": "Project Atlas: services schedule with supplier obligations.",
+    "ai_instruction": null
   }
 }

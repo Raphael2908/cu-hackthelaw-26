@@ -6,7 +6,7 @@ from app.providers.base import (
     Deviation,
     Finding,
     LLMProvider,
-    ReviewResult,
+    TaskResult,
 )
 
 
@@ -15,18 +15,24 @@ class MockLLMProvider(LLMProvider):
     demo runs on with no API key. It honours the planted defects and produces controlled divergence
     across runs so the multi-run-disagreement signal has something real to measure."""
 
-    def review_document(
+    def run_task(
         self,
         *,
-        draft: dict,
-        firm_standard: dict,
-        process_section: str,
+        instruction: str,
+        documents: list[dict],
+        kind: str = "review",
+        reference: dict | None = None,
+        checklist=None,
         run_index: int = 0,
         source_lookup=None,  # ignored: the mock is deterministic and offline
-    ) -> ReviewResult:
-        data = fixtures.mock_reviews().get(draft["id"])
+    ) -> TaskResult:
+        # Deterministic replay keyed off the target document — instruction/kind/checklist don't
+        # change the offline fixture, but the output carries the requested `kind` + its payload.
+        draft = documents[0] if documents else None
+        data = fixtures.mock_reviews().get(draft["id"]) if draft else None
         if not data:
-            return ReviewResult(summary=f"No issues identified in {draft['title']}.")
+            title = draft["title"] if draft else "the task"
+            return TaskResult(summary=f"No issues identified in {title}.", output_kind=kind)
         findings = [
             Finding(
                 id=f["id"],
@@ -38,9 +44,11 @@ class MockLLMProvider(LLMProvider):
             # A finding may only surface on some runs — that divergence is the disagreement signal.
             if run_index in f.get("runs", [run_index])
         ]
-        return ReviewResult(
+        return TaskResult(
             summary=data["summary"],
+            output_kind=kind,
             findings=findings,
+            payload=data.get("payload", {}),
             clauses_relied_on=data.get("clauses_relied_on", []),
             audit_sources=data.get("audit_sources", []),
         )

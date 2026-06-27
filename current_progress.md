@@ -4,6 +4,57 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Flexible worker — the planner tasks it; not every task is a firm-standard review
+
+**Where we are.** The worker is no longer hardcoded to "review a DRAFT against the FIRM STANDARD."
+The process-map section now carries a partner-authored **worker spec** (a `kind`, an `instruction`, a
+`checklist`, the `checks` that apply, and `requires_standard`); the planner copies it onto each task;
+the worker resolves it once and runs the right kind of work, returning a per-task-type output. The
+supervision layer stays intact because every kind still emits the universal `findings` the checker
+reads. On branch `feat/process-map-track-record` (PR #8). All §14 guardrails held: no agent verdicts,
+nothing auto-approved, severity still the partner's up-front call, mock stays deterministic/offline.
+
+**Built**
+- **One worker entry point.** `LLMProvider.run_task(kind, instruction, documents, reference?,
+  checklist, …) -> TaskResult` replaces the review-only call; `review_document` is now a thin
+  `kind="review"` shim so existing callers/tests keep working. `TaskResult` adds `output_kind` +
+  `payload` (the type-specific product) on top of the universal `findings`. Mock returns per-kind
+  payload deterministically; the real provider composes the system prompt from the task instruction +
+  a fixed "checkable claims, never a verdict, STRICT JSON" envelope with the per-kind output schema,
+  and now also instructs **stable finding ids** (helps the disagreement signal in real mode).
+- **`services/task_spec.py` (new) — the single source of truth.** `build_task_spec` resolves a task
+  into `{kind, instruction, documents, reference, checklist, applicable_checks}`, resolving the firm
+  standard **only when `requires_standard`** (no silent fallback), and layers the planner's
+  per-task `ai_instruction` (previously stored and never consumed) onto the section instruction. Used
+  by **both** the worker's first pass and the checker's disagreement re-runs, so the runs compared are
+  provably the same call.
+- **Task-aware checker.** `run_checks` runs only the signals that apply and returns `applied_checks`.
+  Precedent deviation runs only with a reference standard (else neutral, **no fabricated flag**);
+  disagreement re-runs via the shared spec (works for no-standard tasks now); citation support is
+  always on. `compute_uncertainty` **renormalises over the applied checks** (a non-applicable signal
+  is dropped from numerator *and* denominator), so a task is never made to look more certain because a
+  check couldn't run. `applied_checks` rides onto the risk score; the cockpit shows a non-applicable
+  signal as **"n/a"**, not a misleading `0.0`, and renders the per-kind output (key points / extracted
+  obligations / drafted clause).
+- **Planner wiring + fixtures.** The planner copies `output_kind`/`worker_instruction`/`checklist`/
+  `applicable_checks`/`requires_standard` from each section (defaulted at read time via
+  `normalize_section`, so seeded maps and omitted keys behave exactly as before). New seeded
+  **`process-map-extraction`** (a no-standard `extract` section) + `draft-obligations-atlas` +
+  mock review/payload exercise the new path offline.
+- Tests: new `test_flexible_worker.py` (instruction reaches the worker; no-standard task skips
+  precedent deviation with no fabricated flag; uncertainty renormalised; disagreement runs without a
+  standard; per-type payload persists; default task still applies all three). `test_process_maps.py`
+  extended to round-trip the spec. `make test` green (62, was 54), `make lint` clean, frontend
+  `tsc --noEmit` clean. `test_checker.py`/`test_flow.py` pass unedited; `test_cellar.py`'s recording
+  provider now hooks `run_task` (the worker's call shape changed).
+
+**What's next**
+- Real-mode tuning of the new per-kind instructions/prompts (offline mock unaffected).
+- Optional: let the partner edit `worker_instruction`/`checklist` per task pre-approval (`TaskPatch`);
+  show the instruction/checklist on the plan page; surface `payload` for `draft` tasks in the inbox.
+
+---
+
 ## Planner delegation guided by the Trust Matrix framework
 
 **Where we are.** The planner agent's nature-based delegation (architecture.md §6) is now framed

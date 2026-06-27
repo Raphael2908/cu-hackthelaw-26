@@ -3,9 +3,9 @@ from __future__ import annotations
 from app.config import settings
 from app.db.repo import Repo
 from app.db.tables import CORPUS, SUBMISSIONS
-from app.fixtures import firm_standard
 from app.providers.base import LLMProvider
 from app.providers.cellar import CellarConnector, get_cellar
+from app.services.task_spec import build_task_spec
 
 
 def _make_source_lookup(repo: Repo, cellar: CellarConnector):
@@ -33,32 +33,29 @@ def run_review(
     produced_by: str = "ai",
     cellar: CellarConnector | None = None,
 ) -> dict:
-    """The worker (depth): review the task's target document against the firm standard and emit a
-    structured submission — findings, the clauses relied on, the citations made, and the audit trail
-    of sources used. No verdict (architecture.md §14.1).
+    """The worker (depth): execute the task the planner delegated and emit a structured submission.
+    The task is no longer fixed to "review against the firm standard" — its kind, instruction and
+    checklist come from the process-map section (architecture.md §6) via ``build_task_spec``. The
+    submission always carries the universal ``findings`` (the checkable claims the checker reads),
+    plus the type-specific ``payload`` + ``output_kind``. No verdict (architecture.md §14.1).
 
     When Cellar is enabled, the worker grounds its citations: the model can fetch real EU sources by
-    CELEX (tool-use) while drafting, so it cites actual law instead of a hallucinated CELEX. Off by
+    CELEX (tool-use) while working, so it cites actual law instead of a hallucinated CELEX. Off by
     default → the mock/offline path is unchanged and tool-free."""
     cellar = cellar or get_cellar()
-    draft = repo.get(CORPUS, task["target_document_id"])
-    if not draft:
-        raise ValueError(f"Target document {task['target_document_id']} not found.")
-    std = repo.get(CORPUS, task.get("firm_standard_id") or firm_standard()["id"]) or firm_standard()
+    spec = build_task_spec(repo, task)
+    if not spec.documents:
+        raise ValueError(f"Target document {task.get('target_document_id')} not found.")
 
     source_lookup = _make_source_lookup(repo, cellar) if settings.CELLAR_ENABLED else None
-    result = provider.review_document(
-        draft=draft,
-        firm_standard=std,
-        process_section=task.get("input_process_section", ""),
-        run_index=0,
-        source_lookup=source_lookup,
-    )
+    result = provider.run_task(**spec.run_kwargs(run_index=0, source_lookup=source_lookup))
     submission = {
         "task_id": task["id"],
         "produced_by": produced_by,
         "run_index": 0,
         "summary": result.summary,
+        "output_kind": result.output_kind,
+        "payload": result.payload,
         "findings": [
             {
                 "id": f.id,

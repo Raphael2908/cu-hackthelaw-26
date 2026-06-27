@@ -48,6 +48,33 @@
       "review_recital_summary": {"severity": "low", "label": "Summary of a non-key recital / background"}
     }
   },
+  {
+    "id": "process-map-extraction",
+    "celex": null,
+    "kind": "process_doc",
+    "title": "Process Map — Obligations extraction (no firm standard)",
+    "source_url": "internal://process/extraction",
+    "text": "A process map for extracting the operative obligations from a schedule. The worker drafts a structured list; there is no firm standard to deviate from, so precedent deviation does not apply to this task type.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {},
+    "task_types": {
+      "extract_obligations": {
+        "severity": "low",
+        "label": "Extract operative obligations from the schedule",
+        "kind": "extract",
+        "requires_standard": false,
+        "checks": ["citation_support", "multi_run_disagreement"],
+        "instruction": "You are a legal analyst. Extract every operative obligation from the schedule. For each obligation capture the obligated party and a clause locator, and cite supporting authority only where a statutory basis genuinely applies. Do not render a verdict.",
+        "checklist": [
+          "List each operative obligation separately.",
+          "Name the obligated party for each obligation.",
+          "Give the clause locator for each obligation.",
+          "Cite supporting authority only where one genuinely applies."
+        ]
+      }
+    }
+  },
 
   {
     "id": "32016R0679",
@@ -168,6 +195,17 @@
     "source_url": "case://atlas/confidentiality",
     "text": "14. Confidentiality. Each party shall keep the other's confidential information secret. These obligations survive for three years after termination.",
     "clauses": {"confidentiality": "Mutual confidentiality surviving three years post-termination."},
+    "planted_defects": [],
+    "ground_truth": {"clean": true}
+  },
+  {
+    "id": "draft-obligations-atlas",
+    "celex": null,
+    "kind": "draft",
+    "title": "Draft — Services schedule obligations, Project Atlas",
+    "source_url": "case://atlas/obligations",
+    "text": "2.1 Data security. The supplier shall implement appropriate technical and organisational measures to protect personal data.\n\n2.4 Audit. The customer may audit the supplier's compliance on 30 days' written notice.",
+    "clauses": {"obligations": "Supplier security and audit obligations."},
     "planted_defects": [],
     "ground_truth": {"clean": true}
   }

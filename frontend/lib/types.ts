@@ -20,6 +20,10 @@ export type SignalType =
   | "precedent_deviation"
   | "multi_run_disagreement";
 
+// The kind of work the flexible worker executes for a task (architecture.md §6). Drives the
+// per-task-type output `payload` carried on the submission.
+export type TaskKind = "review" | "summarize" | "extract" | "draft";
+
 export type CorpusKind =
   | "legislation"
   | "case_law"
@@ -94,6 +98,10 @@ export interface Risk {
   lane: "review" | "auto_clear";
   sampled: boolean;
   has_hard_flag: boolean;
+  // Which signals actually ran for this task. A signal marked false is "not applicable" and was
+  // excluded from the uncertainty composite — shown as n/a, never a misleading 0.0 (§7.2/§14.4).
+  // Absent on older records → treat all as applied.
+  applied_checks?: Partial<Record<SignalType, boolean>>;
 }
 
 export interface FlagSourceRef {
@@ -133,6 +141,11 @@ export interface Submission {
   citations: { celex: string; claim: string }[];
   clauses_relied_on: string[];
   audit_sources: string[];
+  // The flexible worker's type-specific product. `output_kind` discriminates the `payload` shape
+  // (e.g. extract → {obligations}, summarize → {key_points}, draft → {draft_text}). `review` carries
+  // no payload — its product is the findings (architecture.md §6).
+  output_kind?: TaskKind;
+  payload?: Record<string, unknown>;
   run_index?: number;
 }
 
@@ -225,6 +238,13 @@ export interface DebriefDoc {
 export interface ProcessMapSection {
   label: string;
   severity: Severity;
+  // The partner-authored worker spec for this section (architecture.md §6). Optional — a section
+  // that omits them behaves like the original review task.
+  kind?: TaskKind;
+  instruction?: string | null;
+  checklist?: string[];
+  checks?: SignalType[];
+  requires_standard?: boolean;
 }
 
 export interface ProcessMap {

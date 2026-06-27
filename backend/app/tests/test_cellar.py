@@ -316,9 +316,9 @@ def test_worker_offers_the_tool_only_when_cellar_enabled(in_memory_repo, provide
     class RecordingProvider(type(provider)):
         last_source_lookup = "unset"
 
-        def review_document(self, *, source_lookup=None, **kw):
+        def run_task(self, *, source_lookup=None, **kw):
             self.last_source_lookup = source_lookup
-            return super().review_document(source_lookup=source_lookup, **kw)
+            return super().run_task(source_lookup=source_lookup, **kw)
 
     rec = RecordingProvider()
     worker.run_review(repo, task=task, provider=rec, cellar=NullCellarConnector())

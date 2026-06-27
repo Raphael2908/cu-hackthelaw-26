@@ -78,5 +78,34 @@
     "audit_sources": ["firm-standard-dpa"],
     "findings": [],
     "deviations": []
+  },
+
+  "draft-obligations-atlas": {
+    "summary": "Extracted the operative obligations from the Project Atlas services schedule. A from-scratch extraction with no firm standard to deviate from.",
+    "clauses_relied_on": ["obligations"],
+    "audit_sources": ["32016R0679"],
+    "findings": [
+      {
+        "id": "f-obl-1",
+        "clause_ref": "2.1 Data security",
+        "statement": "The supplier must implement appropriate technical and organisational measures to protect personal data.",
+        "citation": {"celex": "32016R0679", "claim": "transfers of personal data to third countries require appropriate safeguards"},
+        "runs": [0, 1, 2]
+      },
+      {
+        "id": "f-obl-2",
+        "clause_ref": "2.4 Audit",
+        "statement": "The customer may audit the supplier on 30 days' notice; whether this is an operative obligation is unstable across runs.",
+        "citation": null,
+        "runs": [1]
+      }
+    ],
+    "payload": {
+      "obligations": [
+        {"text": "Implement appropriate technical and organisational security measures.", "party": "Supplier", "locator": "2.1"},
+        {"text": "Permit customer audits on 30 days' written notice.", "party": "Supplier", "locator": "2.4"}
+      ]
+    },
+    "deviations": []
   }
 }

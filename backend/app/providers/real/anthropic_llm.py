@@ -11,20 +11,38 @@ from app.providers.base import (
     LLMProvider,
     ProviderError,
     RetryableError,
-    ReviewResult,
+    TaskResult,
 )
+from app.schemas.models import PAYLOAD_MODELS
 
 # Real Claude implementation. Wired but not exercised by the demo (which runs on the mock). It is
 # imported lazily by the factory only when PROVIDER_MODE=real, so the mock path never needs the SDK
 # or a key. Prompts are intentionally minimal; tune them when going live (see todo.md).
 
-_REVIEW_SYS = (
-    "You are a legal document reviewer. Compare the DRAFT against the FIRM STANDARD and return "
-    'STRICT JSON: {"summary": str, "clauses_relied_on": [str], "audit_sources": [str], '
-    '"findings": [{"id": str, "clause_ref": str, "statement": str, '
-    '"citation": {"celex": str, "claim": str} | null}]}. '
-    "Surface checkable observations. Do NOT render a pass/fail verdict."
+# The fixed output envelope every task kind shares: a summary, the universal CHECKABLE-CLAIMS list
+# (`findings`), the audit trail, and a per-kind `payload`. The worker's task instruction is
+# prepended; together they form the system prompt. The stable-id instruction matters for the
+# multi-run disagreement signal — it compares findings by id across runs (architecture.md §7.2).
+_OUTPUT_ENVELOPE = (
+    "Return STRICT JSON of the form "
+    '{{"summary": str, '
+    '"findings": [{{"id": str, "clause_ref": str, "statement": str, '
+    '"citation": {{"celex": str, "claim": str}} | null}}], '
+    '"clauses_relied_on": [str], "audit_sources": [str]{payload_schema}}}. '
+    "Each finding is a CHECKABLE CLAIM the partner can verify, never a verdict; a finding may cite "
+    "a source (by CELEX) or be null. Give each finding a STABLE id derived from the issue it "
+    "describes, so the same issue keeps the same id if the task is run again. Do NOT render a "
+    "pass/fail verdict."
 )
+
+# Per-kind extension to the envelope's `payload` (the type-specific product). `review` has none —
+# its product is the findings themselves.
+_PAYLOAD_SCHEMAS = {
+    "review": "",
+    "summarize": ', "payload": {"key_points": [str]}',
+    "extract": ', "payload": {"obligations": [{"text": str, "party": str, "locator": str}]}',
+    "draft": ', "payload": {"draft_text": str, "clause_ref": str}',
+}
 
 # Worker grounding: when a source lookup is supplied, the model can call this tool to fetch the real
 # EU source by CELEX before citing it, reducing fabricated citations at the source (architecture.md
@@ -127,26 +145,50 @@ class AnthropicLLMProvider(LLMProvider):
             messages.append({"role": "user", "content": results})
         raise ProviderError("Worker review exceeded the tool-use turn limit.")
 
-    def review_document(
+    def run_task(
         self,
         *,
-        draft: dict,
-        firm_standard: dict,
-        process_section: str,
+        instruction: str,
+        documents: list[dict],
+        kind: str = "review",
+        reference: dict | None = None,
+        checklist=None,
         run_index: int = 0,
         source_lookup=None,
-    ) -> ReviewResult:
-        user = (
-            f"PROCESS SECTION: {process_section}\n\nFIRM STANDARD:\n{firm_standard['text']}\n\n"
-            f"DRAFT ({draft['title']}):\n{draft['text']}\n\n(variation seed: {run_index})"
-        )
+    ) -> TaskResult:
+        # System = the partner's task instruction + the fixed checkable-claims envelope (with the
+        # per-kind payload schema). User = the documents, the optional reference, the checklist.
+        payload_schema = _PAYLOAD_SCHEMAS.get(kind, "")
+        system = instruction + "\n\n" + _OUTPUT_ENVELOPE.format(payload_schema=payload_schema)
+
+        parts = [
+            f"DOCUMENT ({d.get('title', '')}):\n{d.get('text', '')}" for d in (documents or [])
+        ]
+        if reference:
+            parts.append(f"FIRM STANDARD / REFERENCE:\n{reference.get('text', '')}")
+        if checklist:
+            items = "\n".join(f"{i}. {c}" for i, c in enumerate(checklist, 1))
+            parts.append(f"CHECKLIST (address each item):\n{items}")
+        parts.append(f"(variation seed: {run_index})")
+        user = "\n\n".join(parts)
+
         if source_lookup is None:
-            data = self._complete_json(_REVIEW_SYS, user)
+            data = self._complete_json(system, user)
         else:  # pragma: no cover - real-mode only
-            data = self._complete_json_grounded(_REVIEW_SYS, user, source_lookup)
-        return ReviewResult(
+            data = self._complete_json_grounded(system, user, source_lookup)
+
+        payload = data.get("payload") or {}
+        model = PAYLOAD_MODELS.get(kind)
+        if model is not None:  # pragma: no cover - real-mode only
+            try:
+                payload = model.model_validate(payload).model_dump()
+            except Exception as e:
+                raise ProviderError(f"Model payload did not match the {kind} schema: {e}") from e
+        return TaskResult(
             summary=data.get("summary", ""),
+            output_kind=kind,
             findings=[Finding(**f) for f in data.get("findings", [])],
+            payload=payload,
             clauses_relied_on=data.get("clauses_relied_on", []),
             audit_sources=data.get("audit_sources", []),
         )

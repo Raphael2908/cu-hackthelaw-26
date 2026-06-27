@@ -41,9 +41,20 @@ cut from the bottom if time runs short.
       createPlan → route).
 
 ## Now (depth — the centrepiece, protect these)
+- [x] **Flexible worker — the planner tasks it via the process map.** The worker is no longer fixed to
+      "review a draft against the firm standard." A process-map section carries a worker spec (`kind`
+      ∈ review|summarize|extract|draft, `instruction`, `checklist`, `checks`, `requires_standard`); the
+      planner copies it onto each task; `services/task_spec.py::build_task_spec` resolves it once and
+      calls the single provider entry `run_task`. Every kind still emits the universal `findings` the
+      checker reads, with the type-specific product in `payload`. Checks are selected per task and the
+      uncertainty composite is **renormalised** over applied signals; a non-applicable signal shows as
+      "n/a", never a fabricated 0.0 (architecture.md §6/§7.2). See `current_progress.md`.
 - [ ] Tune the uncertainty composite weights + `SAMPLE_RATE` against a small labelled set.
 - [ ] Cockpit polish: keyboard-navigable queue, side-by-side source diff for deviation flags.
 - [ ] Show each of the three signals as its own row in the flag panel (no fused number).
+- [ ] Flexible-worker follow-ups: let the partner edit `worker_instruction`/`checklist` per task
+      pre-approval (`TaskPatch`); show the instruction/checklist on the plan page; surface a `draft`
+      task's `payload` in the associate inbox; tune the real per-kind prompts.
 
 ## Next (breadth)
 - [x] **Planner delegation guided by the Trust Matrix.** The `plan_case` system prompt reads each

@@ -6,6 +6,7 @@ from app.db.tables import ASSOCIATES, CORPUS, PLANS, TASKS
 from app.fixtures import firm_standard, process_doc
 from app.providers.base import LLMProvider
 from app.services import track_record
+from app.services.task_spec import normalize_section
 
 
 def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -> dict:
@@ -60,6 +61,10 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
     pulled_back: list[str] = []  # sections it pulled back to a human owner
     for i, t in enumerate(proposed):
         task_type = t["task_type"]
+        # The partner-authored worker spec for this section (kind, instruction, checklist, which
+        # checks apply, whether a standard is required), defaulted at read time so seeded maps and
+        # sections that omit the keys behave like the original review task (architecture.md §6).
+        section = normalize_section(task_types.get(task_type))
         # Never trust the model's target blindly: snap an unknown id back to a real candidate doc.
         target = t.get("target_document_id")
         if target not in draft_ids:
@@ -92,8 +97,16 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
                     "firm_standard_id": std_id,
                     "input_brief_slice": t.get("input_brief_slice", ""),
                     "input_process_section": t.get("input_process_section")
-                    or task_types.get(task_type, {}).get("label", task_type),
+                    or section["label"]
+                    or task_type,
                     "ai_instruction": t.get("ai_instruction"),
+                    # The flexible-worker spec carried from the process-map section (architecture.md
+                    # §6): what kind of work, the instruction + checklist, and which signals apply.
+                    "output_kind": section["kind"],
+                    "worker_instruction": section["instruction"],
+                    "checklist": section["checklist"],
+                    "applicable_checks": section["checks"],
+                    "requires_standard": section["requires_standard"],
                     "status": "proposed",
                     "order_index": t.get("order_index", i),
                 },

@@ -118,13 +118,13 @@ SQLite tables, each a resource on the `Repo`. `id`s are uuid4 strings; timestamp
 | Table | Key fields | Notes |
 |---|---|---|
 | `associates` | `name, practice_area, current_load, capacity` | Human-maintained capability + capacity registry. **Not scraped** (GDPR Art. 22 — see §13). The planner reads it to *propose*; the partner approves. |
-| `corpus_documents` | `celex, title, kind, source_url, text, case_id, planted_defects(json), ground_truth(json)`, plus `task_types(json)` on process maps | `kind ∈ legislation\|case_law\|firm_standard\|process_doc\|draft`. **Multiple `process_doc` rows are allowed** — each is a selectable *process map* carrying its `task_types` (the sections). EU Cellar-modelled + synthetic firm standard/process maps; uploaded case documents are stored as `draft` rows tagged with `case_id`. |
+| `corpus_documents` | `celex, title, kind, source_url, text, case_id, planted_defects(json), ground_truth(json)`, plus `task_types(json)` on process maps | `kind ∈ legislation\|case_law\|firm_standard\|process_doc\|draft`. **Multiple `process_doc` rows are allowed** — each is a selectable *process map* carrying its `task_types` (the sections). Each section may carry the **worker spec** (`kind`, `instruction`, `checklist`, `checks`, `requires_standard` — §6) so the section drives a flexible worker, not just a fixed review. EU Cellar-modelled + synthetic firm standard/process maps; uploaded case documents are stored as `draft` rows tagged with `case_id`. |
 | `cases` | `title, brief_text, goal, severity, process_doc_id, firm_standard_id, status, created_by` | `status ∈ open\|closed`. `severity` is the partner's up-front choice for the matter. |
 | `plans` | `case_id, status, approved_by, approved_at` | `status ∈ proposed\|approved`. The plan is a **proposal**; nothing dispatches until `approved`. |
-| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, assignee_rationale, severity, input_brief_slice, input_process_section, ai_instruction, status, order_index` | `assignee_type ∈ human\|ai\|hybrid` (chosen by task nature + the map's track record, §6); `assignee_rationale` explains the proposal; `severity ∈ low\|medium\|high\|extreme` set **up front** by the partner at case creation. |
-| `submissions` | `task_id, produced_by, run_index, summary, findings(json), citations(json), clauses_relied_on(json), audit_sources(json)` | Worker output. `run_index` supports multi-run disagreement. `produced_by ∈ ai\|human\|hybrid`. |
+| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, assignee_rationale, severity, input_brief_slice, input_process_section, ai_instruction, output_kind, worker_instruction, checklist(json), applicable_checks(json), requires_standard(bool), status, order_index` | `assignee_type ∈ human\|ai\|hybrid` (chosen by task nature + the map's track record, §6); `assignee_rationale` explains the proposal; `severity ∈ low\|medium\|high\|extreme` set **up front** by the partner at case creation. The worker-spec fields (`output_kind ∈ review\|summarize\|extract\|draft`, `worker_instruction`, `checklist`, `applicable_checks`, `requires_standard`) are copied from the process-map section and tell the flexible worker *what* to do and *which checks apply*; all default to the original review behaviour (§6). |
+| `submissions` | `task_id, produced_by, run_index, summary, findings(json), citations(json), clauses_relied_on(json), audit_sources(json), output_kind, payload(json)` | Worker output. `findings` is the universal **checkable-claims** seam the checker reads for every task type; `output_kind` + `payload` carry the type-specific product (e.g. extracted obligations, key points, a drafted clause). `run_index` supports multi-run disagreement. `produced_by ∈ ai\|human\|hybrid`. |
 | `flags` | `task_id, submission_id, signal_type, hard(bool), title, description, evidence(json), source_ref(json)` | `signal_type ∈ citation_support\|precedent_deviation\|multi_run_disagreement`. **Never** a pass/fail. `source_ref` resolves to a corpus doc + locator for one-click verification. |
-| `risk_scores` | `task_id, severity_label, citation_support_rate, deviation_score, disagreement_score, uncertainty, priority, lane, sampled(bool)` | `lane ∈ review\|auto_clear`. Every signal stored separately so none is hidden behind the composite. |
+| `risk_scores` | `task_id, severity_label, citation_support_rate, deviation_score, disagreement_score, uncertainty, priority, lane, sampled(bool), applied_checks(json)` | `lane ∈ review\|auto_clear`. Every signal stored separately so none is hidden behind the composite. `applied_checks` records which signals actually ran, so a non-applicable signal shows as "n/a" rather than a misleading `0.0` and is excluded from the composite (§7.2). |
 | `decisions` | `task_id, action, note, amendment, decided_by, decided_at` | `action ∈ approve\|amend\|reject`. Append-only, signed (hash). |
 | `audit_events` | `case_id, task_id, kind, type, actor, payload(json), prev_hash, hash` | Append-only, **hash-chained**. `kind ∈ accountability\|supervision` (see §11). |
 | `debriefs` | `case_id, content(md)` | Generated at case close. |
@@ -179,6 +179,20 @@ record is **pulled back** to a human owner. The record is computed in `services/
 completed tasks + their decisions — outcomes (signed-off / amended / escalated), never a verdict — and
 each task carries an `assignee_rationale` explaining the proposal. The plan stays a proposal the
 partner edits (§14.7).
+
+**The worker is a flexible agent the process map tasks.** Legal work is not only "review a draft
+against the firm standard." A process-map section therefore carries the partner-authored **worker
+spec**: a `kind` (the output shape — `review | summarize | extract | draft`), an `instruction`
+(system-prompt framing), a `checklist` (points the worker must address), the `checks` that apply, and
+`requires_standard`. The planner copies these onto each task; the worker resolves them once in
+`services/task_spec.py::build_task_spec` and calls the single provider entry point
+`LLMProvider.run_task` (the old `review_document` is now a thin `kind="review"` shim). The provider
+composes the system prompt from the instruction + a fixed "surface checkable claims, never a verdict,
+STRICT JSON" envelope with the per-kind output schema; the planner's per-task `ai_instruction` (which
+used to be stored and never consumed) is layered on top. **Every kind still emits the universal
+`findings` list** — the checkable-claims seam the checker reads — while the type-specific product
+goes in `payload`, so flexible output never reshapes what supervision consumes. All fields default to
+the original review behaviour, so a section that omits them behaves exactly as before.
 
 ---
 
@@ -273,6 +287,15 @@ uncertainty = ( W_CITATION·(1 − citation_support_rate)
 Dividing by the weight sum normalises, so a weight can be retuned without rescaling the others. The
 point is not the exact formula; it is that each signal is also stored separately on `risk_scores`
 and shown on its own in the UI, so no single number is load-bearing.
+
+**Signals are selected per task, and a non-applicable signal is excluded — not zeroed.** Now that the
+worker is flexible (§6), not every check applies to every task: precedent deviation needs a firm
+standard, so a from-scratch draft or a summary has nothing to deviate from. Each task declares its
+`applicable_checks`; the checker runs only those and records `applied_checks` on the risk score. A
+signal that did not apply is **dropped from both the numerator and the denominator** (the sum above
+runs over the applied weights only), so a task is never made to look *more certain* just because a
+signal couldn't run, and the cockpit shows it as "n/a" rather than a misleading `0.0`. Citation
+support always runs — any task can fabricate a citation, and that hard signal is load-bearing.
 
 ### 7.3 Queue and routing (ranker)
 Computed in `services/ranker.py::score_task`. Severity (the up-front human call, §7.1) and the
