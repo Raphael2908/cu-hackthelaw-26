@@ -4,6 +4,26 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Docs: reconcile architecture §8 to Celery/Redis (thread pool retired)
+
+**Where we are.** Closed the open item the README-refresh pass flagged: `architecture.md` §8 still
+described the in-process background thread pool as the current dispatch, even though Celery + Redis
+landed and `core/background.py` was deleted. The spine doc now matches the code.
+
+**Done**
+- §8 rewritten: dispatch is **Celery workers backed by Redis** (`core/celery_app.py`,
+  `core/tasks.py`); the thread pool is retired; only `task_id` crosses the boundary and the worker
+  rebuilds repo/provider from factories; `ASYNC_DISPATCH=false` is the inline offline/test fallback.
+- Corrected the audit-chain sentence: cross-process safety is **SQLite WAL + `BEGIN IMMEDIATE` +
+  `Repo.insert_chained`** (atomic across the API and worker processes), not an in-process lock.
+- Fixed two related stale references: the §3 stack table (`Run` row → redis + worker, Celery is
+  current) and the §13.5 scale-up note (Celery/Redis + pptx have landed; Perplexity web search next).
+
+**What's next**
+- Demo video still a placeholder (unchanged). No code touched.
+
+---
+
 ## Flexible worker — the planner tasks it; not every task is a firm-standard review
 
 **Where we are.** The worker is no longer hardcoded to "review a DRAFT against the FIRM STANDARD."

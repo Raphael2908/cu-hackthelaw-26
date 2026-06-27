@@ -72,7 +72,7 @@ debrief agent summarises the record.
 | API | FastAPI (Python 3.12, `uv`, Pydantic v2) | Thin: validate → authorize → record → orchestrate via services. |
 | Store | **SQLite** (one file) | The production store. Case store, task/assignment records, append-only audit log. `InMemoryRepo` for tests. |
 | LLM | **Anthropic Claude** behind one `LLMProvider` | `PROVIDER_MODE=real` in production; `mock` replays fixtures for a keyless, offline fallback and the test suite. |
-| Run | **Docker Compose** (backend + frontend) | Dockerized. In-process background dispatch today; Celery/Redis is the committed scale-up path (§8). No Supabase/Stripe. |
+| Run | **Docker Compose** (backend + frontend + redis + worker) | Dockerized. Off-request dispatch on **Celery workers backed by Redis** (§8); inline in-process when `ASYNC_DISPATCH=false` for mock/tests. No Supabase/Stripe. |
 
 **Why this shape.** We start lean — a small local SQLite store, one LLM provider behind a single
 service module, an offline fixture mode — and scale up component by component. The *conventions*
@@ -324,18 +324,23 @@ if any hard flag:  priority = max(priority, 0.95)          # hard signals bypass
 Dispatching an approved AI/hybrid task runs the worker → checker → ranker pipeline, each transition
 writing an audit event; the `coordinator` service is the state machine. Under real models this
 pipeline is many slow calls, so dispatch runs **off the request path**: approve returns immediately
-and the cockpit polls, surfacing each task as its pipeline finishes. The store serialises writes and
-the audit chain is written under a lock, so concurrent workers stay safe and the chain stays valid.
+and the cockpit polls, surfacing each task as its pipeline finishes. The store serialises writes with
+SQLite **WAL + `BEGIN IMMEDIATE`**, and the hash-chained audit append is atomic **across processes**
+(`Repo.insert_chained`), so the API and a separate worker process can't fork the chain (§11).
 A pipeline failure **fails safe** — the task escalates to a human, never silently dropped or
 auto-reassigned (§14.6). In mock mode the pipeline is instant; tests set `ASYNC_DISPATCH=false` to
 run it inline and keep post-approve assertions deterministic.
 
-**Dispatch mechanism — current and committed.** Today this runs on an in-process **background thread
-pool** (`core/background.py`, `ASYNC_DISPATCH=true`) — correct and simple, but bounded to one
-process and lost on restart. The committed production path is **Celery workers backed by Redis**
-(roadmap, `todo.md`): durable, retryable, horizontally scalable, surviving restarts. The
-`coordinator` boundary is exactly where it slots in — submitting a task to the queue replaces
-submitting it to the thread pool, and nothing else changes shape.
+**Dispatch mechanism — Celery + Redis (landed).** Dispatch runs on **Celery workers backed by Redis**
+(`core/celery_app.py`, `core/tasks.py`; `ASYNC_DISPATCH=true`): durable, retryable, horizontally
+scalable, and surviving restarts. The earlier in-process background thread pool (`core/background.py`)
+has been **retired**. Only the serializable `task_id` crosses the process boundary; the worker rebuilds
+the repo and provider from their factories (`get_repo()` / `get_llm_provider()`). The `coordinator`
+boundary is unchanged — `coordinator.dispatch_task` enqueues `run_dispatch_task.delay(task_id)` instead
+of running the pipeline inline, and nothing else changes shape. With `ASYNC_DISPATCH=false` the pipeline
+runs inline in-process (no broker needed) — the offline/test fallback. In Docker Compose a `worker`
+service shares the same SQLite volume as the backend — the cross-process audit-chain safety above is
+what makes that shared file safe.
 
 ---
 
@@ -444,8 +449,8 @@ No endpoint returns an agent-generated verdict.
 4. **Standards quality is a dependency.** Precedent deviation is only as good as the firm standard it
    compares against. Garbage scaffold, garbage signal.
 5. **Surface area.** The full spine is broad. Depth concentrates where it matters (§1), and the
-   provider / repo / dispatch seams keep scale-up (Celery/Redis, web search, pptx) incremental
-   rather than rewrites.
+   provider / repo / dispatch seams keep scale-up incremental rather than rewrites — Celery/Redis
+   dispatch and pptx ingestion have already landed this way; web search (Perplexity) is the next one.
 
 ---
 
