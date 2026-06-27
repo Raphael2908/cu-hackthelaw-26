@@ -104,6 +104,60 @@ class MockLLMProvider(LLMProvider):
             tasks.append(task)
         return tasks
 
+    def revise_plan(
+        self, *, case: dict, current_tasks: list[dict], feedback: str
+    ) -> list[dict]:
+        """Deterministic, offline stand-in for a model revising the plan from the partner's words.
+        Applies a few clear, demonstrable keyword transforms to the CURRENT tasks (so partner edits
+        are preserved); unmatched feedback re-proposes the plan unchanged. The real provider would
+        interpret the feedback properly — this keeps the loop exercisable with no network/key."""
+        fb = feedback.lower()
+        tasks = [dict(t) for t in current_tasks]
+
+        # "human-led" → give the human oversight: any AI task becomes hybrid.
+        if "human" in fb:
+            for t in tasks:
+                if t.get("assignee_type") == "ai":
+                    t["assignee_type"] = "hybrid"
+                    t["human_instruction"] = (
+                        t.get("human_instruction")
+                        or "Review the AI's first pass and own the conclusion."
+                    )
+                    t["rationale"] = "Partner asked for human oversight on this work."
+        # "automate"/"use ai" → give the AI a first pass: any human task becomes hybrid.
+        elif any(w in fb for w in ("automate", "use ai", "more ai")):
+            for t in tasks:
+                if t.get("assignee_type") == "human":
+                    t["assignee_type"] = "hybrid"
+                    t["ai_instruction"] = (
+                        t.get("ai_instruction") or "Run a first-pass review for the associate."
+                    )
+                    t["rationale"] = "Partner asked for AI assistance on this work."
+
+        # "remove"/"drop" → drop the last task (keep at least one).
+        if any(w in fb for w in ("remove", "drop", "delete")) and len(tasks) > 1:
+            tasks = tasks[:-1]
+
+        # "add"/"another" → append a partner-requested task on the primary draft.
+        if any(w in fb for w in ("add", "another", "additional", "split")):
+            primary = tasks[0] if tasks else None
+            tasks.append(
+                {
+                    "title": "Partner-requested additional review",
+                    "description": f"Added at the partner's request: {feedback.strip()[:140]}",
+                    "task_type": (primary or {}).get("task_type", "review_binding_obligation"),
+                    "assignee_type": "hybrid",
+                    "assignee_id": None,
+                    "severity": case.get("severity", "medium"),
+                    "target_document_id": (primary or {}).get("target_document_id"),
+                    "input_brief_slice": "",
+                    "ai_instruction": "Run a first-pass review for the associate.",
+                    "human_instruction": "Own the conclusion on the partner's specific request.",
+                    "rationale": "Added in response to the partner's revision request.",
+                }
+            )
+        return tasks
+
     def generate_debrief(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
     ) -> str:

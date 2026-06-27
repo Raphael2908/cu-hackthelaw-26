@@ -41,6 +41,12 @@ class TaskPatch(BaseModel):
     human_instruction: str | None = None
 
 
+class PlanReviseRequest(BaseModel):
+    """The partner's free-text direction for revising a proposed plan (architecture.md §6)."""
+
+    feedback: str
+
+
 class SubmissionCreate(BaseModel):
     """A human associate submitting work back into the flow."""
 

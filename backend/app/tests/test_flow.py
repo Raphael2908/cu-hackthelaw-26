@@ -61,6 +61,41 @@ def test_plan_decomposes_one_task_per_process_section(client):
     assert len(plan["tasks"]) == len(sections)
 
 
+def test_plan_carries_rationale_and_hybrid_split(client):
+    _, plan = _new_case_with_plan(client)
+    # Every task explains its reasoning; the hybrid task carries both halves of the split.
+    assert all(t.get("rationale") for t in plan["tasks"])
+    hybrid = next(t for t in plan["tasks"] if t["assignee_type"] == "hybrid")
+    assert hybrid["ai_instruction"] and hybrid["human_instruction"]
+
+
+def test_revise_plan_respects_feedback_and_stays_proposed(client):
+    case, plan = _new_case_with_plan(client)
+    plan_id = plan["plan"]["id"]
+    assert any(t["assignee_type"] == "ai" for t in plan["tasks"])
+
+    # "human-led" → the AI tasks gain human oversight (become hybrid); still a fresh PROPOSAL.
+    revised = client.post(
+        f"/api/cases/{case['id']}/plan/revise",
+        json={"feedback": "Make all the review human-led."},
+    )
+    assert revised.status_code == 201
+    body = revised.json()
+    assert body["plan"]["status"] == "proposed"
+    assert body["plan"]["id"] != plan_id  # latest plan wins, like regenerate
+    assert all(t["assignee_type"] != "ai" for t in body["tasks"])
+    # The partner's direction is recorded as part of the delegation record.
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    assert "plan_revised" in {e["type"] for e in audit["accountability"]}
+
+    # An approved plan can't be revised.
+    client.post(f"/api/plans/{body['plan']['id']}/approve")
+    blocked = client.post(
+        f"/api/cases/{case['id']}/plan/revise", json={"feedback": "one more change"}
+    )
+    assert blocked.status_code == 409
+
+
 def test_happy_path_end_to_end(client):
     case, plan = _new_case_with_plan(client)
     plan_id = plan["plan"]["id"]

@@ -10,7 +10,7 @@ from app.db.repo import get_repo
 from app.db.tables import CASES, CORPUS, DEBRIEFS, PLANS, TASKS
 from app.fixtures import firm_standard, process_doc
 from app.providers.factory import get_llm_provider
-from app.schemas.models import CaseCreate
+from app.schemas.models import CaseCreate, PlanReviseRequest
 from app.services import debrief as debrief_svc
 from app.services import documents, planner, views
 
@@ -109,6 +109,24 @@ def create_plan(case_id: str, user: CurrentUser = Depends(get_current_user)) -> 
     if not case:
         raise HTTPException(404, "Case not found.")
     return planner.propose_plan(repo, case=case, provider=get_llm_provider(), actor=user.email)
+
+
+@router.post("/cases/{case_id}/plan/revise", status_code=201)
+def revise_case_plan(
+    case_id: str, body: PlanReviseRequest, user: CurrentUser = Depends(get_current_user)
+) -> dict:
+    """Re-propose the plan from the partner's free-text direction. Still a PROPOSAL — nothing
+    dispatches until the partner approves (architecture.md §6)."""
+    repo = get_repo()
+    case = repo.get(CASES, case_id)
+    if not case:
+        raise HTTPException(404, "Case not found.")
+    try:
+        return planner.revise_plan(
+            repo, case=case, provider=get_llm_provider(), feedback=body.feedback, actor=user.email
+        )
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
 
 
 @router.get("/cases/{case_id}/plan")

@@ -91,3 +91,77 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
         payload={"plan_id": plan["id"], "n_tasks": len(tasks)},
     )
     return {"plan": plan, "tasks": tasks}
+
+
+def revise_plan(
+    repo: Repo, *, case: dict, provider: LLMProvider, feedback: str, actor: str
+) -> dict:
+    """Re-propose the plan from the partner's free-text direction. The provider revises the CURRENT
+    tasks (preserving the partner's edits); we re-stamp the result onto a fresh PROPOSED plan, so —
+    like 'regenerate' — the latest plan wins and nothing dispatches until the partner approves. The
+    feedback is recorded as part of the delegation record (architecture.md §14.7)."""
+    plans = repo.list(PLANS, case_id=case["id"])
+    current = plans[-1] if plans else None
+    if not current:
+        raise ValueError("No plan to revise — generate one first.")
+    if current["status"] != "proposed":
+        raise ValueError("Only a proposed plan can be revised; this plan is already approved.")
+
+    current_tasks = sorted(
+        repo.list(TASKS, plan_id=current["id"]), key=lambda t: t.get("order_index", 0)
+    )
+    revised = provider.revise_plan(case=case, current_tasks=current_tasks, feedback=feedback)
+
+    plan = repo.insert(
+        PLANS,
+        {"case_id": case["id"], "status": "proposed", "approved_by": None, "approved_at": None},
+    )
+    std_id = case.get("firm_standard_id") or firm_standard()["id"]
+    case_severity = case.get("severity", "medium")
+    draft_ids = {d["id"] for d in repo.list(CORPUS) if d["kind"] == "draft"}
+    fallback_doc_id = current_tasks[0]["target_document_id"] if current_tasks else None
+
+    tasks = []
+    for i, t in enumerate(revised):
+        target = t.get("target_document_id")
+        if target not in draft_ids:
+            target = fallback_doc_id
+        tasks.append(
+            repo.insert(
+                TASKS,
+                {
+                    "case_id": case["id"],
+                    "plan_id": plan["id"],
+                    "title": t["title"],
+                    "description": t.get("description", ""),
+                    "task_type": t["task_type"],
+                    "assignee_type": t["assignee_type"],
+                    "assignee_id": t.get("assignee_id"),
+                    # Keep the partner's per-task severity edit if present; else the case default.
+                    "severity": t.get("severity", case_severity),
+                    "target_document_id": target,
+                    "firm_standard_id": std_id,
+                    "input_brief_slice": t.get("input_brief_slice", ""),
+                    "input_process_section": t.get("input_process_section"),
+                    "ai_instruction": t.get("ai_instruction"),
+                    "human_instruction": t.get("human_instruction"),
+                    "rationale": t.get("rationale"),
+                    "status": "proposed",
+                    "order_index": i,
+                },
+            )
+        )
+
+    record_accountability(
+        repo,
+        type="plan_revised",
+        actor=actor,
+        case_id=case["id"],
+        payload={
+            "plan_id": plan["id"],
+            "from_plan_id": current["id"],
+            "feedback": feedback,
+            "n_tasks": len(tasks),
+        },
+    )
+    return {"plan": plan, "tasks": tasks}

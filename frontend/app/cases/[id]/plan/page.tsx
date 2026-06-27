@@ -9,6 +9,7 @@ import {
   getCorpus,
   getPlan,
   patchTask,
+  revisePlan,
   type TaskPatchBody,
 } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
@@ -31,6 +32,9 @@ export default function PlanPage() {
   const [approving, setApproving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState("");
+  const [revising, setRevising] = useState(false);
+  const [revisions, setRevisions] = useState(0);
 
   useEffect(() => {
     setRole(getRole());
@@ -100,6 +104,24 @@ export default function PlanPage() {
       setError(e instanceof ApiError ? e.detail : "Could not generate a plan.");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const onRevise = async () => {
+    const note = feedback.trim();
+    if (!note) return;
+    setRevising(true);
+    setError(null);
+    try {
+      const r = await revisePlan(id, note);
+      setPlan(r.plan);
+      setTasks([...r.tasks].sort((a, b) => a.order_index - b.order_index));
+      setFeedback("");
+      setRevisions((n) => n + 1);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not revise the plan.");
+    } finally {
+      setRevising(false);
     }
   };
 
@@ -199,6 +221,37 @@ export default function PlanPage() {
             {error ? (
               <div className="mb-4">
                 <ErrorNote message={error} />
+              </div>
+            ) : null}
+
+            {/* Tell the planner what to change — re-proposes the plan; the partner still approves. */}
+            {editable ? (
+              <div className="mb-4 rounded-xl border border-line bg-canvas p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-semibold text-ink">Shape the plan</div>
+                  {revisions > 0 ? (
+                    <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand">
+                      Revised ×{revisions}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-0.5 text-[11px] text-muted">
+                  Tell the planner what to change — e.g. &ldquo;make the liability review
+                  human-led&rdquo;, &ldquo;add a task for the data-transfer clause&rdquo;, &ldquo;drop
+                  the recital summary&rdquo;. It re-proposes; nothing runs until you approve.
+                </p>
+                <div className="mt-2 flex items-start gap-2">
+                  <textarea
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    rows={2}
+                    placeholder="What should the planner change?…"
+                    className="flex-1 resize-none rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                  />
+                  <Button onClick={onRevise} disabled={revising || !feedback.trim()}>
+                    {revising ? "Revising…" : "Send to planner"}
+                  </Button>
+                </div>
               </div>
             ) : null}
 

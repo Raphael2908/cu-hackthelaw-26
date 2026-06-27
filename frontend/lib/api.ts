@@ -44,6 +44,11 @@ export const uploadCaseDocuments = (caseId: string, files: File[]) => {
 export const createPlan = (caseId: string) =>
   apiFetch<PlanResponse>(`/cases/${caseId}/plan`, { method: "POST" });
 export const getPlan = (caseId: string) => apiFetch<PlanResponse>(`/cases/${caseId}/plan`);
+export const revisePlan = (caseId: string, feedback: string) =>
+  apiFetch<PlanResponse>(`/cases/${caseId}/plan/revise`, {
+    method: "POST",
+    body: JSON.stringify({ feedback }),
+  });
 
 export type TaskPatchBody = Partial<{
   title: string;

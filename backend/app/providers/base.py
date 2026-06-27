@@ -102,6 +102,16 @@ class LLMProvider(ABC):
         the partner's severity, the process-section label, a default assignee and ordering. A
         proposal; nothing dispatches until the partner approves."""
 
+    def revise_plan(
+        self, *, case: dict, current_tasks: list[dict], feedback: str
+    ) -> list[dict]:
+        """Revise the current proposed task list given the partner's free-text direction. Returns
+        FULL task dicts (same shape as the stored tasks, so partner edits are preserved), which the
+        planner service re-stamps onto a fresh proposed plan. Default: a no-op returning the current
+        tasks unchanged — providers that can interpret the feedback override this. Still a proposal;
+        nothing dispatches until the partner approves."""
+        return [dict(t) for t in current_tasks]
+
     @abstractmethod
     def generate_debrief(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
