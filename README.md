@@ -13,6 +13,32 @@ Runs **fully offline** in mock mode (no API key) — the LLM sits behind a provi
 fixtures, so the whole flow works keyless and deterministically (and the test suite never touches the
 network).
 
+## Does the supervision signal actually work?
+
+We tested the core claim — *does our measured `uncertainty` predict where the AI's work is bad?* —
+against the [Harvey](https://www.harvey.ai/) benchmark of real legal tasks, each graded against a
+lawyer-authored pass/fail rubric. For each EU/GDPR task we run the shipped `worker → checker → ranker`
+pipeline, grade the output against the rubric with an independent strict judge (`Q = passed / total`),
+and correlate our supervision `uncertainty` against that quality (Spearman ρ). A strong **negative** ρ
+means higher uncertainty reliably flags lower-quality work — the cockpit sends a partner's attention to
+the right place.
+
+| Task | uncertainty | Harvey Q (passed/total) |
+|---|---|---|
+| review-master-services | 0.750 | 0.658 (27/41) |
+| map-eu-ai-act | 0.786 | 0.638 (30/47) |
+| summarize-new-gdpr | 0.882 | 0.630 (29/46) |
+| compare-privacy-notice | 0.991 | 0.378 (14/37) |
+| identify-issues-DPA | 1.000 | 0.167 (7/42) |
+
+**Spearman ρ = −1.000 (perfect), n=5** — every task's uncertainty rank is the exact inverse of its
+quality rank, up from **−0.60** before routing each task through the planner. The worst task
+(`identify-issues-DPA`, Q=0.167) pegs uncertainty at its ceiling, so the cockpit floats it straight to
+the top of the review queue. A perfect match at n=5 is small-sample (p≈0.017); across **9 graded EU
+tasks** the planner-driven correlation is **ρ = −0.703** (vs −0.32 without the planner) — still clearly
+stronger. Worker model `claude-sonnet-4-6`; full methodology and caveats in
+[`final_harvey_benchmark_results.md`](final_harvey_benchmark_results.md).
+
 ## Architecture
 Three layers — presentation, orchestration (the AI agents), and data/services — with depth
 concentrated in the supervision spine (worker → checker → ranker → cockpit → audit). See
