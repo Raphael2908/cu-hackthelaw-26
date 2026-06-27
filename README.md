@@ -2,15 +2,16 @@
 
 **Hack the Law (Cambridge) · Clifford Chance track** — *How do we supervise legal AI agents?*
 
-An end-to-end demo that delegates legal work under partner approval, then **supervises** it: it
-triages completed AI output by a risk signal, surfaces **checkable flags** (never verdicts), and
-records **defensible, signed sign-off** — so a supervising partner stays accountable without
-manually reviewing every output.
+A system that delegates legal work under partner approval, then **supervises** it: it triages
+completed AI output by a risk signal, surfaces **checkable flags** (never verdicts), and records
+**defensible, signed sign-off** — so a supervising partner stays accountable without manually
+reviewing every output.
 
 > Agents surface checkable claims. They never render verdicts. The human decides.
 
 Runs **fully offline** in mock mode (no API key) — the LLM sits behind a provider that replays
-fixtures, so the demo never depends on a live model.
+fixtures, so the whole flow works keyless and deterministically (and the test suite never touches the
+network).
 
 ## Architecture
 Three layers — presentation, orchestration (the AI agents), and data/services — with depth
@@ -23,8 +24,42 @@ The control loop, end to end — every transition writes to the append-only, has
 
 ![Happy path](system-design/happy_path.png)
 
+## What it does
+
+**Plan — delegate under approval, and shape the delegation.** The partner opens a case (severity set
+up front, optional free-text instructions to steer the planner, optional document upload). The
+planner **proposes** tasks decomposed from the firm's process document, each with an assignee type
+(human / AI / hybrid), a one-line **rationale** the partner can verify, and — for hybrid tasks — an
+explicit *"AI does / associate does"* split. The plan is a **working surface**, not a one-shot: edit
+any field, **add / remove / reorder** tasks, pick **which associate** owns each one, or give the
+planner natural-language direction and have it **re-propose** (the iterative revise loop). **Nothing
+dispatches until the partner approves.**
+
+**Supervise — the centrepiece.** On approval the coordinator dispatches: AI/hybrid tasks run the
+worker → checker → ranker pipeline off the request path (Celery + Redis; inline in mock/test mode),
+human/hybrid work lands in the associate inbox. The cockpit triages the queue by risk, built from
+**three independent, individually-inspectable uncertainty signals** — citation support, precedent
+deviation, multi-run disagreement — shown separately and **never fused into one verdict**; severity
+stays the partner's up-front call. Every flag is **checkable**: one-click source verification shows
+**both** the quoting passage in the submitted work *and* the quoted passage in the source, so the
+partner checks *claimed vs actual* directly (or sees plainly that a fabricated citation has no
+source). Cited EU law can resolve **live against the official EU Cellar API** (opt-in). The partner
+**approves / amends / rejects** (signed), **reassigns** or escalates — escalations get their own lane
+— and the **auto-clear lane** logs low-risk work and **randomly samples** it back into the queue,
+like a financial audit. Nothing is ever auto-approved.
+
+**Partner ⇄ associate loop.** Tasks carry a conversation thread (the associate raises a question *or*
+a concern); every human free-text box uses a shared markdown editor; associates **attach supporting
+documents** to their work, reachable by the partner in one click.
+
+**Close — accountable.** Closing is **gated on every task being resolved** (a debrief drawn from an
+in-flight matter would misrepresent it). The debrief reads as an **issue-centric memo**: each
+needs-attention task joins its flags **and** the partner's decision in one entry, ordered worst-first,
+with a synthesis line and carry-forward notes. Throughout, the audit keeps two streams — **decisions
+(accountability)** separate from **flags (supervision)** — hash-chained so tampering is detectable.
+
 ## Screenshots
-A walk through the demo path, partner first.
+A walk through the path, partner first.
 
 **Cases — delegate under approval.** Create a case, set severity up front, attach documents. Nothing
 is dispatched until you approve a plan.
@@ -42,9 +77,9 @@ and each checkable flag — with approve / amend / reject controls. Nothing is a
 
 ![Supervision cockpit](docs/screenshots/03-cockpit.png)
 
-**One-click source verification.** Every flag links straight to its cited source (or states plainly
-that a fabricated citation has no such source). The agent surfaces a checkable claim; the human
-verifies it in seconds.
+**One-click source verification.** Every flag links straight to its cited source — showing both the
+passage in the submitted work and the part of the source quoted (or stating plainly that a fabricated
+citation has no such source). The agent surfaces a checkable claim; the human verifies it in seconds.
 
 ![Source verification](docs/screenshots/04-source.png)
 
@@ -54,8 +89,8 @@ end to end.
 
 ![Audit](docs/screenshots/05-audit.png)
 
-**Debrief & associate inbox.** At close, a debrief is generated from the case record. Human and
-hybrid tasks land in the associate inbox, with the hybrid AI instruction shown inline.
+**Debrief & associate inbox.** At close, an issue-centric debrief is composed from the case record.
+Human and hybrid tasks land in the associate inbox, with the hybrid AI instruction shown inline.
 
 | Debrief | Associate inbox |
 |---|---|
@@ -72,27 +107,34 @@ make dev            # FastAPI on :8000 + Next.js on :3000
 # then open http://localhost:3000
 ```
 
-Or run the two halves separately:
+Or run the two halves separately, or the full stack in Docker:
 
 ```bash
 make backend        # cd backend && uv run uvicorn app.main:app --reload   (:8000)
 make frontend       # cd frontend && npm run dev                            (:3000)
-make test           # backend tests, offline
+make worker         # Celery worker for off-request dispatch (needs Redis)
+make test           # 54 backend tests, fully offline
+
+docker compose up   # redis + backend + worker + frontend together
 ```
+
+Mock mode is the default — keyless and deterministic. To use a real model, set `ANTHROPIC_API_KEY`
+and `PROVIDER_MODE=real` in `backend/.env` (and `CELLAR_ENABLED=true` to resolve cited EU law live).
 
 ## What's here
 - `architecture.md` — the design spine (read this first).
-- `current_progress.md` — running build log. `todo.md` — backlog. `marketing.md` — GTM.
-- `backend/` — FastAPI + SQLite + the worker/checker/ranker/planner/coordinator/debrief services.
-- `frontend/` — Next.js cockpit (queue, flag panel, approve/amend/reject), plan approval, associate
-  inbox, audit view, debrief.
+- `current_progress.md` — running build log. `todo.md` — backlog + acceptance criteria. `marketing.md` — GTM.
+- `backend/` — FastAPI + SQLite + the worker / checker / ranker / planner / coordinator / debrief
+  services, the Anthropic + Cellar providers behind factories, and the Celery dispatch worker.
+- `frontend/` — Next.js cockpit (queue, flag panel, approve/amend/reject), the editable plan, the
+  associate inbox, the audit view, and the debrief.
 - `system-design/` — the original technical brief and diagrams.
 
 ## The demo path
-Create a case → planner proposes tasks → edit + **approve the plan** (gate) → an AI task runs and one
-lands in the associate inbox → cockpit shows the queue sorted by risk → open the top item, see the
-failed-citation and template-deviation flags, click through to each source → **approve with an
-amendment** (signed) → audit view shows the plan approval + the decision, separate from the flags →
-the auto-clear lane shows a randomly sampled item → close the case → debrief generates.
-
-To use a real model: set `ANTHROPIC_API_KEY` and `PROVIDER_MODE=real` in `backend/.env`.
+Create a case (severity + optional planner instructions) → the planner **proposes** tasks; edit them,
+reorder, reassign, or tell the planner what to change, then **approve the plan** (the gate) → AI tasks
+run and human/hybrid tasks land in the associate inbox → the cockpit shows the queue sorted by risk →
+open the top item, see the failed-citation and template-deviation flags, and click a flag to compare
+the submitted work against the cited source → **approve with an amendment** (signed) → the audit view
+shows the plan approval and the decision, separate from the flags → the auto-clear lane shows a
+randomly sampled item → resolve the rest, **close the case** → the issue-centric debrief generates.

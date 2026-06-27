@@ -127,6 +127,39 @@ editable proposal, severity remains the partner's up-front triage dial, mock sta
 
 ---
 
+## README refreshed to the current feature set
+
+**Where we are.** Doc-only pass (post-merge of PR #3 into `master`): the README still described the
+early demo and missed the partner-journey work that has since landed. Updated it to match reality —
+no code changed.
+
+**Built**
+- Added a **"What it does"** section narrating the journey end to end — *plan* (instructions to steer
+  the planner, per-task rationale, the hybrid AI/associate split, fully-editable plan with
+  add/remove/reorder + assignee choice, the iterative revise loop), *supervise* (three independent
+  signals, both-sides source verification, live EU Cellar, reassign, escalations lane, auto-clear
+  sampling), the *partner⇄associate loop* (conversation, shared markdown editor, attachments), and a
+  *gated close* + *issue-centric debrief*.
+- Reframed from "demo" to "system"; corrected the dispatch story (Celery + Redis worker in
+  docker-compose, inline in mock/test); refreshed the source-verification + debrief captions and the
+  "demo path"; added `docker compose up` / `make worker` and the offline-mock vs real-mode note
+  (`PROVIDER_MODE=real`, `CELLAR_ENABLED=true`); noted the suite is 54 backend tests, offline.
+- Verified the referenced files/targets exist (Makefile targets, docker-compose services,
+  `marketing.md`, diagrams, screenshots) so nothing in the README points at a missing path.
+
+**Then — screenshots regenerated.** Recaptured all seven `docs/screenshots/*.png` against the
+current UI: seeded three deterministic cases via the API (a proposed plan, an active approved case
+with an undecided hard-flag item + an attachment, and a fully-resolved closed case), then drove
+Playwright (system Chrome, mock mode, 1440×900 @2×) to each screen. Now showing: the new-case modal,
+the decluttered cockpit + numbered review path, the **both-sides** source drawer (work vs source),
+the two-stream audit, the **issue-centric** debrief, and the associate inbox (AI/You attribution,
+"Your part", attachments). README captions now match.
+
+**What's next.** Demo video still a placeholder. `architecture.md` §8 still describes the in-process
+thread pool as current though Celery/Redis has landed — reconcile in a future docs pass.
+
+---
+
 ## Associates attach supporting documents to their work
 
 **Where we are.** The shared markdown editor already covered the associate's free-text; the remaining
