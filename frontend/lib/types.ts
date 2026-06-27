@@ -159,6 +159,7 @@ export interface Cockpit {
   auto_clear_lane: Card[];
   sampled_into_queue: Card[];
   decided: Card[];
+  escalated: Card[];
   awaiting_human: Card[];
 }
 

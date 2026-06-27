@@ -120,6 +120,28 @@ export default function CockpitPage() {
                 )}
               </section>
 
+              <section>
+                <SectionHeader
+                  title="Escalations"
+                  caption="Work that fell back to a human — a partner reject or a fail-safe pipeline failure. Awaiting a partner-approved redo; never auto-reassigned into the machine."
+                  count={data.escalated.length}
+                />
+                {data.escalated.length === 0 ? (
+                  <EmptyNote text="No escalations — nothing fell back to a human." />
+                ) : (
+                  <ul className="space-y-2">
+                    {data.escalated.map((card) => (
+                      <EscalatedRow
+                        key={card.task.id}
+                        card={card}
+                        active={selected === card.task.id}
+                        onClick={() => setSelected(card.task.id)}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <MiniSection
                   title="Awaiting human"
@@ -129,7 +151,7 @@ export default function CockpitPage() {
                 />
                 <MiniSection
                   title="Decided"
-                  caption="Signed off or escalated by the partner."
+                  caption="Signed off by the partner."
                   cards={data.decided}
                   emptyText="No decisions yet."
                   onSelect={setSelected}
@@ -216,6 +238,41 @@ function QueueRow({
 
         <div className="mt-2 text-[11px] text-muted">
           {flag_count} flag{flag_count === 1 ? "" : "s"} · uncertainty {pct(risk?.uncertainty)}
+        </div>
+      </button>
+    </li>
+  );
+}
+
+function EscalatedRow({
+  card,
+  active,
+  onClick,
+}: {
+  card: Card;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const { task } = card;
+  return (
+    <li>
+      <button
+        onClick={onClick}
+        className={`w-full rounded-xl border bg-rose-50/60 p-3.5 text-left shadow-sm transition-colors ${
+          active ? "border-rose-400 ring-1 ring-rose-300" : "border-rose-200 hover:border-rose-300"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <SeverityBadge severity={task.severity} />
+            <span className="truncate text-sm font-medium text-ink">{task.title}</span>
+          </div>
+          <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800 ring-1 ring-inset ring-rose-200">
+            escalated
+          </span>
+        </div>
+        <div className="mt-1 text-[11px] text-rose-700/90">
+          Returned to a human — awaiting a partner-approved redo.
         </div>
       </button>
     </li>
