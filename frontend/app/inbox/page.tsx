@@ -37,19 +37,19 @@ export default function InboxPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
       <div className="mb-2 flex items-center gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Associate inbox</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">My inbox</h1>
         <AssigneeTag type="human" />
       </div>
       <p className="mb-6 max-w-2xl text-sm text-muted">
-        Human and hybrid tasks awaiting submission. On hybrid tasks the AI runs a first pass, but the
-        associate owns and submits the result.
+        Tasks assigned to you, awaiting submission. On hybrid tasks the AI runs a first pass, but you
+        own and submit the result.
       </p>
 
       {role !== "associate" ? (
-        <div className="mb-5 rounded-lg border border-line bg-canvas px-4 py-2.5 text-xs text-muted">
-          Tip: switch to <strong className="text-ink">Associate</strong> in the header — this view is
-          the associate&apos;s workspace. The inbox itself is role-independent, but submitting is the
-          associate&apos;s job.
+        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
+          You&apos;re viewing the associate&apos;s workspace as <strong>Partner</strong>. Use the{" "}
+          <strong>Partner / Associate</strong> toggle (top right) to switch views — submitting work is
+          the associate&apos;s job.
         </div>
       ) : null}
 
