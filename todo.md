@@ -96,11 +96,11 @@ cut from the bottom if time runs short.
           saved via `patchTask`); make `ai_instruction` editable here too, not just displayed.
         - **Downstream.** Surface `human_instruction` to the associate in the inbox (pairs with the
           "make the AI/associate division of labour explicit" item below).
-        - **Partial (split authoring done).** Backend `human_instruction` field (model + planner +
-          mock fixture + `TaskPatch`) and the editable two-part "AI does / Associate does" UI on the
-          plan page are in. **Remaining:** the natural-language revise loop (parent item), and
-          surfacing the `human_instruction` *text* in the associate inbox (the attribution item below
-          marks the AI/You split but doesn't yet show the human_instruction wording).
+        - **Done.** Backend `human_instruction` field (model + planner + mock fixture + `TaskPatch`),
+          the editable "AI does / Associate does" UI on the plan page, the revise loop (parent item),
+          and a sky "Your part" block surfacing the `human_instruction` text in the associate inbox
+          (`inbox/page.tsx`, mirroring the AI-instruction block — left uncommitted to land with the
+          in-flight shared-markdown-editor stream that co-owns that file).
 - [x] **Add a short justification to each planner output (for verifiability).** The planner proposes
       tasks (title, assignee type, severity) with no stated reasoning, so the partner can't quickly
       sanity-check *why* — why this is AI vs human, why this severity, why this task exists. Have the
@@ -114,7 +114,7 @@ cut from the bottom if time runs short.
       - **Done.** Planner now emits a per-task `rationale` (mock fixture + `planner.py` passthrough,
         `base.py` docstring); the plan page shows it as a quiet read-only "Why" line per row. Real
         prompt enhancement deferred (real provider returns `None` until its prompt is updated).
-- [ ] **Editable plan at both individual-task and whole-plan granularity.** Plan editing today is
+- [x] **Editable plan at both individual-task and whole-plan granularity.** Plan editing today is
       limited to per-task assignee/severity selects on `plan/page.tsx`. Make the proposed plan fully
       editable before approval at two levels:
       - **Individual task:** edit all of a task's fields inline — title, description, `ai_instruction`
@@ -124,10 +124,12 @@ cut from the bottom if time runs short.
         endpoints + `order_index` in `TaskPatch`) — plus the natural-language revise loop above.
       Keep the edit-on-`proposed` gating and the approval gate throughout; nothing dispatches until
       the partner approves.
-      - **Partial (individual-task done).** `plan/page.tsx` now inline-edits title, description,
-        `ai_instruction`, and `human_instruction` (commit-on-blur via `patchTask`; `human_instruction`
-        added to `TaskPatch`), on top of the existing assignee/severity selects, all gated on
-        `proposed`. **Remaining:** whole-plan add/remove/reorder (backend endpoints + `order_index`).
+      - **Done.** Individual-task: `plan/page.tsx` inline-edits title, description, `ai_instruction`,
+        `human_instruction` (commit-on-blur via `patchTask`) + assignee/severity selects. Whole-plan:
+        `Repo.delete()`, `POST /cases/{id}/plan/tasks` (`task_added`), `DELETE /tasks/{id}`
+        (`task_removed`), `order_index` in `TaskPatch`; plan table gained a per-row Edit column
+        (move ↑/↓ + remove ✕) and an "+ Add task" button. All gated on `proposed`; audited. Test
+        `test_whole_plan_edit_add_remove_reorder`; 30 backend tests green, ruff + tsc clean.
 - [x] **Make the AI/associate division of labour explicit per task in the associate view.** In the
       inbox (`app/inbox/page.tsx`) a hybrid task already shows several blocks — the "AI instruction"
       (indigo), the "AI first-pass review (you remain the owner)" (violet), the brief slice, and the

@@ -4,6 +4,34 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Whole-plan editing + human_instruction in the inbox (Cluster A, increment 3)
+
+**Where we are.** The plan is now fully editable before approval, and the associate sees their
+explicit half of a hybrid task. This finishes Cluster A's plan-as-a-working-surface arc (increment 1
+fields + rationale, increment 2 the revise loop, increment 3 here).
+
+**Built**
+- **Whole-plan editing (committed).** `Repo.delete()` added to the protocol + in-memory + sqlite
+  impls. New `POST /cases/{id}/plan/tasks` (`planner.add_task` → a blank proposed task on the latest
+  proposed plan, `task_added` event) and `DELETE /tasks/{id}` (proposed-only, `task_removed` event);
+  `order_index` added to `TaskPatch` for reordering. The plan table gained a per-row **Edit** column
+  (move ↑/↓ + remove ✕) and an **"+ Add task"** button; reorder swaps `order_index` via two PATCHes.
+  `addPlanTask`/`deleteTask` + `order_index` added to the API client. Everything gated on the plan
+  being `proposed`; all three actions write to the accountability audit.
+- **`human_instruction` in the inbox.** A sky "Your part" block (with the "You" tag) now shows the
+  associate's half of a hybrid task in `inbox/page.tsx`, mirroring the AI-instruction block — closing
+  the loop from "author the split at planning" to "show it at execution". *(This edit lives in
+  `inbox/page.tsx`, which is co-owned with the in-flight shared-markdown-editor work, so it's left
+  uncommitted to land with that stream — by design, not an oversight.)*
+- **Verified.** New test `test_whole_plan_edit_add_remove_reorder` (add/reorder/remove + audit events
+  + approved-plan refusal). 30 backend tests green, ruff clean, frontend tsc clean. Live: add→201,
+  reorder→200, delete→204; inbox hybrid task carries its `human_instruction`.
+
+**Cluster A complete.** Remaining cross-cutting follow-ups (not Cluster A): real-provider prompts for
+rationale/revise; the free-text instructions-at-case-creation item (initial steer).
+
+---
+
 ## Shared markdown editor for all human free-text boxes
 
 **Where we are.** Every human free-text box was a bare `<textarea>` — no formatting, no preview.
