@@ -1,0 +1,109 @@
+from __future__ import annotations
+
+from app import fixtures
+from app.providers.base import (
+    CitationCheck,
+    Deviation,
+    Finding,
+    LLMProvider,
+    ReviewResult,
+)
+
+
+class MockLLMProvider(LLMProvider):
+    """Deterministic, network-free implementation that replays the fixtures. This is what the whole
+    demo runs on with no API key. It honours the planted defects and produces controlled divergence
+    across runs so the multi-run-disagreement signal has something real to measure."""
+
+    def review_document(
+        self, *, draft: dict, firm_standard: dict, process_section: str, run_index: int = 0
+    ) -> ReviewResult:
+        data = fixtures.mock_reviews().get(draft["id"])
+        if not data:
+            return ReviewResult(summary=f"No issues identified in {draft['title']}.")
+        findings = [
+            Finding(
+                id=f["id"],
+                clause_ref=f["clause_ref"],
+                statement=f["statement"],
+                citation=f.get("citation"),
+            )
+            for f in data["findings"]
+            # A finding may only surface on some runs — that divergence is the disagreement signal.
+            if run_index in f.get("runs", [run_index])
+        ]
+        return ReviewResult(
+            summary=data["summary"],
+            findings=findings,
+            clauses_relied_on=data.get("clauses_relied_on", []),
+            audit_sources=data.get("audit_sources", []),
+        )
+
+    def check_citation_support(self, *, claim: str, source: dict) -> CitationCheck:
+        supported_claims = source.get("ground_truth", {}).get("supported_claims", [])
+        claim_l = claim.strip().lower()
+        for s in supported_claims:
+            if claim_l == s.strip().lower() or claim_l in s.strip().lower():
+                return CitationCheck(True, f"The source supports the proposition: '{s}'.")
+        return CitationCheck(
+            False,
+            f"'{source.get('title', source.get('celex'))}' does not support the cited proposition.",
+        )
+
+    def assess_deviations(self, *, draft: dict, firm_standard: dict) -> list[Deviation]:
+        data = fixtures.mock_reviews().get(draft["id"], {})
+        return [
+            Deviation(
+                clause_ref=d["clause_ref"],
+                standard_key=d["standard_key"],
+                draft_text=d["draft_text"],
+                score=d["score"],
+                rationale=d["rationale"],
+            )
+            for d in data.get("deviations", [])
+        ]
+
+    def plan_case(
+        self,
+        *,
+        goal: str,
+        brief: str,
+        process_doc: dict,
+        drafts: list[dict],
+        associates: list[dict],
+    ) -> list[dict]:
+        # Raw task scoping only. The planner SERVICE applies severity (the partner's choice),
+        # the process-section label, a default assignee and ordering — so mock and real are
+        # symmetric and severity is never a model inference (architecture.md §7.1).
+        return [dict(t) for t in fixtures.mock_plan()["tasks"]]
+
+    def generate_debrief(
+        self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
+    ) -> str:
+        lines = [
+            f"# Case debrief — {case['title']}",
+            "",
+            f"**Goal:** {case['goal']}",
+            "",
+            f"## Tasks ({len(tasks)})",
+        ]
+        for t in tasks:
+            lines.append(
+                f"- **{t['title']}** — {t['assignee_type']}, severity {t['severity']}, "
+                f"status {t['status']}"
+            )
+        lines += ["", f"## Flags raised ({len(flags)})"]
+        for f in flags:
+            hard = " (hard)" if f.get("hard") else ""
+            lines.append(f"- [{f['signal_type']}]{hard} {f['title']}")
+        lines += ["", f"## Partner decisions ({len(decisions)})"]
+        for d in decisions:
+            amend = f" — amendment: {d['amendment']}" if d.get("amendment") else ""
+            lines.append(f"- **{d['action']}** on task {d['task_id']}: {d.get('note', '')}{amend}")
+        lines += [
+            "",
+            "## Carry forward",
+            "- Confirm the liability-cap and governing-law deviations are resolved before signing.",
+            "- Re-verify any non-supporting citation before the next matter relies on it.",
+        ]
+        return "\n".join(lines)

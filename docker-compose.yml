@@ -1,0 +1,32 @@
+# Local demo stack for the Supervision Cockpit.
+#   docker compose up --build
+# Backend reads the real root .env (mounted read-only); python-dotenv parses it,
+# inline comments and all. SQLite store persists on a named volume.
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.env:/app/.env:ro
+      - backend-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Browser talks to the backend on the host port mapping.
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  backend-data:
