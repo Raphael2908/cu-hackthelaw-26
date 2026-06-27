@@ -83,7 +83,6 @@ export default function CockpitPage() {
               <section>
                 <SectionHeader
                   title="Needs your review"
-                  caption="Grouped by how pressing it is."
                   count={data.queue.length}
                   prominent
                 />
@@ -119,7 +118,6 @@ export default function CockpitPage() {
               <div className="space-y-2.5">
                 <CollapsibleLane
                   title="Cleared automatically"
-                  caption="Low-risk work, cleared and recorded. A random few are spot-checked."
                   count={data.auto_clear_lane.length}
                 >
                   {data.auto_clear_lane.length === 0 ? (
@@ -144,7 +142,6 @@ export default function CockpitPage() {
 
                 <CollapsibleLane
                   title="With a person"
-                  caption="Tasks assigned to an associate — waiting in their inbox."
                   count={data.awaiting_human.length}
                 >
                   {data.awaiting_human.length === 0 ? (
@@ -166,7 +163,6 @@ export default function CockpitPage() {
 
                 <CollapsibleLane
                   title="You've decided"
-                  caption="Work you've already signed off, amended, or sent back."
                   count={data.decided.length}
                 >
                   {data.decided.length === 0 ? (
@@ -380,7 +376,7 @@ function CollapsibleLane({
   children,
 }: {
   title: string;
-  caption: string;
+  caption?: string;
   count: number;
   children: ReactNode;
 }) {
@@ -394,7 +390,9 @@ function CollapsibleLane({
               {count}
             </span>
           </div>
-          <p className="mt-0.5 text-[11px] leading-snug text-muted">{caption}</p>
+          {caption ? (
+            <p className="mt-0.5 text-[11px] leading-snug text-muted">{caption}</p>
+          ) : null}
         </div>
         <svg
           className="h-4 w-4 shrink-0 text-muted transition-transform group-open:rotate-180"
@@ -441,7 +439,7 @@ function SectionHeader({
   prominent,
 }: {
   title: string;
-  caption: string;
+  caption?: string;
   count: number;
   prominent?: boolean;
 }) {
@@ -453,7 +451,7 @@ function SectionHeader({
           {count}
         </span>
       </div>
-      <p className="mt-0.5 text-[11px] leading-snug text-muted">{caption}</p>
+      {caption ? <p className="mt-0.5 text-[11px] leading-snug text-muted">{caption}</p> : null}
     </div>
   );
 }

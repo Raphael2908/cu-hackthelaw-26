@@ -56,9 +56,6 @@ export default function DebriefPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div>
             <h1 className="text-lg font-semibold text-ink">Case debrief</h1>
-            <p className="mt-0.5 text-xs text-muted">
-              A summary drawn from the case record at close — tasks, flags, and your decisions.
-            </p>
           </div>
           <div className="flex items-center gap-2">
             {debrief ? (

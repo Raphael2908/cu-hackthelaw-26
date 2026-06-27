@@ -26,6 +26,16 @@ honesty messaging is not decoration).
 "nothing dispatched until you approve" / "not an AI inference" claim stays. Typecheck clean
 (`tsc --noEmit`).
 
+**Follow-up — header/lane subtitles removed (partner request).** A second pass stripped the
+orientation captions the partner found unnecessary now that the structure speaks for itself:
+- `cockpit/page.tsx`: removed the four lane captions entirely (Needs your review, Cleared
+  automatically, With a person, You've decided); `SectionHeader`/`CollapsibleLane` now take `caption`
+  as optional. Kept only the "Questions from associates" caption.
+- `components/CaseSubNav.tsx`: removed the per-tab header hints (Plan/Cockpit/Audit/Debrief now show
+  just their labels) and the now-unused `hint` field + its `title`/`aria-label` usages.
+- `debrief/page.tsx`: removed the "A summary drawn from the case record…" header subtitle.
+Typecheck clean.
+
 ---
 
 ## Cockpit declutter, numbered review path, and plan-flow fixes
