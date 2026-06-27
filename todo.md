@@ -48,10 +48,11 @@ cut from the bottom if time runs short.
 - [x] **PPTX ingestion.** Add `.pptx` to document upload — extract slide text via `python-pptx`,
       alongside the existing PDF/DOCX/text extractors in `services/documents.py`. Same path: each
       becomes a `case_id`-tagged `draft` corpus document the planner scopes over.
-- [ ] **Celery + Redis dispatch.** Replace the in-process background thread pool
-      (`core/background.py`) with Celery workers backed by Redis to run the agentic
-      worker→checker→ranker flows — durable, retryable, horizontally scalable, surviving restarts.
-      The `coordinator` service boundary stays; only the dispatch mechanism changes (architecture §8).
+- [x] **Celery + Redis dispatch.** Replaced the in-process background thread pool with Celery
+      workers backed by Redis for the agentic worker→checker→ranker flows — durable, retryable,
+      horizontally scalable, surviving restarts. The `coordinator` boundary stayed; only the
+      dispatch mechanism changed (architecture §8). Audit-chain integrity made cross-process safe
+      (SQLite WAL + BEGIN IMMEDIATE via a new `Repo.insert_chained`). See `current_progress.md`.
 - [ ] **Perplexity web search.** Give AI agents web-search via Perplexity, behind a tool/provider
       seam, so workers can retrieve live external sources when checking citations and gathering
       context — improving citation-support retrieval quality (§13.1). Keep it checkable: every fetched

@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from app.config import settings
-from app.core import background
 from app.core.audit import record_accountability
 from app.db.repo import Repo
 from app.db.tables import DECISIONS, PLANS, SUBMISSIONS, TASKS
@@ -109,9 +108,14 @@ def dispatch_task(repo: Repo, task: dict, provider: LLMProvider) -> dict:
     )
     if task["assignee_type"] in ("ai", "hybrid"):
         if settings.ASYNC_DISPATCH:
-            # Mark it as working so the cockpit shows progress, then run off the request path.
+            # Mark it as working so the cockpit shows progress, then enqueue to Celery so the slow
+            # pipeline runs off the request path on a durable worker (architecture.md §8). Only the
+            # task_id crosses the process boundary; the worker rebuilds repo + provider. Lazy import
+            # to avoid an import cycle (tasks.py imports this module).
+            from app.core.tasks import run_dispatch_task
+
             repo.update(TASKS, task["id"], {"status": "in_progress"})
-            background.submit(_background_dispatch, repo, task["id"], provider)
+            run_dispatch_task.delay(task["id"])
             return {"status": "dispatching"}
         return _run_and_route(repo, task["id"], provider)
     # human: sits in the inbox awaiting submission.

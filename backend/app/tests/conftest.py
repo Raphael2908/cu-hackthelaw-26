@@ -16,6 +16,12 @@ def in_memory_repo():
     settings.PROVIDER_MODE = "mock"
     settings.SAMPLE_RATE = 0.0  # deterministic auto-clear; sampling tests opt in explicitly
     settings.ASYNC_DISPATCH = False  # run the pipeline inline so post-approve assertions are stable
+    # Celery runs tasks eagerly in-process: tests that flip ASYNC_DISPATCH on exercise the .delay()
+    # path without a broker, so the suite stays offline and network-free.
+    from app.core.celery_app import celery_app
+
+    celery_app.conf.task_always_eager = True
+    celery_app.conf.task_eager_propagates = False
     repo = InMemoryRepo()
     seed(repo)
     repo_module.set_repo(repo)

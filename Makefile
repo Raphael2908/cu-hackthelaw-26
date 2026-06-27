@@ -1,4 +1,4 @@
-.PHONY: install backend frontend dev test lint fmt clean
+.PHONY: install backend worker frontend dev test lint fmt clean
 
 install:
 	cd backend && uv venv && uv pip install -e ".[dev]"
@@ -6,6 +6,11 @@ install:
 
 backend:
 	cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Celery worker for off-request dispatch. Needs Redis running (e.g. docker run -p 6379:6379
+# redis:7-alpine). For a no-Redis run set ASYNC_DISPATCH=false to run the pipeline inline.
+worker:
+	cd backend && uv run celery -A app.core.celery_app.celery_app worker --loglevel=info
 
 frontend:
 	cd frontend && npm run dev
