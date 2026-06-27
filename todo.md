@@ -46,9 +46,17 @@ cut from the bottom if time runs short.
 - [ ] Show each of the three signals as its own row in the flag panel (no fused number).
 
 ## Next (breadth)
-- [ ] Planner: smarter task decomposition from the goal + process doc (currently template-led).
-- [ ] Coordinator: surface escalations as their own cockpit lane.
+- [x] **Planner: smarter task decomposition from the goal + process doc.** The mock planner now
+      walks the process doc's `task_types` in document order and emits one task per section
+      (was a static fixture), staying deterministic; the real Anthropic prompt decomposes per
+      section. Raw scoping only — severity/label/assignee/ordering stay in the planner service.
+      See `current_progress.md`.
+- [x] **Coordinator: surface escalations as their own cockpit lane.** `views.cockpit` returns a
+      dedicated `escalated` lane (narrowing `decided` to signed-off only); the cockpit renders a
+      distinct rose-styled Escalations section. See `current_progress.md`.
 - [ ] Associate inbox: richer task context; show hybrid AI instruction inline with submit.
+      _(The hybrid AI-instruction-inline part already ships; remaining: process-guideline +
+      target-document excerpt in the inbox card.)_
 - [ ] Debrief: include carry-forward notes derived from flags the partner amended.
 
 ## Production scale-up (next)
