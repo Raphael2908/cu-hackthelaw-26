@@ -201,6 +201,19 @@ parts are fully free of model self-assessment.
    IDs**, so semantic equivalence is reduced to string-ID equality (a known calibration risk;
    clustering by clause + meaning would harden it).
 
+   *Worked example (the `draft-govlaw-atlas` fixture).* Each finding carries an `id` — a stable
+   label for "this specific finding" (e.g. `f-gov-1`), **not** a hash of its prose and **not** an
+   LLM judging whether two findings match; runs are compared by exact string equality of those
+   labels. The fixture has two findings: `f-gov-1` (scripted to appear in every run) and `f-gov-2`
+   (scripted to appear only in run 1, via its per-finding `runs` list). Reviewing 3 times yields the
+   label-sets `run 0 = {f-gov-1}`, `run 1 = {f-gov-1, f-gov-2}`, `run 2 = {f-gov-1}`. So
+   `union = {f-gov-1, f-gov-2}` (|2|), `intersection = {f-gov-1}` (|1|, the only finding in *all*
+   runs), and `score = 1 − 1/2 = 0.5`. That clears `DISAGREEMENT_FLAG_THRESHOLD` (`0.3`) and flags
+   "Conclusions unstable across 3 runs", with the unstable set `union − intersection = {f-gov-2}` —
+   the finding that flickered. The whole computation is set arithmetic over the labels; its honesty
+   rests entirely on `f-gov-2` keeping the same label across runs (guaranteed in mock; the model's
+   job in real mode).
+
 **Where run-to-run variation comes from (and the role of `temperature`).** The disagreement signal
 needs the N runs to differ, or it always reads `0`. There is **no API seed** — the Anthropic
 Messages API has no `seed` parameter. `review_document` does interpolate `run_index` into the prompt
