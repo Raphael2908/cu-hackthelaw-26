@@ -3,6 +3,13 @@
 Newest first. Build order protects the supervision layer (depth) over delegation (breadth);
 cut from the bottom if time runs short.
 
+## Bug fixes
+- [ ] **Frontend cannot talk to backend in Docker.** Browser/server requests from the Next.js
+      container fail because they target `localhost`, which resolves to the frontend container, not
+      the backend. Fix: address the backend by its Docker Compose service/container name over the
+      shared Docker network (e.g. `http://backend:8000`), wired through the `.env` so the API base
+      URL differs between local dev and Compose.
+
 ## Presentation
 - [ ] Update the README with demo videos and screenshots.
 - [ ] Create the demo video.
