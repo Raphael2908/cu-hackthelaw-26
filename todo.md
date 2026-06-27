@@ -12,6 +12,12 @@ cut from the bottom if time runs short.
 
 ## Presentation
 - [x] Update the README with screenshots (full partner-first walkthrough in `docs/screenshots/`).
+- [x] Refresh the README narrative to the current feature set (added a "What it does" partner-journey
+      section; corrected dispatch/quick-start/captions). _Code unchanged; doc-only._
+- [x] Regenerate the screenshots — recaptured all seven (`docs/screenshots/01..07`) via the live app
+      + Playwright (system Chrome, mock mode, 1440×900 @2×) against the current UI: new-case modal,
+      decluttered cockpit + numbered review path, both-sides source drawer, two-stream audit,
+      issue-centric debrief, and the associate inbox (AI/You attribution, "Your part", attachments).
 - [ ] Create the demo video. _(README has a "Demo video — coming soon" placeholder ready for the embed.)_
 - [x] Create a PNG architecture diagram and add it to the README (landscape, high-res
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
