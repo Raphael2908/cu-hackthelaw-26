@@ -3,6 +3,11 @@
 Newest first. Build order protects the supervision layer (depth) over delegation (breadth);
 cut from the bottom if time runs short.
 
+## Presentation
+- [ ] Update the README with demo videos and screenshots.
+- [ ] Create the demo video.
+- [ ] Create a PNG architecture diagram and add it to the README.
+
 ## Frontend / UX
 - [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
       process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
