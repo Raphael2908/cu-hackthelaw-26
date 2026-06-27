@@ -11,8 +11,8 @@ import {
   SeverityBadge,
   Spinner,
   StatusPill,
-  pct,
 } from "@/components/ui";
+import { attentionPhrase, priorityBand } from "@/lib/plain";
 import { CaseSubNav } from "@/components/CaseSubNav";
 import { ItemDetail } from "@/components/ItemDetail";
 
@@ -60,12 +60,12 @@ export default function CockpitPage() {
             <div className="space-y-6 lg:col-span-5">
               <section>
                 <SectionHeader
-                  title="Review queue"
-                  caption="Sorted highest-priority first. High severity + high uncertainty rises to the top."
+                  title="Needs your review"
+                  caption="Your most pressing items first — the riskier and less certain the work, the higher it sits."
                   count={data.queue.length}
                 />
                 {data.queue.length === 0 ? (
-                  <EmptyNote text="Nothing awaiting review. Approve a plan to dispatch work." />
+                  <EmptyNote text="Nothing needs your review. Approve a plan to send work out." />
                 ) : (
                   <ul className="space-y-2.5">
                     {data.queue.map((card) => (
@@ -82,8 +82,8 @@ export default function CockpitPage() {
 
               <section>
                 <SectionHeader
-                  title="Auto-clear lane"
-                  caption="Cleared and logged. A random sample is pulled into the queue for review, like a financial audit."
+                  title="Cleared automatically"
+                  caption="Low-risk work, cleared and recorded. A random few are pulled back for a spot-check, like a financial audit."
                   count={data.auto_clear_lane.length}
                 />
                 {data.auto_clear_lane.length === 0 ? (
@@ -101,12 +101,15 @@ export default function CockpitPage() {
                               </span>
                             </div>
                             <div className="mt-0.5 text-[11px] text-muted">
-                              uncertainty {pct(card.risk?.uncertainty)} · logged to audit
+                              Low risk — cleared and recorded
                             </div>
                           </div>
                           {card.risk?.sampled ? (
-                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200">
-                              sampled
+                            <span
+                              className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200"
+                              title="Pulled into your queue for a spot-check, like a financial audit"
+                            >
+                              spot-check
                             </span>
                           ) : (
                             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
@@ -144,14 +147,14 @@ export default function CockpitPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <MiniSection
-                  title="Awaiting human"
-                  caption="Human/hybrid tasks in the associate's inbox."
+                  title="With a person"
+                  caption="Tasks assigned to an associate — waiting in their inbox."
                   cards={data.awaiting_human}
-                  emptyText="None awaiting a human."
+                  emptyText="Nothing with a person right now."
                 />
                 <MiniSection
-                  title="Decided"
-                  caption="Signed off by the partner."
+                  title="You've decided"
+                  caption="Work you've already signed off, amended, or sent back."
                   cards={data.decided}
                   emptyText="No decisions yet."
                   onSelect={setSelected}
@@ -166,7 +169,7 @@ export default function CockpitPage() {
                 <ItemDetail taskId={selected} onDecided={load} />
               ) : (
                 <Panel className="flex h-64 items-center justify-center p-6 text-center text-sm text-muted">
-                  Select an item from the queue to review its flags and decide.
+                  Pick an item on the left to see what was done and decide.
                 </Panel>
               )}
             </div>
@@ -187,6 +190,13 @@ function QueueRow({
   onClick: () => void;
 }) {
   const { task, risk, top_flag, flag_count } = card;
+  const prio = priorityBand(risk?.priority);
+  const prioCls =
+    prio.band === "high"
+      ? "bg-red-50 text-red-700 ring-red-200"
+      : prio.band === "medium"
+        ? "bg-amber-50 text-amber-700 ring-amber-200"
+        : "bg-slate-100 text-slate-600 ring-slate-200";
   return (
     <li>
       <button
@@ -196,19 +206,21 @@ function QueueRow({
         }`}
       >
         <div className="flex items-center justify-between gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${prioCls}`}
+          >
+            {prio.label}
+          </span>
           <div className="flex items-center gap-2">
             <SeverityBadge severity={task.severity} />
             {risk?.sampled ? (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200">
-                sampled
+              <span
+                className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200"
+                title="Low-risk item pulled for a spot-check, like a financial audit"
+              >
+                spot-check
               </span>
             ) : null}
-          </div>
-          <div className="text-right">
-            <div className="text-[11px] text-muted">priority</div>
-            <div className="text-sm font-semibold tabular-nums text-ink">
-              {pct(risk?.priority)}
-            </div>
           </div>
         </div>
 
@@ -220,15 +232,15 @@ function QueueRow({
             <span className="text-xs text-ink-soft">{top_flag.title}</span>
           </div>
         ) : (
-          <div className="mt-2 text-xs text-muted">No flags.</div>
+          <div className="mt-2 text-xs text-muted">Nothing flagged.</div>
         )}
 
         <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
           <div
             className={`h-full rounded-full ${
-              (risk?.priority ?? 0) >= 0.66
+              prio.band === "high"
                 ? "bg-red-500"
-                : (risk?.priority ?? 0) >= 0.33
+                : prio.band === "medium"
                   ? "bg-amber-500"
                   : "bg-slate-400"
             }`}
@@ -237,7 +249,7 @@ function QueueRow({
         </div>
 
         <div className="mt-2 text-[11px] text-muted">
-          {flag_count} flag{flag_count === 1 ? "" : "s"} · uncertainty {pct(risk?.uncertainty)}
+          {attentionPhrase(flag_count, !!top_flag?.hard)}
         </div>
       </button>
     </li>

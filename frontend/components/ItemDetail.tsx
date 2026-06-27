@@ -12,13 +12,22 @@ import {
   HardSoftChip,
   Panel,
   SeverityBadge,
-  SignalStat,
   SignalTypeTag,
   Spinner,
   StatusPill,
   pct,
 } from "./ui";
+import {
+  citationReading,
+  deviationReading,
+  disagreementReading,
+  overallReading,
+  priorityBand,
+  TONE_TEXT,
+  type Reading,
+} from "@/lib/plain";
 import { SourceDrawer } from "./SourceDrawer";
+import { TaskTrace } from "./TaskTrace";
 
 type Action = "approve" | "amend" | "reject";
 
@@ -122,50 +131,51 @@ export function ItemDetail({
         </div>
       </Panel>
 
-      {/* Three independent signals — never collapsed into one verdict */}
+      {/* Chain of custody — who holds the work and how far it has travelled (walkthrough G2) */}
+      <TaskTrace task={task} auditHref={`/cases/${task.case_id}/audit?task=${task.id}`} />
+
+      {/* Three independent checks — each read in plain language, the number kept alongside.
+          Never collapsed into a single pass/fail. */}
       {risk ? (
         <Panel className="p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">Uncertainty signals</h3>
-            <span className="text-[11px] text-muted">
-              Three independent checks. None is a pass/fail.
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-ink">What the checks found</h3>
+            <span className="text-[11px] text-muted">Three separate checks — none is a verdict.</span>
+          </div>
+          <p className="mb-3 text-xs text-muted">
+            Overall:{" "}
+            <span className={`font-semibold ${TONE_TEXT[overallReading(risk.uncertainty).tone]}`}>
+              {overallReading(risk.uncertainty).text}
             </span>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <SignalStat
-              label="Citation support"
-              value={pct(risk.citation_support_rate)}
-              hint="claims whose cited source supports them"
-              tone={risk.citation_support_rate >= 0.999 ? "good" : "bad"}
+            . This is a steer for where to look — you decide.
+          </p>
+
+          <div className="space-y-2">
+            <CheckRow
+              label="Citations"
+              reading={citationReading(risk.citation_support_rate)}
+              detail={`${pct(risk.citation_support_rate)} of cited sources support the claim`}
             />
-            <SignalStat
-              label="Precedent deviation"
-              value={pct(risk.deviation_score)}
-              hint="distance from the firm standard"
-              tone={risk.deviation_score >= 0.5 ? "warn" : "neutral"}
+            <CheckRow
+              label="Firm standard"
+              reading={deviationReading(risk.deviation_score)}
+              detail={`${pct(risk.deviation_score)} distance from your firm's standard wording`}
             />
-            <SignalStat
-              label="Multi-run disagreement"
-              value={pct(risk.disagreement_score)}
-              hint="divergence across repeated runs"
-              tone={risk.disagreement_score >= 0.5 ? "warn" : "neutral"}
-            />
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <SignalStat
-              label="Composite uncertainty"
-              value={pct(risk.uncertainty)}
-              hint="weighted blend — tunable, not load-bearing alone"
-            />
-            <SignalStat
-              label="Queue priority"
-              value={pct(risk.priority)}
-              hint={`f(severity, uncertainty) · lane: ${risk.lane}`}
+            <CheckRow
+              label="Consistency"
+              reading={disagreementReading(risk.disagreement_score)}
+              detail={`${pct(risk.disagreement_score)} disagreement when the review was re-run`}
             />
           </div>
+
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-line bg-canvas px-3 py-2 text-xs">
+            <span className="text-muted">Where this sits on your list</span>
+            <span className="font-semibold text-ink">{priorityBand(risk.priority).label}</span>
+          </div>
+
           {risk.has_hard_flag ? (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
-              Hard flag present — surfaced regardless of severity.
+              A must-check issue was found — shown no matter how low-risk the task.
             </div>
           ) : null}
         </Panel>
@@ -175,8 +185,10 @@ export function ItemDetail({
       {submission ? (
         <Panel className="p-5">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">Worker submission</h3>
-            <span className="text-[11px] text-muted">produced by {submission.produced_by}</span>
+            <h3 className="text-sm font-semibold text-ink">The work that was produced</h3>
+            <span className="text-[11px] text-muted">
+              by {submission.produced_by === "ai" ? "the AI worker" : `a ${submission.produced_by} worker`}
+            </span>
           </div>
           <p className="text-sm text-ink-soft">{submission.summary}</p>
 
@@ -200,13 +212,13 @@ export function ItemDetail({
           ) : null}
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <MetaList title="Clauses relied on" items={submission.clauses_relied_on} />
-            <MetaList title="Audit sources" items={submission.audit_sources} mono />
+            <MetaList title="Clauses it relied on" items={submission.clauses_relied_on} />
+            <MetaList title="Sources it used" items={submission.audit_sources} mono />
           </div>
         </Panel>
       ) : (
         <Panel className="p-5 text-sm text-muted">
-          No submission yet for this task.
+          No work has been submitted for this task yet.
         </Panel>
       )}
 
@@ -214,13 +226,13 @@ export function ItemDetail({
       <Panel className="p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">
-            Flags ({flags.length})
+            Points to check ({flags.length})
           </h3>
-          <span className="text-[11px] text-muted">Each is a checkable observation.</span>
+          <span className="text-[11px] text-muted">Things to verify — each links to its source.</span>
         </div>
         {flags.length === 0 ? (
           <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">
-            No flags raised. (Human work product is not graded by the checker.)
+            Nothing flagged. (Work done by a person isn&apos;t graded by the automated checks.)
           </div>
         ) : (
           <div className="space-y-3">
@@ -237,7 +249,8 @@ export function ItemDetail({
           <h3 className="text-sm font-semibold text-ink">Your decision</h3>
         </div>
         <p className="mb-3 text-xs text-muted">
-          The flags are observations. You are the decider — nothing here is auto-approved.
+          The points above are things to check, not verdicts. The decision is yours — nothing is
+          approved automatically.
         </p>
 
         {decided ? (
@@ -311,6 +324,35 @@ export function ItemDetail({
       </Panel>
 
       <SourceDrawer sourceRef={source} onClose={() => setSource(null)} />
+    </div>
+  );
+}
+
+// One check, read in plain language. The measured number stays visible underneath (secondary), so a
+// partner who wants the figure has it without it leading. A coloured dot encodes good/attention.
+function CheckRow({
+  label,
+  reading,
+  detail,
+}: {
+  label: string;
+  reading: Reading;
+  detail: string;
+}) {
+  const dot = {
+    good: "bg-emerald-500",
+    warn: "bg-amber-500",
+    bad: "bg-red-500",
+    neutral: "bg-slate-400",
+  }[reading.tone];
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-line bg-canvas px-3 py-2.5">
+      <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
+      <div className="min-w-0">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
+        <div className={`text-sm font-semibold ${TONE_TEXT[reading.tone]}`}>{reading.text}</div>
+        <div className="mt-0.5 text-[11px] text-muted">{detail}</div>
+      </div>
     </div>
   );
 }

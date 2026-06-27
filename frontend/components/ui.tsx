@@ -33,10 +33,11 @@ export function HardSoftChip({ hard }: { hard: boolean }) {
   );
 }
 
+// Partner-facing names for the three checks (the technical names live in lib/types + DESIGN.md).
 export const SIGNAL_LABEL: Record<SignalType, string> = {
-  citation_support: "Citation support",
-  precedent_deviation: "Precedent deviation",
-  multi_run_disagreement: "Multi-run disagreement",
+  citation_support: "Citation check",
+  precedent_deviation: "Firm-standard check",
+  multi_run_disagreement: "Consistency check",
 };
 
 export function SignalTypeTag({ type }: { type: SignalType }) {
