@@ -18,20 +18,22 @@ from harvey_eval import run as runner
 from harvey_eval import score as scorer
 
 RESULTS_ROOT = runner.RESULTS_ROOT
-OUT = Path(__file__).resolve().parent / "batch_results.jsonl"
+HERE = Path(__file__).resolve().parent
+OUT = HERE / "batch_results.jsonl"
 
 
 def _load_json(path: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
-def run_batch(task_ids: list[str], severity: str, tag: str, merge: bool = False) -> list[dict]:
+def run_batch(task_ids: list[str], severity: str, tag: str, merge: bool = False,
+              out_path: Path = OUT) -> list[dict]:
     # When merging, seed from existing rows and upsert by task id (preserving order), so a
     # re-run of a few tasks fills them in without clobbering the rest of the batch.
     by_task: dict[str, dict] = {}
     order: list[str] = []
-    if merge and OUT.exists():
-        for line in OUT.read_text(encoding="utf-8").splitlines():
+    if merge and out_path.exists():
+        for line in out_path.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 r = json.loads(line)
                 by_task[r["task"]] = r
@@ -71,13 +73,13 @@ def run_batch(task_ids: list[str], severity: str, tag: str, merge: bool = False)
             order.append(task)
         by_task[task] = row
         # checkpoint after every task so a mid-batch crash keeps prior results
-        OUT.write_text(
+        out_path.write_text(
             "\n".join(json.dumps(by_task[t]) for t in order) + "\n", encoding="utf-8"
         )
     return [by_task[t] for t in order]
 
 
-def summarize(rows: list[dict]) -> None:
+def summarize(rows: list[dict], out_path: Path = OUT) -> None:
     ok = [r for r in rows if "error" not in r]
     print("\n" + "=" * 78)
     print(f"BATCH SUMMARY (variant A — shipped worker) — {len(ok)}/{len(rows)} scored")
@@ -99,7 +101,7 @@ def summarize(rows: list[dict]) -> None:
         print(f"Macro per-task pass rate:      {sum(r['pct'] for r in ok)/len(ok)*100:.1f}%")
         print(f"All-pass tasks:                {n_allpass}/{len(ok)}")
         print(f"Routed to review lane:         {sum(1 for r in ok if r['lane']=='review')}/{len(ok)}")
-    print(f"\nRows written to {OUT}")
+    print(f"\nRows written to {out_path}")
 
 
 if __name__ == "__main__":
@@ -108,7 +110,13 @@ if __name__ == "__main__":
     p.add_argument("--severity", default="high", choices=["low", "medium", "high", "extreme"])
     p.add_argument("--tag", default="batchA")
     p.add_argument("--merge", action="store_true",
-                   help="Upsert into existing batch_results.jsonl instead of overwriting.")
+                   help="Upsert into existing results file instead of overwriting.")
+    p.add_argument("--out", default=None,
+                   help="Results jsonl filename (relative to harvey_eval/) or absolute path. "
+                        "Defaults to batch_results.jsonl. Use a distinct name to avoid clobbering.")
     args = p.parse_args()
+    out_path = OUT if args.out is None else (
+        Path(args.out) if Path(args.out).is_absolute() else HERE / args.out
+    )
     task_ids = json.loads(Path(args.tasks_file).read_text(encoding="utf-8"))
-    summarize(run_batch(task_ids, args.severity, args.tag, args.merge))
+    summarize(run_batch(task_ids, args.severity, args.tag, args.merge, out_path), out_path)
