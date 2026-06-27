@@ -16,9 +16,14 @@ stance (offline mock mode is now the keyless *fallback*, not the default story).
   deliberately" to a production posture: real Anthropic on SQLite is the run, Docker is in, Celery/
   Redis is the named scale-up path, real auth is the next step (not a slide).
 
+**Done (production scale-up)**
+- **PPTX ingestion** — `.pptx` now accepted at document upload. `_extract_pptx` (`python-pptx`,
+  lazy-imported) walks each slide's text-frame shapes; joins slide blocks with `\n\n`. Same
+  extractor path and error handling as PDF/DOCX/text: image-only/empty decks raise `ValueError`
+  → HTTP 415, like scanned PDFs. Speaker notes excluded (on-slide visible text only). Frontend
+  `accept` list updated; new offline `test_documents.py` covers happy path + empty-deck 415.
+
 **Planned next (production scale-up — see `todo.md`)**
-- **PPTX ingestion** — add `.pptx` to document upload via `python-pptx`, same extractor path as
-  PDF/DOCX/text.
 - **Celery + Redis** — replace the in-process background thread pool (`core/background.py`) with
   durable, retryable, horizontally-scalable Celery workers for the agentic worker→checker→ranker
   flows. The `coordinator` boundary stays; only the dispatch mechanism changes.

@@ -4,10 +4,11 @@ import io
 from pathlib import Path
 
 # Best-effort plain-text extraction from an uploaded file. The demo attaches text to a case
-# (architecture.md §9) — no object store. PDF/DOCX use lightweight pure-Python parsers; everything
-# else is decoded as UTF-8. There is no OCR, so scanned/image PDFs yield no text and are rejected.
+# (architecture.md §9) — no object store. PDF/DOCX/PPTX use lightweight pure-Python parsers;
+# everything else is decoded as UTF-8. There is no OCR, so scanned/image PDFs and image-only
+# slide decks yield no text and are rejected.
 
-SUPPORTED = {".pdf", ".docx", ".txt", ".md", ".markdown", ".text"}
+SUPPORTED = {".pdf", ".docx", ".pptx", ".txt", ".md", ".markdown", ".text"}
 
 
 def _extract_pdf(raw: bytes) -> str:
@@ -24,6 +25,20 @@ def _extract_docx(raw: bytes) -> str:
     return "\n".join(p.text for p in document.paragraphs).strip()
 
 
+def _extract_pptx(raw: bytes) -> str:
+    from pptx import Presentation  # python-pptx
+
+    presentation = Presentation(io.BytesIO(raw))
+    slides = []
+    for slide in presentation.slides:
+        texts = [
+            shape.text for shape in slide.shapes if shape.has_text_frame and shape.text.strip()
+        ]
+        if texts:
+            slides.append("\n".join(texts))
+    return "\n\n".join(slides).strip()
+
+
 def extract_text(filename: str, raw: bytes) -> str:
     """Return the plain text of an uploaded document, or raise ValueError if the format is
     unsupported or no text could be extracted (e.g. an empty or scanned-image PDF)."""
@@ -36,6 +51,8 @@ def extract_text(filename: str, raw: bytes) -> str:
             text = _extract_pdf(raw)
         elif suffix == ".docx":
             text = _extract_docx(raw)
+        elif suffix == ".pptx":
+            text = _extract_pptx(raw)
         else:
             text = raw.decode("utf-8", errors="ignore").strip()
     except ValueError:
