@@ -36,6 +36,22 @@ answering, so every change respects the architecture and the one rule:
    pattern, centralized config, thin API + logic in services, hash-chained
    audit).
 
+4. **When the task is complete, update the two living docs** so the next
+   session starts from the truth. Do this as the final step, after the work is
+   done and verified — not for pure research/read-only requests where nothing
+   changed.
+   - `current_progress.md` — add a **new section at the top** (newest first),
+     matching the existing shape: a short **Where we are**, then **Done** /
+     **Built** bullets for what this task changed, and a **What's next** note.
+     Convert any relative dates to absolute. Do not rewrite older sections.
+   - `todo.md` — tick (`[ ]` → `[x]`) any backlog item or acceptance criterion
+     this task satisfied, add new follow-ups it surfaced, and keep the
+     newest-first ordering. If a listed fix turned out to be unneeded or wrong,
+     note that next to the item rather than silently leaving it.
+   - Keep both edits factual and concise — record what was done, decided, and
+     left open; never overstate. If the task changed nothing in these docs
+     (e.g. a question answered, no code touched), say so and skip the edit.
+
 ## Notes
 
 - This skill is just-in-time context loading; there is no app to launch and no
