@@ -17,12 +17,28 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
-- [ ] **Cockpit worker-task progress: elapsed timer + streamed thoughts.** In the cockpit,
-      while a `worker→checker→ranker` task runs, show (a) a live **elapsed timer** per task and
-      (b) **stream the worker model's thinking** into the task view as it's produced. Scope of
-      the broader streaming item below, applied to the cockpit's per-task worker runs.
-      **Guardrail (architecture §14):** streamed thoughts are transient UX only — never persist
-      them as the audit record (decisions + checkable evidence only).
+- [x] **Declutter the partner cockpit with Gestalt grouping.** A senior partner found the cockpit
+      unreadable — too many competing sections and overloaded cards. Reduce visual load and make the
+      per-item review read as a clear process, without hiding any signal (the one rule holds; see
+      `frontend/DESIGN.md`). Two surfaces:
+      - **Left rail / queue** (`app/cases/[id]/cockpit/page.tsx`): make **"Needs your review" the one
+        focal lane** (figure/ground). **Group its cards under High / Medium / Low headers**
+        (proximity + similarity) so priority is shown by grouping — then drop the per-card priority
+        pill *and* the redundant progress bar. **Collapse the secondary lanes** (Cleared
+        automatically, With a person, You've decided) into compact expandable summaries showing just
+        counts (common region). Slim each queue card to three things: title · one-line "what to
+        check" · severity/must-check only when present (remove the duplicate attention-phrase line).
+        Keep "Questions from associates" as a slim distinct actionable banner.
+      - **Right pane / per-item review** (`components/ItemDetail.tsx`): reframe the six equal-weight
+        panels as a **numbered review path** with continuity — 1 Who did it & where it is (merge
+        header + `TaskTrace`) → 2 What was produced → 3 What to check (**merge "What the checks
+        found" + "Points to check"** into one region: the three signals as the steer, the flags as
+        the concrete things to verify with source links) → 4 **Your decision** as the visually
+        dominant focal endpoint (consider sticky). Lower border/shadow weight on steps 1–3 so they
+        read as one flow, not six rival cards.
+      - **Docs:** add a short "Gestalt grouping" subsection to `frontend/DESIGN.md`. Guardrail: every
+        signal stays individually visible with its number — re-grouping and progressive disclosure
+        only, never a fused verdict.
 - [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
       process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
       (a) an **elapsed timer** while it runs, and (b) **stream the model's thinking live** into the

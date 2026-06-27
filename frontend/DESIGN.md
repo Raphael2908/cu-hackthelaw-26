@@ -95,6 +95,26 @@ partner cannot act on. Every decision below is in service of making the *checkab
   The teaching is embedded at the point of use — the partner never leaves to read a manual.
 - This document is the designer-facing companion to that in-product help.
 
+### Gestalt grouping — the cockpit declutter
+A senior partner shown the first cockpit found it unreadable: too many lanes competing for
+attention and cards carrying six pieces of information each. The rework applies Gestalt grouping to
+restore a clear focal point and a followable order — *without hiding any signal* (the one rule and H1
+still hold; this is re-grouping and progressive disclosure, never a fused verdict).
+
+- **Figure/ground (queue rail).** "Needs your review" is the one prominent lane; the handled/in-flight
+  lanes (Cleared automatically, With a person, You've decided) collapse to a one-line summary with a
+  count, so the partner sees they exist but they stay out of the way until expanded.
+- **Proximity + similarity (queue).** Review items are grouped under High / Medium / Low priority
+  bands, so priority is read from the *grouping* — letting each card drop its own priority pill and
+  progress bar. A card is now three things: title · one line of what to check · severity/must-check.
+- **Continuity (item review).** The per-item pane is a numbered path with a connecting spine —
+  1 who did it & where it stands → 2 what was produced → 3 what to check → 4 your decision — so the
+  partner follows produce → check → decide instead of facing six rival panels.
+- **Focal point.** Steps 1–3 are visually light; the decision (step 4) is emphasised as the endpoint
+  the whole path leads to.
+- **Common region (checks).** The three checks (the steer) and the flags (the concrete things to
+  verify) merge into one "What to check" region, since they answer the same question together.
+
 ---
 
 ## Part B — Cognitive walkthrough: senior partner, traceability task
