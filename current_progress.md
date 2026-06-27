@@ -4,6 +4,52 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Harvey Track C through the planner — the supervision signal sharpens (2026-06-27)
+
+**Where we are.** Re-ran Harvey **Track C** (does our composite `uncertainty` predict work quality?)
+with the **planner as the entry point**, fixing `evaluation.md` headline #1 (the harness bypassed the
+planner, so every task fell back to the fixed "review the DRAFT against the FIRM STANDARD" instruction).
+Worker model **Sonnet** (`claude-sonnet-4-6`). On the first 5 EU tasks the planner brief took Track C
+from the prior non-planner **ρ = −0.60 to a perfect −1.00**; across 9 graded EU tasks **ρ = −0.703**
+(stronger than the prior non-planner −0.32 at n=10). No `app/` changes — new harness files only; §14
+guardrails held (planner output run as AI work, worker emits findings not verdicts, severity pinned
+`high`, the offline mock path untouched).
+
+**Built**
+- **`harvey_eval/run_planned.py`** — planner-driven Track A+B runner. Reuses `run.py`'s helpers, but
+  calls `provider.plan_case` to author a task-specific `ai_instruction` (the lightweight planner entry
+  point) and maps Harvey `work_type` → worker `kind` (`review/analyze→review`, `draft→draft`,
+  `research→extract`); the shipped `worker→checker→ranker` then runs with that tailored brief. Records
+  the `ai_instruction` + `applied_checks` into `our_eval.json`.
+- **`harvey_eval/track_c/planner_batch.py`** — grades the 10 planner deliverables with the strict
+  Q-full judge (independent Sonnet), resumes (skips already-graded), writes its own
+  `planner_sonnet5_grades.jsonl` (never clobbers the prior `grader_results.jsonl`), reports Spearman ρ.
+- **Results** in `track_c/planner_sonnet5_results.md`: batch 1 (n=5, ρ=−1.00, clean A/B vs −0.60),
+  batch 2 + combined (n=9, ρ=−0.703). Total worker cost **$18.55**.
+
+**Findings**
+- **The signal got sharper, not just the work.** Track A quality did not uniformly rise; the *alignment*
+  between `uncertainty` and Harvey quality did. The worst task (`identify-issues-DPA`, Q=0.167) pegged
+  `uncertainty=1.0` — the cockpit floats it to the top of the review queue. Supervision working as designed.
+- **Two batch-2 swaps were forced operationally:** `review-saas` (cost outlier) and
+  `analyze-counterparty` (its ~47-finding output **structurally** overruns the worker's 32k `max_tokens`
+  in the disagreement re-runs every run — the streamed path doesn't catch the cut-off → `ProviderError`).
+- **Draft tasks: routing works, rendering doesn't (yet).** The planner correctly routes `draft` tasks to
+  `kind=draft` (2 checks, precedent-deviation dropped, composite renormalised), but
+  `run.py::render_docx` renders only `summary`+`findings`, **never the per-kind `payload`** — so the
+  drafted document never reaches the graded `.docx` and draft scores stay low (0.13–0.16). Not a fair
+  draft-task test until `render_docx` emits `payload.draft_text` and the draft tasks are re-run.
+
+**What's next**
+- Top up Anthropic credits, then re-grade `assess-impact-of-eu-ai-act` (worker ran, `uncertainty=0.952`;
+  grader blocked on a 400 credit error) → n=10. `uv run python -m harvey_eval.track_c.planner_batch` resumes.
+- Fix `render_docx` to emit the per-kind `payload` (draft_text/key_points/obligations) and re-run the
+  draft/summarize/extract tasks for a fair Track A.
+- Optional robustness (would also unblock `analyze-counterparty`): make the real provider raise a
+  Retryable on `stop_reason == "max_tokens"` instead of returning truncated JSON.
+
+---
+
 ## Planner authors a per-task worker system prompt for AI tasks
 
 **Where we are.** The planner now writes a **specific worker instruction** for every task it

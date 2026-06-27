@@ -22,18 +22,37 @@ from pathlib import Path
 from harvey_eval.track_c.correlate import spearman
 from harvey_eval.track_c.grade import _uncertainty, grade_deliverable
 
-# The first-5-EU-task set (same as the prior eu_sonnet5 run), run-ids namespaced planner_sonnet5/.
-TASKS = [
+# The 10 planner-driven EU tasks as (task_id, run_id) pairs.
+# Batch 1 = the prior eu_sonnet5 set (clean A/B). Batch 2 = the next 5, with two swaps from the
+# prior eu_sonnet5b set: review-saas (cost outlier) and analyze-counterparty (structural max_tokens
+# truncation in the disagreement re-runs) were replaced by transfer-agreement + assess-impact.
+_BATCH1 = [
     "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
     "data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements",
     "intellectual-property/identify-issues-in-counterparty-data-processing-addendum",
     "corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
     "intellectual-property/review-master-services-agreement-for-regulatory-compliance",
 ]
+_BATCH2 = [
+    "data-privacy-cybersecurity/triage-vendor-contracts-for-gdpr-cross",
+    "data-privacy-cybersecurity/draft-data-processing-agreement",
+    "data-privacy-cybersecurity/draft-standard-contractual-clauses-addendum",
+    "data-privacy-cybersecurity/identify-privacy-and-data-protection-issues-in-counterparty-transfer-agreement",
+    "corporate-governance/assess-impact-of-eu-ai-act-on-company-ai-product-portfolio",
+]
+# (task_id, run_id) for every task; run-ids namespaced per batch.
+TASK_RUNS = (
+    [(t, f"planner_sonnet5/{t.split('/')[-1]}") for t in _BATCH1]
+    + [(t, f"planner_sonnet5b/{t.split('/')[-1]}") for t in _BATCH2]
+)
+TASKS = [t for t, _ in TASK_RUNS]
 GRADES_FILE = Path(__file__).resolve().parent / "planner_sonnet5_grades.jsonl"
 
 
 def _run_id(task_id: str) -> str:
+    for t, rid in TASK_RUNS:
+        if t == task_id:
+            return rid
     return f"planner_sonnet5/{task_id.split('/')[-1]}"
 
 
@@ -73,6 +92,7 @@ def _report(rows: list[dict]) -> None:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--recorrelate", action="store_true", help="report over saved rows, no grading")
+    p.add_argument("--regrade", action="store_true", help="re-grade tasks already saved")
     args = p.parse_args()
 
     if args.recorrelate:
@@ -80,8 +100,10 @@ def main() -> None:
         return
 
     rows_by_run: dict[str, dict] = {r["run_id"]: r for r in _load_rows()}
-    for task_id in TASKS:
-        run_id = _run_id(task_id)
+    for task_id, run_id in TASK_RUNS:
+        if run_id in rows_by_run and not args.regrade:
+            print(f"\n===== skip {task_id} ({run_id}) — already graded =====")
+            continue
         print(f"\n===== grading {task_id} ({run_id}) =====")
         try:
             res = grade_deliverable(task_id, run_id)

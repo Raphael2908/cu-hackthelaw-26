@@ -113,6 +113,12 @@ cut from the bottom if time runs short.
 - [x] Run on real Anthropic (`PROVIDER_MODE=real`, `ENV=production`); SQLite stays the store.
 - [ ] Tune the real review/plan prompts; verify structured output parsing. (`max_tokens` raised
       2048 → 32768 in `providers/real/anthropic_llm.py` — done; prompts + parsing still to do.)
+      _Harvey Track C now exercises the planner-authored worker prompts on real EU cases
+      (`harvey_eval/run_planned.py`; results in `harvey_eval/track_c/planner_sonnet5_results.md`) —
+      the planner brief took Track C ρ from −0.60 to −1.00 on the first 5 EU tasks. Open parsing gap
+      it surfaced: a findings-heavy task can still **overrun `max_tokens` in the disagreement re-runs**,
+      and `_complete_text` (streamed) doesn't detect `stop_reason == "max_tokens"` → truncated JSON →
+      `ProviderError`. Make the provider raise Retryable on a `max_tokens` cut-off._
 - [x] Live EU Cellar API connector (keep fixtures as the offline fallback). Opt-in `CELLAR_ENABLED`;
       `providers/cellar.py` (Null default + Http impl behind `get_cellar()`); citation-support fetches
       a source by CELEX on a corpus miss and caches it; outage → soft "unverifiable" flag, never a

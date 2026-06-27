@@ -120,6 +120,29 @@ tasks through the planner — or mapping each task's nature to a `worker_instruc
 > `plan_case` (the planner). That makes the planner *machinery* available, but the eval harness
 > still bypasses it — resolving the merge is necessary, not sufficient, for planner involvement.
 
+### Update (2026-06-27) — the planner path is built, and it sharpens Track C
+
+`harvey_eval/run_planned.py` now routes each task through `provider.plan_case` to author a
+task-specific `ai_instruction`, then runs the shipped `worker→checker→ranker`; `track_c/planner_batch.py`
+grades + correlates. Sonnet worker, EU tasks (full table in `track_c/planner_sonnet5_results.md`):
+
+- **First 5 EU tasks: Track C ρ went from −0.60 (no planner) → −1.00 (planner)** — a clean A/B,
+  the only changed variable being the planner brief (kind stayed `review`, same 3 signals).
+- **9 graded EU tasks combined: ρ = −0.703** (vs the prior non-planner −0.32 at n=10).
+- Quality did **not** uniformly rise — what improved is the *alignment* of `uncertainty` with quality.
+  So the planner sharpened the **supervision signal**, the product's actual claim, more than raw Track A.
+
+Two caveats this run surfaced (both open):
+1. **Draft tasks still aren't fairly tested.** The planner routes `draft` → `kind=draft` correctly,
+   but `run.py::render_docx` renders only `summary`+`findings`, never the per-kind `payload`, so the
+   drafted document never reaches the graded `.docx` (draft scores 0.13–0.16). Fix `render_docx` to
+   emit `payload.draft_text` (+ key_points/obligations) and re-run before claiming the draft fix.
+2. **`max_tokens` truncation is unhandled.** `analyze-counterparty` (~47 findings) overruns the
+   worker's 32k cap in the disagreement re-runs *every* run; the streamed path returns truncated JSON
+   → `ProviderError`, so the task can't complete. Have the real provider raise Retryable on
+   `stop_reason == "max_tokens"`. (It was swapped out, with `review-saas` the cost outlier, for two
+   smaller EU tasks.)
+
 ---
 
 ## How we built the grader (and a methodology trap)
