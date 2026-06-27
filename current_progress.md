@@ -194,6 +194,68 @@ dispatch mechanism moved.
 
 ---
 
+## Partner-facing UX pass — traceability, plain language, conversation loop
+
+**Where we are.** The supervision surfaces were built but read like a developer tool. This branch
+(`feat/frontend-mockup`) reworks the frontend for a time-poor, non-technical supervising partner,
+adds a partner↔associate conversation loop end to end, and records the design lens behind it. The
+backend gains one new capability (task messaging / return-to-associate); everything else is UI.
+
+**Decisions locked**
+- **Design-led, evaluated against heuristics.** `frontend/DESIGN.md` records Nielsen's 10 usability
+  heuristics applied decision-by-decision plus a cognitive walkthrough of a senior partner doing an
+  end-to-end traceability task. The walkthrough named gaps (G1–G4 + a deep-link accelerator) that
+  the following commits close.
+- **Plain language without hiding the signals.** Every reframing keeps the measured figure visible
+  alongside the friendly wording — still checkable claims, never a verdict (the one rule holds).
+- **The role toggle is the view switcher**, not just an identity label: partner ⇄ associate switches
+  the whole workspace.
+- **Rejected work returns to the associate; escalation toward a human is permitted** (architecture
+  §14.6). AI-only work still escalates (no associate to receive it).
+
+**Built**
+- **Traceability for the partner** (`8adbc39`): `TaskTrace` per-task chain of custody (owner +
+  lifecycle stepper) with a deep link into the audit trail pre-filtered to that task (G2); at-a-glance
+  status pills on the cases list so a case needing the partner is visible before opening it (G1);
+  plain-language hints per tab in the case sub-nav (G3).
+- **Plain-language audit + cockpit** (`dba28dc`): audit rewritten as one chronological timeline of
+  plain sentences ("You signed off on…", "The AI worker submitted their work") with a friendly
+  tamper-proof banner (hash tucked into a disclosure) and actor / task / kind filters;
+  accountability vs supervision kept distinct per entry via a tag, not two jargon columns (G3/G4).
+  Cockpit shows High/Medium/Low priority bands and "N points to check" instead of raw
+  priority/uncertainty percentages; item detail's "What the checks found" reads each of the three
+  checks in words with the figure alongside. Shared readings in `lib/plain.ts`.
+- **Role toggle drives the view** (`595761c`): role-aware nav (partner = Cases, associate = My
+  inbox), toggle + logo route to each role's home (`ROLE_HOME`), standalone Inbox link removed,
+  inbox reworded as the associate's workspace with a banner if a partner deep-links in.
+- **Debrief as a review-friendly report** (`32e8afa`): letterhead header (title, status, goal
+  callout, generated date), Print / Save PDF action, and an honesty footer (a summary, not a
+  sign-off); `DebriefReport` renders sections as cards (tasks with assignee/severity/status badges,
+  flags colour-coded hard/soft with the signal chip, decisions with signed-off/amended/rejected
+  pills, carry-forward as a checklist), falling back to Markdown cards for free-form real-model
+  output.
+- **Partner↔associate ping-pong — backend** (`bf9fed7`): reject on human/hybrid work returns it to
+  the associate (status `returned`) with the partner's note as a message instead of dead-ending at
+  `escalated`; new `task_messages` table + thread so an associate can ask a question
+  (`awaiting_clarification`, surfaced in the cockpit) and the partner answers (`returned`).
+  `POST /tasks/{id}/message` is role-aware; cockpit gains a needs_reply lane; inbox carries returned
+  + awaiting tasks with their thread. Tests cover return-and-resubmit, the Q&A loop, the
+  no-open-question guard, and AI-still-escalates (`test_pingpong.py`).
+- **Partner↔associate conversation — frontend** (`31999e2`): `MessageThread` chat UI (partner
+  right/navy, associate left/sky, bubbles labelled return / question / answer); item-detail
+  conversation panel with status-aware actions (reply box when a question is open, "sent back,
+  awaiting rework" when returned, reject relabelled "Reject & send back"); cockpit "Questions from
+  associates" lane; inbox shows returned tasks with the partner's reason + Resubmit and an "Ask the
+  partner a question" action; audit timeline + trace stepper handle the new events/statuses.
+
+**What's next**
+- The Frontend / UX backlog in `todo.md`: live progress + streamed thinking for slow real-model
+  runs, hide the plan-approval button when there is no proposed plan, and split case creation from
+  plan generation.
+- Cockpit depth: keyboard-navigable queue and a side-by-side source diff for deviation flags.
+
+---
+
 ## Production stance — building the real product now
 
 **Where we are.** This is no longer framed as a hackathon demo: it is the **production build**.
