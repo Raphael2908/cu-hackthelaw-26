@@ -4,155 +4,49 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
-## EU Cellar — official API (not scraping) + worker grounding via tool-use
+## Cockpit declutter, numbered review path, and plan-flow fixes
 
-**Where we are.** Two follow-ups to the Cellar connector, on the same branch/PR. (1) The connector
-now uses the **official CELLAR API** instead of scraping rendered HTML. (2) The **worker** can ground
-its citations against real Cellar sources while drafting (Anthropic tool-use) — it's no longer only
-the checker that touches Cellar. Both opt-in (`CELLAR_ENABLED`), default off, suite stays offline.
-
-**Built**
-- **Official API, not scraping (`providers/cellar.py`).** `HttpCellarConnector` now negotiates
-  `application/xhtml+xml` (Formex XML for pre-2014 docs) and parses the result with a
-  namespace-agnostic `xml.etree.ElementTree` walk that handles **both** XHTML and Formex; the old
-  regex strip survives only as a defensive fallback when the payload isn't well-formed XML. Title +
-  resource-type come from a best-effort **SPARQL** query (`/webapi/rdf/sparql`, CDM ontology); `kind`
-  still derives from the CELEX sector as the reliable default and SPARQL only refines it. A proper
-  `User-Agent` is sent. New config: `CELLAR_SPARQL_PATH`, `CELLAR_USER_AGENT`. The tri-state contract
-  (found / absent / raise) and the §14.1 hard-vs-soft flag logic are unchanged.
-- **Worker grounding via tool-use.** Added an optional `source_lookup` callable to
-  `LLMProvider.review_document` (a plain `Callable`, so `base.py` gains no import and there's no
-  provider→cellar cycle). The real Anthropic provider runs a bounded **tool-use loop** exposing a
-  `fetch_eu_source` tool; the mock ignores it (offline, deterministic). `worker.run_review` builds a
-  corpus-first, cache-on-hit `source_lookup` (repo access stays in the service) and passes it **only
-  when `CELLAR_ENABLED`**, so mock/offline is unchanged and tool-free. The coordinator is untouched —
-  worker and checker both resolve `get_cellar()` by default. The checker's multi-run review calls
-  stay un-grounded to bound tool-call cost.
-- Tests stay offline: `test_cellar.py` now drives `HttpCellarConnector` with a path-routing
-  `MockTransport` (content vs SPARQL) — XHTML parse, Formex parse, malformed→regex fallback, SPARQL
-  title precedence + type→kind refinement, English-language filter, junk-filename-title discard,
-  SPARQL failure swallowed, status mapping — plus worker tests (source_lookup caches into the corpus;
-  the tool is offered only when enabled). `make test` green (41), `make lint` clean.
-
-**Verified against the LIVE EU Cellar API** (real `curl`s + the actual connector, not mocks):
-- Content negotiation `GET /resource/celex/{CELEX}` with `Accept: application/xhtml+xml` returns a
-  **303 → 200** to the cellar manifestation (`follow_redirects` handles it). Both modern
-  (`32016R0679`, 351 KB) and **pre-2014** (`31990L0314`) docs come back as **XHTML** — the Pub Office
-  converts old Formex via CONVEX — so one `ElementTree` walk parses everything; the DOCTYPE is
-  harmless. A bogus CELEX (`99999X9999`) → `None` (absence), so fabrication detection holds.
-- `62018CJ0311` (Schrems II) correctly resolves as **`case_law`** with the right English title.
-- Two fixes the live test surfaced, now in: (1) the XHTML `<title>` is the internal OJ **filename**
-  (`L_2016119EN.01000101.xml`), not a title → discarded via `_human_title`, real title comes from
-  SPARQL; (2) the SPARQL title must be **filtered by language** — without it `LIMIT 1` returned
-  *Croatian* for an English request → added an ISO-639-1 → Pub-Office language-authority map and an
-  `expression_uses_language` filter. Both public endpoints; **no auth** needed.
-
-**What's next**
-- Still open: tune the `plan_case`/`review_document` prompts + harden structured-output parsing
-  (`max_tokens` already raised). Perplexity web search; real SSO/JWKS auth.
-
----
-
-## Live EU Cellar connector — citation signal can resolve real EU law
-
-**Where we are.** The citation-support signal (architecture.md §7.1) is no longer limited to the
-seeded fixtures. With `CELLAR_ENABLED` on, a cited CELEX that isn't in the corpus is fetched live
-from the EU Publications Office, cached, and checked against the real source. Default is **off**, so
-the stack and the test suite stay fully offline. Also raised the real-provider `max_tokens`
-2048 → 32768 (both call sites) so large documents/plans don't truncate.
+**Where we are.** Continuing the partner-facing pass on `feat/frontend-mockup`. A senior partner
+found the cockpit unreadable (too many competing lanes, overloaded cards) and the create→plan flow
+surprising. This work applies Gestalt grouping to the cockpit, reframes the per-item review as a
+numbered process, and splits case creation from plan generation. All re-grouping and progressive
+disclosure — every signal stays individually visible, never a fused verdict (the one rule holds).
 
 **Built**
-- `providers/cellar.py` — a `CellarConnector` seam behind a `get_cellar()` factory, mirroring the
-  LLM provider: `NullCellarConnector` (the default — always reports absence, keeps the stack
-  offline/network-free) and `HttpCellarConnector` (lazy-imports `httpx`, fetches by CELEX via REST
-  content negotiation `GET {base}/resource/celex/{CELEX}`, strips HTML → plain text, maps the CELEX
-  sector → `legislation`/`case_law`). `get_cellar()` is `@lru_cache`d and returns the Null impl
-  unless `CELLAR_ENABLED`.
-- `services/checker.py` — `citation_support`/`run_checks` resolve a CELEX from the corpus first,
-  then fetch live on a miss and **cache the fetched doc into `CORPUS`** (so it's one-click-openable
-  via `GET /api/corpus/{id}`, like any seeded source). The `coordinator` is unchanged — it flows
-  through the `get_cellar()` default.
-- **The §14.1 guardrail, enforced + tested.** A fetch that *authoritatively* reports no such CELEX
-  stays a **hard "fabricated"** flag; a fetch that *fails* (network/outage) is a **soft
-  "unverifiable"** flag and the claim is dropped from the support-rate denominator — so an outage
-  can never masquerade as a fabricated citation. The connector returns `None` for absence and
-  **raises** (`RetryableError`/`ProviderError`) for transient failure to make this distinction
-  load-bearing.
-- Config + env: four mock-safe `CELLAR_*` settings (`ENABLED=false`, `BASE_URL`, `LANGUAGE`,
-  `TIMEOUT`) + `.env.example` section. Architecture §9 documents the opt-in source.
-- Tests stay offline: new `test_cellar.py` (10 cases) covers the hit (resolve + cache), absence
-  (hard fabricated), and outage (soft unverifiable, excluded from rate) paths via an injected fake,
-  plus `HttpCellarConnector` parsing/status handling via `httpx.MockTransport`. `make test` green
-  (32, was 19), `make lint` clean. Existing tests unchanged — the Null default keeps them
-  network-free.
+- **Cockpit queue declutter** (`app/cases/[id]/cockpit/page.tsx`). "Needs your review" is the one
+  focal lane (figure/ground); its cards group under High/Medium/Low bands so priority is shown by
+  grouping (proximity + similarity) — dropped the redundant per-card priority pill and progress bar.
+  Each queue card slimmed to three things (title · one line of what to check, with flag count folded
+  in as "+N more to check" · severity/spot-check). Secondary lanes (Cleared automatically, With a
+  person, You've decided) collapse into expandable count-only summaries; "Questions from associates"
+  stays a distinct actionable banner.
+- **Numbered review path** (`components/ItemDetail.tsx`). The per-item pane's six equal-weight panels
+  became a numbered path with a connecting spine (continuity): 1 Who did it & where it stands (header
+  merged with the chain of custody — `TaskTrace` gained a `bare` mode to embed without a nested card)
+  → 2 What was produced → 3 What to check (merged "what the checks found" + "points to check": the
+  three signals as the steer, flags as concrete things to verify with source links) → 4 Your decision
+  as the dominant focal endpoint. Steps 1–3 are light so they read as one flow; the associate
+  conversation sits as a contextual block before the decision.
+- **Split case creation from plan generation** (`app/page.tsx`, `app/cases/[id]/plan/page.tsx`).
+  `onCreate` no longer chains `createPlan` — it creates + uploads, then routes to the plan page where
+  generating the plan is an explicit partner step. The plan page now treats a missing plan (404) as
+  the expected "no plan yet" state (not an error) and renders an empty-state with a partner-only
+  **Generate plan** button; the proposal banner + **Approve plan** button only appear once a
+  `proposed` plan exists. Two deliberate actions (generate, then approve) before anything dispatches.
+- **PPTX upload hint** (`app/page.tsx`). The picker already accepted `.pptx` (backend PPTX ingestion
+  landed earlier); the helper text now names PowerPoint so partners know decks are scoped too.
+- **Docs.** `frontend/DESIGN.md` gained a "Gestalt grouping" subsection (figure/ground, proximity +
+  similarity, continuity, focal point, common region). Typecheck clean (`tsc --noEmit`); ESLint is
+  not configured in this project so it isn't a gate.
 
-**What's next**
-- Confirm the exact EU Cellar `Accept` header / endpoint with a couple of live `curl`s before
-  flipping `CELLAR_ENABLED=true` (the one external unknown; isolated to `HttpCellarConnector`).
-- Still open on the real-provider todo: tune the `plan_case`/`review_document` prompts and harden
-  structured-output parsing (only the `max_tokens` part of that item is done).
-- Perplexity web search; real SSO/JWKS auth before any non-demo use.
+**Backlog groomed (queued in `todo.md`, not built).** Reassign action has no UI though the backend
+endpoint + audit event exist; async-dispatch health / stalled-task hint for the Celery path; explicit
+task filter on the audit page; **reshape the debrief into an issue-centric memo** (it's laid out by
+data-model entity type, not by the matter — detailed backend+frontend steps recorded); cut redundant
+hint text (with a guardrail to keep the load-bearing one-rule framing).
 
----
-
-## Breadth: planner decomposition + cockpit escalations lane
-
-**Where we are.** Two of the four `## Next (breadth)` backlog items are done (branch
-`feat/breadth-planner-escalations`, PR #7). Breadth components made solid and sensible — depth
-stays in the checker/ranker/cockpit. All §14 guardrails held: no agent verdicts, nothing
-auto-approved, severity stays the partner's up-front choice, mock stays deterministic, audit split
-untouched.
-
-**Built**
-- **Planner now decomposes from the process doc.** The mock planner returned a static 4-task
-  fixture regardless of the matter. It now walks the process doc's `task_types` **in document
-  order and emits one task per section** — add/remove a section and the plan changes — fully
-  deterministic for the offline demo and tests. `mock_plan.json` rekeyed from a flat list to a
-  `task_type`→scoping map; new `fixtures.mock_plan_by_type()` (replaces `mock_plan()`); a generic
-  deterministic fallback covers any section without scripted scoping. Still **raw scoping only** —
-  severity (partner's choice), the process-section label, the default assignee and ordering stay
-  in `services/planner.py`, so mock and real stay symmetric and severity is never a model
-  inference (§6, §7.1). The real Anthropic `plan_case` prompt was strengthened to decompose per
-  process-doc section and bind targets to supplied documents (not offline-verifiable).
-- **Escalations get their own cockpit lane.** Escalated tasks — work that fell back to a human via
-  a partner reject or a fail-safe pipeline failure — were lumped into the cockpit's "Decided" lane
-  next to signed-off work, burying the one thing a partner most needs to act on.
-  `services/views.py::cockpit` now returns a dedicated `escalated` lane and narrows `decided` to
-  signed-off only (raw dict response, no schema change). The frontend `Cockpit` type gains
-  `escalated: Card[]`; the cockpit page renders a distinct rose-styled **Escalations** section
-  above the awaiting/decided grid, each row clickable into the detail panel; the "Decided" caption
-  now reads "Signed off by the partner."
-- Tests: `test_plan_decomposes_one_task_per_process_section` pins the doc-driven contract;
-  `test_reject_moves_task_to_escalated_lane` covers the previously-untested reject path and asserts
-  the task lands in `escalated`, not `decided`. `make test` green (24), `make lint` clean, frontend
-  `tsc --noEmit` clean.
-
-**What's next**
-- The remaining two `## Next (breadth)` items: associate-inbox richer context (process-guideline +
-  target-document excerpt; the hybrid AI-instruction-inline part already ships) and debrief
-  carry-forward notes derived from amended flags.
-
----
-
-## Presentation assets — README diagrams + screenshots
-
-**Where we are.** The README is now presentation-ready. Done bar the demo video (placeholder in
-place).
-
-**Done**
-- **Landscape, high-res diagrams.** Regenerated `system-design/architecture.png` (7752×3474) and
-  `happy_path.png` (5985×3954) as balanced landscape diagrams via Mermaid → Chrome render, replacing
-  the portrait/low-res originals. Corrected the happy-path copy to the locked design (severity is the
-  partner's up-front choice, not derived from the process doc). Both embedded in a new README
-  **Architecture** section.
-- **Screenshots.** Captured seven real screens (mock mode, offline, deterministic) into
-  `docs/screenshots/`: cases, plan-approval gate, cockpit (three independent signals + flag panel),
-  one-click source verification, the two-stream hash-chained audit, debrief, and associate inbox.
-  Driven through the live API + Playwright (system Chrome). Added a README **Screenshots** walkthrough
-  and a **Demo video — coming soon** placeholder.
-
-**What's next**
-- Record the demo video and embed it under the placeholder.
+**What's next.** Pick up one of the queued items — reassign action or the debrief reshape are the
+highest-value. Live progress / streaming for slow real-model runs remains the big frontend lift.
 
 ---
 
