@@ -455,6 +455,11 @@ export default function PlanPage() {
                               <div className="mt-1 text-[11px] text-muted">Unassigned</div>
                             )
                           ) : null}
+                          {t.assignee_rationale ? (
+                            <div className="mt-1 max-w-[15rem] text-[11px] leading-snug text-muted">
+                              {t.assignee_rationale}
+                            </div>
+                          ) : null}
                         </td>
                         <td className="px-4 py-3">
                           {editable ? (

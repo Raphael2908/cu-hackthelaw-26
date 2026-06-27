@@ -9,7 +9,10 @@ import { RoleToggle } from "./RoleToggle";
 // Navigation follows the role: the partner supervises cases, the associate works their inbox.
 // You move between the two worlds with the role toggle (right), not a shared link.
 const NAV_BY_ROLE: Record<Role, { href: string; label: string }[]> = {
-  partner: [{ href: "/", label: "Cases" }],
+  partner: [
+    { href: "/", label: "Cases" },
+    { href: "/track-record", label: "Track record" },
+  ],
   associate: [{ href: "/inbox", label: "My inbox" }],
 };
 

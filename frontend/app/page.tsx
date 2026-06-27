@@ -3,10 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createCase, createPlan, getCockpit, listCases, uploadCaseDocuments } from "@/lib/api";
+import {
+  createCase,
+  createPlan,
+  createProcessMap,
+  getCockpit,
+  listCases,
+  listProcessMaps,
+  uploadCaseDocuments,
+} from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Case, Cockpit, Severity } from "@/lib/types";
+import type { Case, Cockpit, ProcessMap, ProcessMapSection, Severity } from "@/lib/types";
 import { Button, ErrorNote, Panel, Spinner } from "@/components/ui";
+
+// Derive a stable task_type key from a free-text section label.
+const slug = (s: string) =>
+  s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "section";
 
 const SEVERITIES: Severity[] = ["low", "medium", "high", "extreme"];
 
@@ -52,14 +64,55 @@ export default function CasesPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
 
+  const [maps, setMaps] = useState<ProcessMap[]>([]);
+  const [processDocId, setProcessDocId] = useState<string>("");
+  const [addingMap, setAddingMap] = useState(false);
+  const [newMapTitle, setNewMapTitle] = useState("");
+  const [newMapSections, setNewMapSections] = useState("");
+
   const load = () =>
     listCases()
       .then((c) => setCases([...c].reverse()))
       .catch((e) => setError(e instanceof ApiError ? e.detail : "Failed to load cases."));
 
+  const loadMaps = () =>
+    listProcessMaps()
+      .then((m) => {
+        setMaps(m);
+        setProcessDocId((cur) => cur || m[0]?.id || "");
+      })
+      .catch(() => {});
+
   useEffect(() => {
     load();
+    loadMaps();
   }, []);
+
+  const onAddMap = async () => {
+    const task_types: Record<string, ProcessMapSection> = {};
+    newMapSections
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .forEach((label) => {
+        task_types[slug(label)] = { label, severity: "medium" };
+      });
+    if (!newMapTitle.trim() || Object.keys(task_types).length === 0) return;
+    setBusy("map");
+    setError(null);
+    try {
+      const created = await createProcessMap({ title: newMapTitle, task_types });
+      setNewMapTitle("");
+      setNewMapSections("");
+      setAddingMap(false);
+      await loadMaps();
+      setProcessDocId(created.id);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not add the process map.");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   // Pull each case's cockpit summary in parallel; degrade silently per-case (a case with no plan
   // yet simply shows no status line rather than blocking the list).
@@ -85,7 +138,14 @@ export default function CasesPage() {
     setBusy("create");
     setError(null);
     try {
-      const created = await createCase({ title, brief_text: brief, goal, severity, instructions });
+      const created = await createCase({
+        title,
+        brief_text: brief,
+        goal,
+        severity,
+        instructions,
+        process_doc_id: processDocId || undefined,
+      });
       // Attach any uploaded documents up front so the planner scopes tasks over them when the
       // partner generates the plan.
       if (files.length) {
@@ -306,6 +366,56 @@ export default function CasesPage() {
                 <span className="mt-1 block text-[11px] leading-snug text-muted">
                   Your up-front risk call — higher severity keeps more work in the review queue.
                 </span>
+              </Field>
+              <Field label="Process map (optional)">
+                <select
+                  value={processDocId}
+                  onChange={(e) => setProcessDocId(e.target.value)}
+                  className="input"
+                >
+                  {maps.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-[11px] leading-snug text-muted">
+                  How the firm runs this kind of matter. A reused map lets the planner propose AI
+                  where it has a clean track record; a fresh map is a clean slate — you decide where
+                  AI goes.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setAddingMap((v) => !v)}
+                    className="font-medium text-brand hover:underline"
+                  >
+                    {addingMap ? "Cancel" : "＋ Add map"}
+                  </button>
+                </span>
+                {addingMap ? (
+                  <div className="mt-2 space-y-2 rounded-lg bg-brand-soft/40 p-3 ring-1 ring-inset ring-line">
+                    <input
+                      value={newMapTitle}
+                      onChange={(e) => setNewMapTitle(e.target.value)}
+                      placeholder="Map title (e.g. Standard licensing review)"
+                      className="input"
+                    />
+                    <textarea
+                      value={newMapSections}
+                      onChange={(e) => setNewMapSections(e.target.value)}
+                      rows={3}
+                      placeholder="One section per line (e.g. Review of the licence grant)"
+                      className="input resize-none"
+                    />
+                    <Button
+                      type="button"
+                      onClick={onAddMap}
+                      disabled={busy === "map" || !newMapTitle.trim() || !newMapSections.trim()}
+                      className="w-full !py-1.5 !text-xs"
+                    >
+                      {busy === "map" ? "Adding…" : "Add process map"}
+                    </Button>
+                  </div>
+                ) : null}
               </Field>
               <Field label="Documents (optional)">
                 <input

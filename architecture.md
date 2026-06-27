@@ -72,7 +72,7 @@ debrief agent summarises the record.
 | API | FastAPI (Python 3.12, `uv`, Pydantic v2) | Thin: validate → authorize → record → orchestrate via services. |
 | Store | **SQLite** (one file) | The production store. Case store, task/assignment records, append-only audit log. `InMemoryRepo` for tests. |
 | LLM | **Anthropic Claude** behind one `LLMProvider` | `PROVIDER_MODE=real` in production; `mock` replays fixtures for a keyless, offline fallback and the test suite. |
-| Run | **Docker Compose** (backend + frontend) | Dockerized. In-process background dispatch today; Celery/Redis is the committed scale-up path (§8). No Supabase/Stripe. |
+| Run | **Docker Compose** (backend + frontend + redis + worker) | Dockerized. Off-request dispatch on **Celery workers backed by Redis** (§8); inline in-process when `ASYNC_DISPATCH=false` for mock/tests. No Supabase/Stripe. |
 
 **Why this shape.** We start lean — a small local SQLite store, one LLM provider behind a single
 service module, an offline fixture mode — and scale up component by component. The *conventions*
@@ -118,13 +118,13 @@ SQLite tables, each a resource on the `Repo`. `id`s are uuid4 strings; timestamp
 | Table | Key fields | Notes |
 |---|---|---|
 | `associates` | `name, practice_area, current_load, capacity` | Human-maintained capability + capacity registry. **Not scraped** (GDPR Art. 22 — see §13). The planner reads it to *propose*; the partner approves. |
-| `corpus_documents` | `celex, title, kind, source_url, text, case_id, planted_defects(json), ground_truth(json)` | `kind ∈ legislation\|case_law\|firm_standard\|process_doc\|draft`. EU Cellar-modelled + synthetic firm standard/process doc; uploaded case documents are stored as `draft` rows tagged with `case_id`. |
+| `corpus_documents` | `celex, title, kind, source_url, text, case_id, planted_defects(json), ground_truth(json)`, plus `task_types(json)` on process maps | `kind ∈ legislation\|case_law\|firm_standard\|process_doc\|draft`. **Multiple `process_doc` rows are allowed** — each is a selectable *process map* carrying its `task_types` (the sections). Each section may carry the **worker spec** (`kind`, `instruction`, `checklist`, `checks`, `requires_standard` — §6) so the section drives a flexible worker, not just a fixed review. EU Cellar-modelled + synthetic firm standard/process maps; uploaded case documents are stored as `draft` rows tagged with `case_id`. |
 | `cases` | `title, brief_text, goal, severity, process_doc_id, firm_standard_id, status, created_by` | `status ∈ open\|closed`. `severity` is the partner's up-front choice for the matter. |
 | `plans` | `case_id, status, approved_by, approved_at` | `status ∈ proposed\|approved`. The plan is a **proposal**; nothing dispatches until `approved`. |
-| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, severity, input_brief_slice, input_process_section, ai_instruction, status, order_index` | `assignee_type ∈ human\|ai\|hybrid`; `severity ∈ low\|medium\|high\|extreme` set **up front** by the partner at case creation. |
-| `submissions` | `task_id, produced_by, run_index, summary, findings(json), citations(json), clauses_relied_on(json), audit_sources(json)` | Worker output. `run_index` supports multi-run disagreement. `produced_by ∈ ai\|human\|hybrid`. |
+| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, assignee_rationale, severity, input_brief_slice, input_process_section, ai_instruction, output_kind, worker_instruction, checklist(json), applicable_checks(json), requires_standard(bool), status, order_index` | `assignee_type ∈ human\|ai\|hybrid` (chosen by task nature + the map's track record, §6); `assignee_rationale` explains the proposal; `severity ∈ low\|medium\|high\|extreme` set **up front** by the partner at case creation. The worker-spec fields (`output_kind ∈ review\|summarize\|extract\|draft`, `worker_instruction`, `checklist`, `applicable_checks`, `requires_standard`) are copied from the process-map section and tell the flexible worker *what* to do and *which checks apply*; all default to the original review behaviour (§6). |
+| `submissions` | `task_id, produced_by, run_index, summary, findings(json), citations(json), clauses_relied_on(json), audit_sources(json), output_kind, payload(json)` | Worker output. `findings` is the universal **checkable-claims** seam the checker reads for every task type; `output_kind` + `payload` carry the type-specific product (e.g. extracted obligations, key points, a drafted clause). `run_index` supports multi-run disagreement. `produced_by ∈ ai\|human\|hybrid`. |
 | `flags` | `task_id, submission_id, signal_type, hard(bool), title, description, evidence(json), source_ref(json)` | `signal_type ∈ citation_support\|precedent_deviation\|multi_run_disagreement`. **Never** a pass/fail. `source_ref` resolves to a corpus doc + locator for one-click verification. |
-| `risk_scores` | `task_id, severity_label, citation_support_rate, deviation_score, disagreement_score, uncertainty, priority, lane, sampled(bool)` | `lane ∈ review\|auto_clear`. Every signal stored separately so none is hidden behind the composite. |
+| `risk_scores` | `task_id, severity_label, citation_support_rate, deviation_score, disagreement_score, uncertainty, priority, lane, sampled(bool), applied_checks(json)` | `lane ∈ review\|auto_clear`. Every signal stored separately so none is hidden behind the composite. `applied_checks` records which signals actually ran, so a non-applicable signal shows as "n/a" rather than a misleading `0.0` and is excluded from the composite (§7.2). |
 | `decisions` | `task_id, action, note, amendment, decided_by, decided_at` | `action ∈ approve\|amend\|reject`. Append-only, signed (hash). |
 | `audit_events` | `case_id, task_id, kind, type, actor, payload(json), prev_hash, hash` | Append-only, **hash-chained**. `kind ∈ accountability\|supervision` (see §11). |
 | `debriefs` | `case_id, content(md)` | Generated at case close. |
@@ -148,6 +148,51 @@ The plan renders in the cockpit as an **editable proposal**. The partner can cha
 split/merge tasks, adjust severity, or reject, then approves. **Only on approval does the
 coordinator dispatch anything.** This is intentionally a thin state machine — the intelligence that
 matters for this track is in the checker and cockpit, not the routing.
+
+**Delegation is decided by task *nature*, never severity — read through the Trust Matrix.** The
+planner agent chooses `assignee_type` by placing each task on two axes that are properties of the
+task itself (the [Trust Matrix](https://trust-transformed.netlify.app/)): **stakes** (the
+consequence if *this* task's output is wrong) × **verifiability** (how cheaply a human can check
+the output against an objective source — a citation, the firm standard, a document in hand). The
+four quadrants map to the assignee:
+
+| | Low verifiability | High verifiability |
+|---|---|---|
+| **High stakes** | *Reserve* → `human` (human judgement, checked by human judgement) | *Augment* → `hybrid` (AI does the volume, a human verifies, signs off, and owns it) |
+| **Low stakes** | *Monitor* → `ai` (AI runs; quality held by downstream sampling, §7.3) | *Delegate* → `ai` (AI end-to-end within guardrails; errors cheap and easy to catch) |
+
+So mechanical / low-judgment work (grammar, a first-look data-room triage, summarising non-operative
+recitals) leans AI; judgment on binding obligations leans human/hybrid — with the verifiability axis
+deciding `human` vs `hybrid` and AI-with-sampling vs AI-end-to-end. Critically, **stakes is the
+task's own consequence-of-error, not the matter's severity.** Gating delegation on the matter's
+severity would starve a high/extreme-heavy firm of any AI help, so severity stays purely the
+partner's triage dial (§7), not a routing rule.
+
+**Process maps + the agentic track record.** A *process map* is a (optional) `process_doc` the
+partner selects or adds, describing how the firm runs a standard kind of matter as named sections
+(the task types). The process map is the **unit of "clean slate"**: a freshly added map has no
+history, so the planner's nature-based suggestion stands and the partner decides where to insert AI.
+As a map is reused, it accumulates an agentic track record *scoped to that map* (per section). The
+planner overlays it on the suggestion: a section AI has a **clean** record on (≥ `AI_TRACK_RECORD_MIN`
+completed AI/hybrid tasks, none amended or rejected) **graduates to AI**; one with an **adverse**
+record is **pulled back** to a human owner. The record is computed in `services/track_record.py` from
+completed tasks + their decisions — outcomes (signed-off / amended / escalated), never a verdict — and
+each task carries an `assignee_rationale` explaining the proposal. The plan stays a proposal the
+partner edits (§14.7).
+
+**The worker is a flexible agent the process map tasks.** Legal work is not only "review a draft
+against the firm standard." A process-map section therefore carries the partner-authored **worker
+spec**: a `kind` (the output shape — `review | summarize | extract | draft`), an `instruction`
+(system-prompt framing), a `checklist` (points the worker must address), the `checks` that apply, and
+`requires_standard`. The planner copies these onto each task; the worker resolves them once in
+`services/task_spec.py::build_task_spec` and calls the single provider entry point
+`LLMProvider.run_task` (the old `review_document` is now a thin `kind="review"` shim). The provider
+composes the system prompt from the instruction + a fixed "surface checkable claims, never a verdict,
+STRICT JSON" envelope with the per-kind output schema; the planner's per-task `ai_instruction` (which
+used to be stored and never consumed) is layered on top. **Every kind still emits the universal
+`findings` list** — the checkable-claims seam the checker reads — while the type-specific product
+goes in `payload`, so flexible output never reshapes what supervision consumes. All fields default to
+the original review behaviour, so a section that omits them behaves exactly as before.
 
 ---
 
@@ -243,6 +288,15 @@ Dividing by the weight sum normalises, so a weight can be retuned without rescal
 point is not the exact formula; it is that each signal is also stored separately on `risk_scores`
 and shown on its own in the UI, so no single number is load-bearing.
 
+**Signals are selected per task, and a non-applicable signal is excluded — not zeroed.** Now that the
+worker is flexible (§6), not every check applies to every task: precedent deviation needs a firm
+standard, so a from-scratch draft or a summary has nothing to deviate from. Each task declares its
+`applicable_checks`; the checker runs only those and records `applied_checks` on the risk score. A
+signal that did not apply is **dropped from both the numerator and the denominator** (the sum above
+runs over the applied weights only), so a task is never made to look *more certain* just because a
+signal couldn't run, and the cockpit shows it as "n/a" rather than a misleading `0.0`. Citation
+support always runs — any task can fabricate a citation, and that hard signal is load-bearing.
+
 ### 7.3 Queue and routing (ranker)
 Computed in `services/ranker.py::score_task`. Severity (the up-front human call, §7.1) and the
 measured uncertainty enter through different doors and are combined — never fused into one model
@@ -270,18 +324,23 @@ if any hard flag:  priority = max(priority, 0.95)          # hard signals bypass
 Dispatching an approved AI/hybrid task runs the worker → checker → ranker pipeline, each transition
 writing an audit event; the `coordinator` service is the state machine. Under real models this
 pipeline is many slow calls, so dispatch runs **off the request path**: approve returns immediately
-and the cockpit polls, surfacing each task as its pipeline finishes. The store serialises writes and
-the audit chain is written under a lock, so concurrent workers stay safe and the chain stays valid.
+and the cockpit polls, surfacing each task as its pipeline finishes. The store serialises writes with
+SQLite **WAL + `BEGIN IMMEDIATE`**, and the hash-chained audit append is atomic **across processes**
+(`Repo.insert_chained`), so the API and a separate worker process can't fork the chain (§11).
 A pipeline failure **fails safe** — the task escalates to a human, never silently dropped or
 auto-reassigned (§14.6). In mock mode the pipeline is instant; tests set `ASYNC_DISPATCH=false` to
 run it inline and keep post-approve assertions deterministic.
 
-**Dispatch mechanism — current and committed.** Today this runs on an in-process **background thread
-pool** (`core/background.py`, `ASYNC_DISPATCH=true`) — correct and simple, but bounded to one
-process and lost on restart. The committed production path is **Celery workers backed by Redis**
-(roadmap, `todo.md`): durable, retryable, horizontally scalable, surviving restarts. The
-`coordinator` boundary is exactly where it slots in — submitting a task to the queue replaces
-submitting it to the thread pool, and nothing else changes shape.
+**Dispatch mechanism — Celery + Redis (landed).** Dispatch runs on **Celery workers backed by Redis**
+(`core/celery_app.py`, `core/tasks.py`; `ASYNC_DISPATCH=true`): durable, retryable, horizontally
+scalable, and surviving restarts. The earlier in-process background thread pool (`core/background.py`)
+has been **retired**. Only the serializable `task_id` crosses the process boundary; the worker rebuilds
+the repo and provider from their factories (`get_repo()` / `get_llm_provider()`). The `coordinator`
+boundary is unchanged — `coordinator.dispatch_task` enqueues `run_dispatch_task.delay(task_id)` instead
+of running the pipeline inline, and nothing else changes shape. With `ASYNC_DISPATCH=false` the pipeline
+runs inline in-process (no broker needed) — the offline/test fallback. In Docker Compose a `worker`
+service shares the same SQLite volume as the backend — the cross-process audit-chain safety above is
+what makes that shared file safe.
 
 ---
 
@@ -355,6 +414,8 @@ streams. The hash chain (`prev_hash → hash`) makes tampering detectable.
 |---|---|
 | `GET /healthz`, `GET /api/healthz` | Liveness. |
 | `GET /api/corpus`, `GET /api/corpus/{id}` | List / fetch corpus docs (for one-click source view). |
+| `GET /api/process-maps` · `POST /api/process-maps` | List process maps; lightweight structured create (title + sections). |
+| `GET /api/track-record?process_doc_id=` | Per-map agentic track record: per-section outcomes + completed-task log. No verdict. |
 | `GET /api/associates` · `POST /api/associates` | Capability + capacity registry. |
 | `POST /api/cases` · `GET /api/cases` · `GET /api/cases/{id}` | Case intake (with severity) + list/detail. |
 | `POST /api/cases/{id}/documents` · `GET /api/cases/{id}/documents` | Bulk-attach case documents (PDF/DOCX/text) for the planner; list them. |
@@ -388,8 +449,8 @@ No endpoint returns an agent-generated verdict.
 4. **Standards quality is a dependency.** Precedent deviation is only as good as the firm standard it
    compares against. Garbage scaffold, garbage signal.
 5. **Surface area.** The full spine is broad. Depth concentrates where it matters (§1), and the
-   provider / repo / dispatch seams keep scale-up (Celery/Redis, web search, pptx) incremental
-   rather than rewrites.
+   provider / repo / dispatch seams keep scale-up incremental rather than rewrites — Celery/Redis
+   dispatch and pptx ingestion have already landed this way; web search (Perplexity) is the next one.
 
 ---
 

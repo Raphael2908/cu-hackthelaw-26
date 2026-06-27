@@ -35,5 +35,14 @@
     "input_brief_slice": "Project Atlas: mutual confidentiality expected.",
     "ai_instruction": null,
     "rationale": "A standard clause an associate can confirm directly; human work is not graded by the automated checks."
+  },
+  "extract_obligations": {
+    "title": "Extract operative obligations (Project Atlas schedule)",
+    "description": "Extract the operative obligations from the Project Atlas services schedule. A from-scratch extraction — no firm standard applies, so precedent deviation does not run.",
+    "assignee_type": "ai",
+    "target_document_id": "draft-obligations-atlas",
+    "input_brief_slice": "Project Atlas: services schedule with supplier obligations.",
+    "ai_instruction": null,
+    "rationale": "A from-scratch extraction the AI drafts for the partner to verify; citable statutory hooks keep it checkable."
   }
 }

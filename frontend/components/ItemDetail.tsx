@@ -3,7 +3,15 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { decideTask, getAssociates, getTaskDetail, postMessage, reassignTask } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Associate, Flag, FlagSourceRef, FlagWorkRef, TaskDetail } from "@/lib/types";
+import type {
+  Associate,
+  Flag,
+  FlagSourceRef,
+  FlagWorkRef,
+  SignalType,
+  Submission,
+  TaskDetail,
+} from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
 import {
   AssigneeTag,
@@ -191,6 +199,9 @@ export function ItemDetail({
   const reviewable = !decided && !awaitingClar && !returned;
   const isPartner = role === "partner";
   const hasThread = (messages?.length ?? 0) > 0;
+  // A signal absent from applied_checks (older records) is treated as applied; an explicit false
+  // means the check didn't run for this task type — shown as "n/a", not a misleading 0.0 (§14.4).
+  const applies = (s: SignalType) => risk?.applied_checks?.[s] ?? true;
 
   return (
     <div>
@@ -221,6 +232,8 @@ export function ItemDetail({
         {submission ? (
           <div>
             <Markdown content={submission.summary} />
+
+            <TaskOutput submission={submission} />
 
             {submission.findings.length > 0 ? (
               <div className="mt-4 space-y-2">
@@ -306,11 +319,15 @@ export function ItemDetail({
                 label="Firm standard"
                 reading={deviationReading(risk.deviation_score)}
                 detail={`${pct(risk.deviation_score)} distance from your firm's standard wording`}
+                applies={applies("precedent_deviation")}
+                naReason="No firm standard applies to this task — nothing to deviate from."
               />
               <CheckRow
                 label="Consistency"
                 reading={disagreementReading(risk.disagreement_score)}
                 detail={`${pct(risk.disagreement_score)} disagreement when the review was re-run`}
+                applies={applies("multi_run_disagreement")}
+                naReason="This check was not run for this task."
               />
             </div>
 
@@ -615,25 +632,96 @@ function CheckRow({
   label,
   reading,
   detail,
+  applies = true,
+  naReason,
 }: {
   label: string;
   reading: Reading;
   detail: string;
+  // When false, the check did not run for this task type: show "Not applicable" instead of a
+  // misleading measured score (architecture.md §7.2/§14.4).
+  applies?: boolean;
+  naReason?: string;
 }) {
+  const tone = applies ? reading.tone : "neutral";
   const dot = {
     good: "bg-emerald-500",
     warn: "bg-amber-500",
     bad: "bg-red-500",
     neutral: "bg-slate-400",
-  }[reading.tone];
+  }[tone];
   return (
     <div className="flex items-start gap-3 rounded-lg border border-line bg-canvas px-3 py-2.5">
       <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
       <div className="min-w-0">
         <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
-        <div className={`text-sm font-semibold ${TONE_TEXT[reading.tone]}`}>{reading.text}</div>
-        <div className="mt-0.5 text-[11px] text-muted">{detail}</div>
+        {applies ? (
+          <>
+            <div className={`text-sm font-semibold ${TONE_TEXT[tone]}`}>{reading.text}</div>
+            <div className="mt-0.5 text-[11px] text-muted">{detail}</div>
+          </>
+        ) : (
+          <>
+            <div className="text-sm font-semibold text-slate-500">Not applicable</div>
+            <div className="mt-0.5 text-[11px] text-muted">
+              {naReason ?? "This check does not apply to this task."}
+            </div>
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+/** The flexible worker's type-specific product (architecture.md §6). `review` has no payload — its
+ *  product is the findings — so this renders nothing for it. */
+function TaskOutput({ submission }: { submission: Submission }) {
+  const kind = submission.output_kind;
+  const payload = submission.payload;
+  if (!kind || kind === "review" || !payload) return null;
+
+  let body: ReactNode = null;
+  let heading = "Worker output";
+
+  if (kind === "draft") {
+    const text = typeof payload.draft_text === "string" ? payload.draft_text : "";
+    const ref = typeof payload.clause_ref === "string" ? payload.clause_ref : "";
+    heading = ref ? `Drafted output — ${ref}` : "Drafted output";
+    body = <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{text}</p>;
+  } else if (kind === "summarize") {
+    const points = Array.isArray(payload.key_points) ? (payload.key_points as string[]) : [];
+    heading = "Key points";
+    body = (
+      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+        {points.map((p, i) => (
+          <li key={i}>{p}</li>
+        ))}
+      </ul>
+    );
+  } else if (kind === "extract") {
+    const items = Array.isArray(payload.obligations)
+      ? (payload.obligations as Array<Record<string, unknown>>)
+      : [];
+    heading = "Extracted obligations";
+    body = (
+      <div className="mt-1.5 space-y-1.5">
+        {items.map((o, i) => (
+          <div key={i} className="text-sm text-ink-soft">
+            <span className="font-medium text-ink">{String(o.party ?? "")}</span>
+            {o.locator ? (
+              <span className="ml-1 font-mono text-[11px] text-muted">[{String(o.locator)}]</span>
+            ) : null}
+            <span> — {String(o.text ?? "")}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-line bg-canvas p-3">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{heading}</div>
+      {body}
     </div>
   );
 }

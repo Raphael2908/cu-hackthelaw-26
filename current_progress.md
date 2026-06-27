@@ -4,6 +4,149 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Docs: reconcile architecture §8 to Celery/Redis (thread pool retired)
+
+**Where we are.** Closed the open item the README-refresh pass flagged: `architecture.md` §8 still
+described the in-process background thread pool as the current dispatch, even though Celery + Redis
+landed and `core/background.py` was deleted. The spine doc now matches the code.
+
+**Done**
+- §8 rewritten: dispatch is **Celery workers backed by Redis** (`core/celery_app.py`,
+  `core/tasks.py`); the thread pool is retired; only `task_id` crosses the boundary and the worker
+  rebuilds repo/provider from factories; `ASYNC_DISPATCH=false` is the inline offline/test fallback.
+- Corrected the audit-chain sentence: cross-process safety is **SQLite WAL + `BEGIN IMMEDIATE` +
+  `Repo.insert_chained`** (atomic across the API and worker processes), not an in-process lock.
+- Fixed two related stale references: the §3 stack table (`Run` row → redis + worker, Celery is
+  current) and the §13.5 scale-up note (Celery/Redis + pptx have landed; Perplexity web search next).
+
+**What's next**
+- Demo video still a placeholder (unchanged). No code touched.
+
+---
+
+## Flexible worker — the planner tasks it; not every task is a firm-standard review
+
+**Where we are.** The worker is no longer hardcoded to "review a DRAFT against the FIRM STANDARD."
+The process-map section now carries a partner-authored **worker spec** (a `kind`, an `instruction`, a
+`checklist`, the `checks` that apply, and `requires_standard`); the planner copies it onto each task;
+the worker resolves it once and runs the right kind of work, returning a per-task-type output. The
+supervision layer stays intact because every kind still emits the universal `findings` the checker
+reads. On branch `feat/process-map-track-record` (PR #8). All §14 guardrails held: no agent verdicts,
+nothing auto-approved, severity still the partner's up-front call, mock stays deterministic/offline.
+
+**Built**
+- **One worker entry point.** `LLMProvider.run_task(kind, instruction, documents, reference?,
+  checklist, …) -> TaskResult` replaces the review-only call; `review_document` is now a thin
+  `kind="review"` shim so existing callers/tests keep working. `TaskResult` adds `output_kind` +
+  `payload` (the type-specific product) on top of the universal `findings`. Mock returns per-kind
+  payload deterministically; the real provider composes the system prompt from the task instruction +
+  a fixed "checkable claims, never a verdict, STRICT JSON" envelope with the per-kind output schema,
+  and now also instructs **stable finding ids** (helps the disagreement signal in real mode).
+- **`services/task_spec.py` (new) — the single source of truth.** `build_task_spec` resolves a task
+  into `{kind, instruction, documents, reference, checklist, applicable_checks}`, resolving the firm
+  standard **only when `requires_standard`** (no silent fallback), and layers the planner's
+  per-task `ai_instruction` (previously stored and never consumed) onto the section instruction. Used
+  by **both** the worker's first pass and the checker's disagreement re-runs, so the runs compared are
+  provably the same call.
+- **Task-aware checker.** `run_checks` runs only the signals that apply and returns `applied_checks`.
+  Precedent deviation runs only with a reference standard (else neutral, **no fabricated flag**);
+  disagreement re-runs via the shared spec (works for no-standard tasks now); citation support is
+  always on. `compute_uncertainty` **renormalises over the applied checks** (a non-applicable signal
+  is dropped from numerator *and* denominator), so a task is never made to look more certain because a
+  check couldn't run. `applied_checks` rides onto the risk score; the cockpit shows a non-applicable
+  signal as **"n/a"**, not a misleading `0.0`, and renders the per-kind output (key points / extracted
+  obligations / drafted clause).
+- **Planner wiring + fixtures.** The planner copies `output_kind`/`worker_instruction`/`checklist`/
+  `applicable_checks`/`requires_standard` from each section (defaulted at read time via
+  `normalize_section`, so seeded maps and omitted keys behave exactly as before). New seeded
+  **`process-map-extraction`** (a no-standard `extract` section) + `draft-obligations-atlas` +
+  mock review/payload exercise the new path offline.
+- Tests: new `test_flexible_worker.py` (instruction reaches the worker; no-standard task skips
+  precedent deviation with no fabricated flag; uncertainty renormalised; disagreement runs without a
+  standard; per-type payload persists; default task still applies all three). `test_process_maps.py`
+  extended to round-trip the spec. `make test` green (62, was 54), `make lint` clean, frontend
+  `tsc --noEmit` clean. `test_checker.py`/`test_flow.py` pass unedited; `test_cellar.py`'s recording
+  provider now hooks `run_task` (the worker's call shape changed).
+
+**What's next**
+- Real-mode tuning of the new per-kind instructions/prompts (offline mock unaffected).
+- Optional: let the partner edit `worker_instruction`/`checklist` per task pre-approval (`TaskPatch`);
+  show the instruction/checklist on the plan page; surface `payload` for `draft` tasks in the inbox.
+
+---
+
+## Planner delegation guided by the Trust Matrix framework
+
+**Where we are.** The planner agent's nature-based delegation (architecture.md §6) is now framed
+explicitly by the **Trust Matrix** (https://trust-transformed.netlify.app/): each task is read on
+two task-intrinsic axes — **stakes** (consequence if *this* task is wrong) × **verifiability** (how
+cheaply a human can check the output against an objective source) — and the four quadrants map to
+the assignee. All §14 guardrails held: stakes is the *task's* consequence-of-error, **not** the
+matter's severity (still the partner's separate up-front triage dial), so a high-severity matter can
+still route mechanical, checkable tasks to AI.
+
+**Built**
+- **Planner system prompt (`providers/real/anthropic_llm.py::plan_case`)** rewritten around the Trust
+  Matrix. The four quadrants → `assignee_type`: high-stakes/low-verifiability → *Reserve* (`human`);
+  high-stakes/high-verifiability → *Augment* (`hybrid`, AI volume under human sign-off who owns it);
+  low-stakes/low-verifiability → *Monitor* (`ai`, quality held by downstream sampling §7.3);
+  low-stakes/high-verifiability → *Delegate* (`ai`, end-to-end within guardrails). Keeps the
+  decompose-by-section instruction, the strict-JSON contract, and the explicit "do NOT route by the
+  matter's severity" guardrail.
+- **`architecture.md` §6** now names the Trust Matrix and adds the stakes×verifiability quadrant
+  table; **`services/planner.py`** docstring points at the matrix.
+- No behaviour change in mock/offline mode (the prompt is real-provider only; mock replays fixtures),
+  so the track-record overlay and all downstream logic are untouched. `make test` green (54),
+  `make lint` clean.
+
+**What's next**
+- Tune + eval the `plan_case` prompt on real cases to confirm the matrix produces sensible
+  quadrant placement; still open: `review_document` prompt tuning, Perplexity web search, SSO/JWKS.
+
+---
+
+## Process maps + per-map agentic track record driving delegation
+
+**Where we are.** Delegation (human/ai/hybrid) is now decided by the planner agent from the *nature*
+of the task — **never severity** (gating on severity would starve a high/extreme-heavy firm of any
+AI help). On top of that nature-based suggestion, the planner consults a per-process-map **agentic
+track record** and graduates a section to AI where AI has earned a clean record, or pulls it back to
+a human owner where it hasn't. All §14 guardrails held: outcomes never verdicts, plan stays an
+editable proposal, severity remains the partner's up-front triage dial, mock stays deterministic.
+
+**Built**
+- **`services/track_record.py`** — `aggregate(repo, *, process_doc_id)` walks completed **AI/hybrid**
+  tasks (terminal status) whose case used that process map, bucketed by section; outcome per task is
+  clean (auto-cleared / signed off w/o amendment) or adverse (amended / rejected / escalated). A
+  section is `clean` at ≥ `AI_TRACK_RECORD_MIN` (=3) completed with **zero** adverse. `apply_record`
+  overlays this on the agent's suggestion: clean → AI; adverse → pull back to a human owner; fresh →
+  keep the suggestion. Returns an `assignee_rationale` for each.
+- **Planner (`services/planner.py`)** now aggregates the case's process-map record, applies the
+  overlay per task, stores `assignee_rationale`, and records `process_doc_id` + graduated/pulled-back
+  sections in the `plan_proposed` audit payload. The real `plan_case` prompt was rewritten to choose
+  `assignee_type` by **task nature** (mechanical → ai; binding obligations → human/hybrid), not risk.
+- **Process maps are multiple + selectable.** `corpus_documents` can hold many `process_doc` rows
+  (each a map with its `task_types`). New `GET/POST /api/process-maps` (lightweight structured create,
+  no document parsing) and `GET /api/track-record?process_doc_id=`. `ProcessMapCreate` schema added.
+- **Seed** — kept the existing process doc as **Map A** and seeded a closed prior matter giving its
+  `review_binding_obligation` section a clean record (so it graduates to AI and the track-record view
+  has real history); added **Map B** (`process-map-nda-fresh`) with no history to demo the clean
+  slate. Idempotent.
+- **Frontend** — `assignee_rationale` shown on the plan page; process-map selector + inline "add map"
+  on case creation; new `/track-record` page (per-section stats + completed-task log) and nav link.
+- Tests: new `test_track_record.py` (per-map scoping isolation, clean vs adverse/escalated detection,
+  `apply_record` graduate/pull-back/fresh, planner graduation + fresh-map integration) and
+  `test_process_maps.py` (list/create). Existing tests unchanged and green — clean-slate delegation =
+  the provider's nature-based suggestion = prior behaviour. `make test` green (54, was 43), `make lint`
+  clean, frontend `tsc --noEmit` clean.
+
+**What's next**
+- Use *actual* process maps: upload a real process-map document and derive its sections via an LLM
+  step (the interim is a structured create). Expose a true "no map" (fully optional) path.
+- Still open: tune the `plan_case`/`review_document` prompts; Perplexity web search; real SSO/JWKS.
+
+---
+
 ## README refreshed to the current feature set
 
 **Where we are.** Doc-only pass (post-merge of PR #3 into `master`): the README still described the

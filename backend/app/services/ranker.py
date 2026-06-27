@@ -13,15 +13,27 @@ LOW_UNCERTAINTY_THRESHOLD = 0.15
 
 
 def compute_uncertainty(signals: dict) -> float:
-    """Tunable weighted composite of the three independent signals. Each signal is also stored
-    separately so no single number is load-bearing in the UI (architecture.md §7.2)."""
-    w_c, w_d, w_g = settings.W_CITATION, settings.W_DEVIATION, settings.W_DISAGREEMENT
-    total = w_c + w_d + w_g or 1.0
-    return (
-        w_c * (1.0 - signals["citation_support_rate"])
-        + w_d * signals["deviation_score"]
-        + w_g * signals["disagreement_score"]
-    ) / total
+    """Tunable weighted composite of the independent signals that APPLY to this task. A signal the
+    task didn't run (e.g. precedent deviation on a from-scratch draft with no firm standard) is
+    excluded from BOTH numerator and denominator — i.e. the composite is renormalised over the
+    applied checks, so a task is never made to look more certain just because a signal couldn't run
+    (architecture.md §7.2/§14.4). Each signal is also stored separately so no single number is
+    load-bearing in the UI.
+
+    `applied_checks` defaults to all-applied when absent, preserving the original three-signal
+    behaviour for any caller that doesn't supply it."""
+    applied = signals.get("applied_checks") or {}
+    weighted: list[tuple[float, float]] = []  # (weight, contribution)
+    if applied.get("citation_support", True):
+        weighted.append((settings.W_CITATION, 1.0 - signals["citation_support_rate"]))
+    if applied.get("precedent_deviation", True):
+        weighted.append((settings.W_DEVIATION, signals["deviation_score"]))
+    if applied.get("multi_run_disagreement", True):
+        weighted.append((settings.W_DISAGREEMENT, signals["disagreement_score"]))
+    total = sum(w for w, _ in weighted)
+    if total <= 0:
+        return 0.0
+    return sum(w * c for w, c in weighted) / total
 
 
 def score_task(repo: Repo, task: dict, signals: dict, *, rng: random.Random | None = None) -> dict:
@@ -55,5 +67,8 @@ def score_task(repo: Repo, task: dict, signals: dict, *, rng: random.Random | No
         "lane": lane,
         "sampled": sampled,
         "has_hard_flag": has_hard,
+        # Which signals actually ran — so the cockpit shows a non-applicable signal as "n/a" instead
+        # of a misleading measured 0.0 (architecture.md §14.4).
+        "applied_checks": signals.get("applied_checks", {}),
     }
     return repo.insert(RISK_SCORES, record)

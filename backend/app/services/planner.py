@@ -5,6 +5,8 @@ from app.db.repo import Repo
 from app.db.tables import ASSOCIATES, CORPUS, PLANS, TASKS
 from app.fixtures import firm_standard, process_doc
 from app.providers.base import LLMProvider
+from app.services import track_record
+from app.services.task_spec import normalize_section
 
 
 def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -> dict:
@@ -14,7 +16,15 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
     Severity is the partner's up-front choice on the case (architecture.md §7.1) and is applied here
     as the default for every task — never inferred by the model. Task enrichment (severity, process
     section, default assignee, ordering, target validation) lives in this service so the mock and
-    real providers stay symmetric and only need to return raw task scoping."""
+    real providers stay symmetric and only need to return raw task scoping.
+
+    Delegation (human/ai/hybrid) is the planner agent's judgment of the task's *nature* — not a
+    function of severity (architecture.md §6). The agent reads each task through the Trust Matrix
+    (stakes x verifiability) to pick the assignee; see the planner system prompt. On top of that,
+    this service overlays the selected process map's agentic track record: a section AI has a clean
+    record on graduates to AI;
+    one with an adverse record is pulled back to a human owner. A fresh (or unselected) map is a
+    clean slate, so the nature suggestion stands and the partner decides where to insert AI."""
     # Prefer documents the partner uploaded to THIS case; fall back to the seeded demo drafts so the
     # offline demo still produces a plan when nothing was uploaded.
     all_drafts = [d for d in repo.list(CORPUS) if d["kind"] == "draft"]
@@ -24,6 +34,12 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
     associates = repo.list(ASSOCIATES)
     proc = repo.get(CORPUS, case.get("process_doc_id") or process_doc()["id"]) or process_doc()
     task_types = proc.get("task_types", {})
+    # The process map scopes the agentic track record: this map's history alone decides whether a
+    # section has earned AI by default (architecture.md §6).
+    record = track_record.aggregate(repo, process_doc_id=proc["id"])["by_section"]
+    # When the partner has given up-front instructions, the planner's suggestion already reflects
+    # them; a clean track record must not graduate a task back to AI over that explicit steer (§6).
+    instructed = bool(case.get("instructions", "").strip())
 
     proposed = provider.plan_case(
         goal=case["goal"],
@@ -45,15 +61,29 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
     humans = [a["id"] for a in associates] or [None]
 
     tasks = []
+    graduated: list[str] = []  # sections the track record pushed to AI (for the audit record)
+    pulled_back: list[str] = []  # sections it pulled back to a human owner
     for i, t in enumerate(proposed):
         task_type = t["task_type"]
+        # The partner-authored worker spec for this section (kind, instruction, checklist, which
+        # checks apply, whether a standard is required), defaulted at read time so seeded maps and
+        # sections that omit the keys behave like the original review task (architecture.md §6).
+        section = normalize_section(task_types.get(task_type))
         # Never trust the model's target blindly: snap an unknown id back to a real candidate doc.
         target = t.get("target_document_id")
         if target not in draft_ids:
             target = fallback_doc_id
+        # Delegation = the agent's nature-based suggestion, adjusted by this map's track record.
+        assignee_type, assignee_rationale = track_record.apply_record(
+            suggested_type=t["assignee_type"],
+            section_record=record.get(task_type),
+            instructed=instructed,
+        )
+        if assignee_type != t["assignee_type"]:
+            (graduated if assignee_type == "ai" else pulled_back).append(task_type)
         # Default assignee for human/hybrid work; the partner can reassign before approval.
         assignee_id = t.get("assignee_id")
-        if assignee_id is None and t["assignee_type"] in ("human", "hybrid"):
+        if assignee_id is None and assignee_type in ("human", "hybrid"):
             assignee_id = humans[i % len(humans)]
         tasks.append(
             repo.insert(
@@ -64,20 +94,29 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
                     "title": t["title"],
                     "description": t.get("description", ""),
                     "task_type": task_type,
-                    "assignee_type": t["assignee_type"],
+                    "assignee_type": assignee_type,
                     "assignee_id": assignee_id,
+                    "assignee_rationale": assignee_rationale,
                     # Severity is the partner's choice on the case, not a model inference.
                     "severity": case_severity,
                     "target_document_id": target,
                     "firm_standard_id": std_id,
                     "input_brief_slice": t.get("input_brief_slice", ""),
                     "input_process_section": t.get("input_process_section")
-                    or task_types.get(task_type, {}).get("label", task_type),
+                    or section["label"]
+                    or task_type,
                     "ai_instruction": t.get("ai_instruction"),
                     # The associate's half of a hybrid task, and a one-line rationale the partner
                     # can sanity-check. Both are proposals the partner can edit before approval.
                     "human_instruction": t.get("human_instruction"),
                     "rationale": t.get("rationale"),
+                    # The flexible-worker spec carried from the process-map section (architecture.md
+                    # §6): what kind of work, the instruction + checklist, and which signals apply.
+                    "output_kind": section["kind"],
+                    "worker_instruction": section["instruction"],
+                    "checklist": section["checklist"],
+                    "applicable_checks": section["checks"],
+                    "requires_standard": section["requires_standard"],
                     "status": "proposed",
                     "order_index": t.get("order_index", i),
                 },
@@ -92,6 +131,10 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
         payload={
             "plan_id": plan["id"],
             "n_tasks": len(tasks),
+            "process_doc_id": proc["id"],
+            "track_record_consulted": True,
+            "graduated_to_ai": graduated,
+            "pulled_back_to_human": pulled_back,
             # The partner's up-front direction is part of the delegation record.
             "instructions": case.get("instructions", ""),
         },
@@ -123,6 +166,9 @@ def add_task(repo: Repo, *, case: dict, actor: str) -> dict:
     proc = repo.get(CORPUS, case.get("process_doc_id") or process_doc()["id"]) or process_doc()
     task_types = proc.get("task_types", {})
     default_type = next(iter(task_types), "review_binding_obligation")
+    # The flexible-worker spec for the default section (defaulted at read time), so a partner-added
+    # task is dispatchable like any other (architecture.md §6).
+    section = normalize_section(task_types.get(default_type))
 
     task = repo.insert(
         TASKS,
@@ -134,6 +180,7 @@ def add_task(repo: Repo, *, case: dict, actor: str) -> dict:
             "task_type": default_type,
             "assignee_type": "ai",
             "assignee_id": None,
+            "assignee_rationale": "Added by the partner.",
             "severity": case.get("severity", "medium"),
             "target_document_id": target,
             "firm_standard_id": case.get("firm_standard_id") or firm_standard()["id"],
@@ -142,6 +189,11 @@ def add_task(repo: Repo, *, case: dict, actor: str) -> dict:
             "ai_instruction": None,
             "human_instruction": None,
             "rationale": "Added by the partner.",
+            "output_kind": section["kind"],
+            "worker_instruction": section["instruction"],
+            "checklist": section["checklist"],
+            "applicable_checks": section["checks"],
+            "requires_standard": section["requires_standard"],
             "status": "proposed",
             "order_index": order,
         },
@@ -184,12 +236,17 @@ def revise_plan(
     case_severity = case.get("severity", "medium")
     draft_ids = {d["id"] for d in repo.list(CORPUS) if d["kind"] == "draft"}
     fallback_doc_id = current_tasks[0]["target_document_id"] if current_tasks else None
+    proc = repo.get(CORPUS, case.get("process_doc_id") or process_doc()["id"]) or process_doc()
+    task_types = proc.get("task_types", {})
 
     tasks = []
     for i, t in enumerate(revised):
         target = t.get("target_document_id")
         if target not in draft_ids:
             target = fallback_doc_id
+        # Re-resolve the flexible-worker spec from the section so revised tasks stay dispatchable;
+        # the partner's assignee edit is preserved as-is (no track-record overlay on a revision).
+        section = normalize_section(task_types.get(t["task_type"]))
         tasks.append(
             repo.insert(
                 TASKS,
@@ -201,15 +258,23 @@ def revise_plan(
                     "task_type": t["task_type"],
                     "assignee_type": t["assignee_type"],
                     "assignee_id": t.get("assignee_id"),
+                    "assignee_rationale": t.get("rationale"),
                     # Keep the partner's per-task severity edit if present; else the case default.
                     "severity": t.get("severity", case_severity),
                     "target_document_id": target,
                     "firm_standard_id": std_id,
                     "input_brief_slice": t.get("input_brief_slice", ""),
-                    "input_process_section": t.get("input_process_section"),
+                    "input_process_section": t.get("input_process_section")
+                    or section["label"]
+                    or t["task_type"],
                     "ai_instruction": t.get("ai_instruction"),
                     "human_instruction": t.get("human_instruction"),
                     "rationale": t.get("rationale"),
+                    "output_kind": section["kind"],
+                    "worker_instruction": section["instruction"],
+                    "checklist": section["checklist"],
+                    "applicable_checks": section["checks"],
+                    "requires_standard": section["requires_standard"],
                     "status": "proposed",
                     "order_index": i,
                 },
