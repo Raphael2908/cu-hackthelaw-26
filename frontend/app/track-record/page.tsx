@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getTrackRecord, listProcessMaps } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { ProcessMap, TrackRecord } from "@/lib/types";
-import { AssigneeTag, ErrorNote, Panel, Spinner } from "@/components/ui";
+import type { ProcessMap, SignalType, TrackRecord, TrackRecordSection } from "@/lib/types";
+import { AssigneeTag, ErrorNote, HardSoftChip, Panel, SignalTypeTag, Spinner } from "@/components/ui";
+
+const SIGNAL_ORDER: SignalType[] = [
+  "citation_support",
+  "precedent_deviation",
+  "multi_run_disagreement",
+];
 
 export default function TrackRecordPage() {
   const [maps, setMaps] = useState<ProcessMap[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [record, setRecord] = useState<TrackRecord | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,6 +32,7 @@ export default function TrackRecordPage() {
   useEffect(() => {
     if (!selected) return;
     setRecord(null);
+    setExpanded(null);
     getTrackRecord(selected)
       .then(setRecord)
       .catch((e) => setError(e instanceof ApiError ? e.detail : "Failed to load track record."));
@@ -93,31 +102,18 @@ export default function TrackRecordPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sections.map(([key, s]) => (
-                    <tr key={key} className="border-b border-line last:border-0">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-ink">{s.label}</div>
-                        <div className="mt-0.5 text-[11px] text-muted">{key.replace(/_/g, " ")}</div>
-                      </td>
-                      <td className="px-4 py-3 text-ink-soft">{s.completed}</td>
-                      <td className="px-4 py-3 text-ink-soft">{s.clean_successes}</td>
-                      <td className="px-4 py-3 text-ink-soft">{s.amended}</td>
-                      <td className="px-4 py-3 text-ink-soft">{s.escalated}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${
-                            s.clean
-                              ? "bg-violet-50 text-violet-700 ring-violet-200"
-                              : s.adverse > 0
-                                ? "bg-rose-50 text-rose-700 ring-rose-200"
-                                : "bg-slate-100 text-slate-500 ring-slate-200"
-                          }`}
-                        >
-                          {s.clean ? "graduated → AI" : s.adverse > 0 ? "pulled back" : "building"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {sections.map(([key, s]) => {
+                    const open = expanded === key;
+                    return (
+                      <SectionRows
+                        key={key}
+                        sectionKey={key}
+                        section={s}
+                        open={open}
+                        onToggle={() => setExpanded(open ? null : key)}
+                      />
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -156,5 +152,135 @@ export default function TrackRecordPage() {
         </>
       )}
     </div>
+  );
+}
+
+// A section row plus its expandable feedback detail (flags by signal, carry-forward notes, the
+// matters it ran in). Clicking the row toggles the detail.
+function SectionRows({
+  sectionKey,
+  section: s,
+  open,
+  onToggle,
+}: {
+  sectionKey: string;
+  section: TrackRecordSection;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const signals = SIGNAL_ORDER.filter((sig) => s.flags_by_signal?.[sig]?.count);
+  return (
+    <>
+      <tr
+        className="cursor-pointer border-b border-line last:border-0 hover:bg-canvas"
+        onClick={onToggle}
+      >
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-1.5 font-medium text-ink">
+            <span className={`text-[10px] text-muted transition-transform ${open ? "rotate-90" : ""}`}>
+              ▶
+            </span>
+            {s.label}
+          </div>
+          <div className="ml-4 mt-0.5 text-[11px] text-muted">{sectionKey.replace(/_/g, " ")}</div>
+        </td>
+        <td className="px-4 py-3 text-ink-soft">{s.completed}</td>
+        <td className="px-4 py-3 text-ink-soft">{s.clean_successes}</td>
+        <td className="px-4 py-3 text-ink-soft">{s.amended}</td>
+        <td className="px-4 py-3 text-ink-soft">{s.escalated}</td>
+        <td className="px-4 py-3">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${
+              s.clean
+                ? "bg-violet-50 text-violet-700 ring-violet-200"
+                : s.adverse > 0
+                  ? "bg-rose-50 text-rose-700 ring-rose-200"
+                  : "bg-slate-100 text-slate-500 ring-slate-200"
+            }`}
+          >
+            {s.clean ? "graduated → AI" : s.adverse > 0 ? "pulled back" : "building"}
+          </span>
+        </td>
+      </tr>
+      {open ? (
+        <tr className="border-b border-line bg-canvas/50 last:border-0">
+          <td colSpan={6} className="space-y-4 px-4 py-4">
+            {/* Flags raised, by checker signal (hard/soft visible). */}
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                Flags raised
+              </div>
+              {signals.length === 0 ? (
+                <p className="mt-1 text-[13px] text-muted">
+                  None — the AI work cleared without flags here.
+                </p>
+              ) : (
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  {signals.map((sig) => {
+                    const f = s.flags_by_signal[sig];
+                    return (
+                      <span
+                        key={sig}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-white px-2 py-1 text-[12px] text-ink ring-1 ring-inset ring-line"
+                      >
+                        <SignalTypeTag type={sig} />
+                        <span className="tabular-nums">{f.count}</span>
+                        {f.hard ? <HardSoftChip hard /> : null}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Carry forward — the partner's own amend/reject words. */}
+            {s.lessons.length > 0 ? (
+              <div>
+                <div className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                  Carry forward
+                </div>
+                <ul className="mt-1.5 space-y-1.5">
+                  {s.lessons.map((l, i) => (
+                    <li
+                      key={i}
+                      className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900"
+                    >
+                      <span className="font-medium uppercase tracking-wide text-amber-700">
+                        {l.action === "reject" ? "Rejected" : "Amended"}
+                      </span>{" "}
+                      {l.text}
+                      <Link
+                        href={`/cases/${l.case_id}/cockpit`}
+                        className="ml-1 whitespace-nowrap font-medium text-brand hover:underline"
+                      >
+                        · {l.case_title} →
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {/* Drill-down: the matters this section ran in. */}
+            {s.cases.length > 0 ? (
+              <p className="text-[12px] text-muted">
+                Run in:{" "}
+                {s.cases.map((c, i) => (
+                  <span key={c.case_id}>
+                    {i > 0 ? " · " : ""}
+                    <Link
+                      href={`/cases/${c.case_id}/cockpit`}
+                      className="text-brand hover:underline"
+                    >
+                      {c.title}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            ) : null}
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 }
