@@ -1,0 +1,61 @@
+=== RUN data-privacy-cybersecurity/analyze-counterparty-markup-of-cross ===
+{
+  "task": "data-privacy-cybersecurity/analyze-counterparty-markup-of-cross",
+  "run_id": "eu_sonnet5b/analyze-counterparty-markup-of-cross",
+  "severity": "high",
+  "deliverable": "deviation-report.docx",
+  "documents_included": [
+    "cascadia-tia-summary.docx",
+    "eurocloud-markup-dta.docx",
+    "lh-dta-playbook.docx",
+    "original-draft-dta.docx",
+    "partner-instructions.eml"
+  ],
+  "n_findings": 18,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.0625,
+  "deviation_score": 1.0,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.9688,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 22,
+    "input_tokens": 384206,
+    "output_tokens": 66726,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 384206,
+    "total_tokens": 450932,
+    "cost_usd": 2.153508
+  },
+  "n_flags": 34,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 450,932 (22 LLM calls) | in=384,206 out=66,726 cache_read=0 | cost=$2.1535 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\analyze-counterparty-markup-of-cross\output\deviation-report.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\analyze-counterparty-markup-of-cross
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5b/analyze-counterparty-markup-of-cross' --task 'data-privacy-cybersecurity/analyze-counterparty-markup-of-cross'
+=== GRADE data-privacy-cybersecurity/analyze-counterparty-markup-of-cross ===
+{
+  "task": "data-privacy-cybersecurity/analyze-counterparty-markup-of-cross",
+  "run_id": "eu_sonnet5b/analyze-counterparty-markup-of-cross",
+  "uncertainty": 0.9688,
+  "score": 0.7143,
+  "n_criteria": 63,
+  "n_pass": 45,
+  "n_low_confidence": 2,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 15132,
+    "output_tokens": 9773,
+    "cost_usd": 0.19199
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)

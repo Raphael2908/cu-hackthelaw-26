@@ -45,6 +45,8 @@ def _deliverable_text(run_id: str) -> str:
     out_dir = RESULTS_ROOT / run_id / "output"
     parts: list[str] = []
     for path in sorted(out_dir.glob("*.docx")):
+        if path.name.startswith("~$"):
+            continue  # Word lock/owner file (doc open in Word), not a real deliverable
         document = docx.Document(str(path))
         body = "\n".join(p.text for p in document.paragraphs if p.text.strip())
         parts.append(f"===== {path.name} =====\n{body}")

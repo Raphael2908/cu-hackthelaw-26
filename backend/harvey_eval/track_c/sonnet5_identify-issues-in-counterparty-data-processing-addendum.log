@@ -1,0 +1,60 @@
+=== RUN intellectual-property/identify-issues-in-counterparty-data-processing-addendum ===
+{
+  "task": "intellectual-property/identify-issues-in-counterparty-data-processing-addendum",
+  "run_id": "eu_sonnet5/identify-issues-in-counterparty-data-processing-addendum",
+  "severity": "high",
+  "deliverable": "dpa-issue-memorandum.docx",
+  "documents_included": [
+    "chu-to-lindgren-dpa-review-request.eml",
+    "cloudnest-dpa-v6-3.docx",
+    "msa-summary-terms.docx",
+    "verdana-dpa-playbook-v4-1.docx"
+  ],
+  "n_findings": 14,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.375,
+  "deviation_score": 1.0,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.8125,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 13,
+    "input_tokens": 154121,
+    "output_tokens": 42981,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 154121,
+    "total_tokens": 197102,
+    "cost_usd": 1.107078
+  },
+  "n_flags": 22,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 197,102 (13 LLM calls) | in=154,121 out=42,981 cache_read=0 | cost=$1.1071 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\identify-issues-in-counterparty-data-processing-addendum\output\dpa-issue-memorandum.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\identify-issues-in-counterparty-data-processing-addendum
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5/identify-issues-in-counterparty-data-processing-addendum' --task 'intellectual-property/identify-issues-in-counterparty-data-processing-addendum'
+=== GRADE intellectual-property/identify-issues-in-counterparty-data-processing-addendum ===
+{
+  "task": "intellectual-property/identify-issues-in-counterparty-data-processing-addendum",
+  "run_id": "eu_sonnet5/identify-issues-in-counterparty-data-processing-addendum",
+  "uncertainty": 0.8125,
+  "score": 0.6977,
+  "n_criteria": 43,
+  "n_pass": 30,
+  "n_low_confidence": 1,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 11395,
+    "output_tokens": 8600,
+    "cost_usd": 0.16318
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)

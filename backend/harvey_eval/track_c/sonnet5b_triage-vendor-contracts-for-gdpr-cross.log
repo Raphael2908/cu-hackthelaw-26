@@ -1,0 +1,76 @@
+=== RUN data-privacy-cybersecurity/triage-vendor-contracts-for-gdpr-cross ===
+{
+  "task": "data-privacy-cybersecurity/triage-vendor-contracts-for-gdpr-cross",
+  "run_id": "eu_sonnet5b/triage-vendor-contracts-for-gdpr-cross",
+  "severity": "high",
+  "deliverable": "cross-border-transfer-risk-assessment.docx",
+  "documents_included": [
+    "cpo-directive-memo.docx",
+    "crestline-dpa-excerpts.docx",
+    "dpf-verification-report.xlsx",
+    "kaspar-voss-status-memo.eml",
+    "meridian-dpa-subprocessor.docx",
+    "novaspark-msa-dpa-excerpts.docx",
+    "orion-genomics-dpa-excerpts.docx",
+    "palladian-dpa-tia.docx",
+    "silverlake-dpa-cloudmetric.docx",
+    "terravault-dpa-tia.docx",
+    "vendor-contract-summary-matrix.xlsx"
+  ],
+  "n_findings": 22,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.4,
+  "deviation_score": 0.99,
+  "disagreement_score": 0.9322033898305084,
+  "uncertainty": 0.7834,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 18,
+    "input_tokens": 340305,
+    "output_tokens": 53978,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 340305,
+    "total_tokens": 394283,
+    "cost_usd": 1.830585
+  },
+  "n_flags": 31,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 394,283 (18 LLM calls) | in=340,305 out=53,978 cache_read=0 | cost=$1.8306 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\triage-vendor-contracts-for-gdpr-cross\output\cross-border-transfer-risk-assessment.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\triage-vendor-contracts-for-gdpr-cross
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5b/triage-vendor-contracts-for-gdpr-cross' --task 'data-privacy-cybersecurity/triage-vendor-contracts-for-gdpr-cross'
+=== GRADE data-privacy-cybersecurity/triage-vendor-contracts-for-gdpr-cross ===
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\grade.py", line 174, in <module>
+    main()
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\grade.py", line 150, in main
+    res = grade_deliverable(args.task, args.run_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\grade.py", line 62, in grade_deliverable
+    deliverable = _deliverable_text(run_id)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\quality.py", line 48, in _deliverable_text
+    document = docx.Document(str(path))
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\.venv\Lib\site-packages\docx\api.py", line 27, in Document
+    document_part = cast("DocumentPart", Package.open(docx).main_document_part)
+                                         ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\.venv\Lib\site-packages\docx\opc\package.py", line 126, in open
+    pkg_reader = PackageReader.from_file(pkg_file)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\.venv\Lib\site-packages\docx\opc\pkgreader.py", line 22, in from_file
+    phys_reader = PhysPkgReader(pkg_file)
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\.venv\Lib\site-packages\docx\opc\phys_pkg.py", line 21, in __new__
+    raise PackageNotFoundError("Package not found at '%s'" % pkg_file)
+docx.opc.exceptions.PackageNotFoundError: Package not found at 'C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\triage-vendor-contracts-for-gdpr-cross\output\~$oss-border-transfer-risk-assessment.docx'

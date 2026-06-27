@@ -1,0 +1,64 @@
+=== RUN data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements ===
+{
+  "task": "data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "run_id": "eu_sonnet5/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "severity": "high",
+  "deliverable": "privacy-notice-gap-analysis.docx",
+  "documents_included": [
+    "aldersgate-dd-questionnaire-privacy.docx",
+    "consumer-rights-metrics-fy2024.xlsx",
+    "data-processing-inventory.xlsx",
+    "dpo-appointment-scc-summary.docx",
+    "soc2-management-letter-excerpt.docx",
+    "stellaridge-hipaa-notice.docx",
+    "stellaridge-privacy-notice.docx",
+    "symptomai-product-roadmap.docx"
+  ],
+  "n_findings": 19,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.0,
+  "deviation_score": 0.97,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.991,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 13,
+    "input_tokens": 229423,
+    "output_tokens": 45721,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 229423,
+    "total_tokens": 275144,
+    "cost_usd": 1.374084
+  },
+  "n_flags": 39,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 275,144 (13 LLM calls) | in=229,423 out=45,721 cache_read=0 | cost=$1.3741 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\compare-privacy-notice-against-statutory-disclosure-requirements\output\privacy-notice-gap-analysis.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\compare-privacy-notice-against-statutory-disclosure-requirements
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5/compare-privacy-notice-against-statutory-disclosure-requirements' --task 'data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements'
+=== GRADE data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements ===
+{
+  "task": "data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "run_id": "eu_sonnet5/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "uncertainty": 0.991,
+  "score": 0.5676,
+  "n_criteria": 37,
+  "n_pass": 21,
+  "n_low_confidence": 0,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 12357,
+    "output_tokens": 7528,
+    "cost_usd": 0.14999
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)

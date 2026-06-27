@@ -1,0 +1,65 @@
+=== RUN corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation ===
+{
+  "task": "corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "run_id": "eu_sonnet5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "severity": "high",
+  "deliverable": "eu-ai-act-gap-analysis-memo.docx",
+  "documents_included": [
+    "client-deployment-agreement-v61.docx",
+    "cto-email-transparency-concerns.eml",
+    "dpia-talentlens-workpulse.docx",
+    "risk-management-policy-2024.docx",
+    "soc2-audit-report-summary.docx",
+    "talentlens-model-card-v31.docx",
+    "talentlens-product-guide-v42.docx",
+    "workpulse-model-card-v24.docx",
+    "workpulse-technical-whitepaper.docx"
+  ],
+  "n_findings": 29,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.10714285714285714,
+  "deviation_score": 0.35,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.7514,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 33,
+    "input_tokens": 386530,
+    "output_tokens": 42408,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 386530,
+    "total_tokens": 428938,
+    "cost_usd": 1.79571
+  },
+  "n_flags": 26,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 428,938 (33 LLM calls) | in=386,530 out=42,408 cache_read=0 | cost=$1.7957 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\map-eu-ai-act-transparency-obligations-to-existing-product-documentation\output\eu-ai-act-gap-analysis-memo.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\map-eu-ai-act-transparency-obligations-to-existing-product-documentation
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation' --task 'corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation'
+=== GRADE corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation ===
+{
+  "task": "corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "run_id": "eu_sonnet5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "uncertainty": 0.7514,
+  "score": 0.5833,
+  "n_criteria": 48,
+  "n_pass": 28,
+  "n_low_confidence": 1,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 12971,
+    "output_tokens": 9530,
+    "cost_usd": 0.18186
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)

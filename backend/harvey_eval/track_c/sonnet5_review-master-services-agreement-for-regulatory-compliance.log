@@ -1,0 +1,61 @@
+=== RUN intellectual-property/review-master-services-agreement-for-regulatory-compliance ===
+{
+  "task": "intellectual-property/review-master-services-agreement-for-regulatory-compliance",
+  "run_id": "eu_sonnet5/review-master-services-agreement-for-regulatory-compliance",
+  "severity": "high",
+  "deliverable": "compliance-deviation-report.docx",
+  "documents_included": [
+    "bridgepoint-due-diligence-report.docx",
+    "greenleaf-contract-playbook.docx",
+    "greenleaf-vendor-management-policy.docx",
+    "internal-email-chain-pinnacle.eml",
+    "msa-draft-pinnacle-greenleaf.docx"
+  ],
+  "n_findings": 31,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.4,
+  "deviation_score": 0.99,
+  "disagreement_score": 0.9868421052631579,
+  "uncertainty": 0.7944,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 7,
+    "input_tokens": 241062,
+    "output_tokens": 47422,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 241062,
+    "total_tokens": 288484,
+    "cost_usd": 1.434516
+  },
+  "n_flags": 25,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 288,484 (7 LLM calls) | in=241,062 out=47,422 cache_read=0 | cost=$1.4345 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\review-master-services-agreement-for-regulatory-compliance\output\compliance-deviation-report.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\review-master-services-agreement-for-regulatory-compliance
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5/review-master-services-agreement-for-regulatory-compliance' --task 'intellectual-property/review-master-services-agreement-for-regulatory-compliance'
+=== GRADE intellectual-property/review-master-services-agreement-for-regulatory-compliance ===
+{
+  "task": "intellectual-property/review-master-services-agreement-for-regulatory-compliance",
+  "run_id": "eu_sonnet5/review-master-services-agreement-for-regulatory-compliance",
+  "uncertainty": 0.7944,
+  "score": 0.8049,
+  "n_criteria": 41,
+  "n_pass": 33,
+  "n_low_confidence": 0,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 12816,
+    "output_tokens": 7412,
+    "cost_usd": 0.14963
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)

@@ -1,0 +1,63 @@
+=== RUN data-privacy-cybersecurity/draft-standard-contractual-clauses-addendum ===
+{
+  "task": "data-privacy-cybersecurity/draft-standard-contractual-clauses-addendum",
+  "run_id": "eu_sonnet5b/draft-standard-contractual-clauses-addendum",
+  "severity": "high",
+  "deliverable": "scc-addendum.docx",
+  "documents_included": [
+    "data-processing-agreement.docx",
+    "luminos-soc2-executive-summary.docx",
+    "master-services-agreement.docx",
+    "negotiation-email-chain.eml",
+    "statement-of-work.docx",
+    "sub-processor-list.xlsx",
+    "transfer-impact-assessment.docx"
+  ],
+  "n_findings": 21,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.15384615384615385,
+  "deviation_score": 0.95,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.9081,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 17,
+    "input_tokens": 314723,
+    "output_tokens": 38882,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 314723,
+    "total_tokens": 353605,
+    "cost_usd": 1.527399
+  },
+  "n_flags": 25,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 353,605 (17 LLM calls) | in=314,723 out=38,882 cache_read=0 | cost=$1.5274 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\draft-standard-contractual-clauses-addendum\output\scc-addendum.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\draft-standard-contractual-clauses-addendum
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5b/draft-standard-contractual-clauses-addendum' --task 'data-privacy-cybersecurity/draft-standard-contractual-clauses-addendum'
+=== GRADE data-privacy-cybersecurity/draft-standard-contractual-clauses-addendum ===
+{
+  "task": "data-privacy-cybersecurity/draft-standard-contractual-clauses-addendum",
+  "run_id": "eu_sonnet5b/draft-standard-contractual-clauses-addendum",
+  "uncertainty": 0.9081,
+  "score": 0.0,
+  "n_criteria": 62,
+  "n_pass": 0,
+  "n_low_confidence": 0,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 14367,
+    "output_tokens": 11254,
+    "cost_usd": 0.21191
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)

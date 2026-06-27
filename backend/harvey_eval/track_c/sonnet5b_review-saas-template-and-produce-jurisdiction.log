@@ -1,0 +1,61 @@
+=== RUN intellectual-property/review-saas-template-and-produce-jurisdiction ===
+{
+  "task": "intellectual-property/review-saas-template-and-produce-jurisdiction",
+  "run_id": "eu_sonnet5b/review-saas-template-and-produce-jurisdiction",
+  "severity": "high",
+  "deliverable": "conformance-memorandum.docx",
+  "documents_included": [
+    "cyber-insurance-policy-summary.docx",
+    "data-processing-architecture-summary.docx",
+    "expansion-kickoff-email-thread.eml",
+    "jurisdiction-legal-summary.docx",
+    "saas-template-v4-2.docx"
+  ],
+  "n_findings": 53,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.6136363636363636,
+  "deviation_score": 0.99,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.6902,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 48,
+    "input_tokens": 1715214,
+    "output_tokens": 72497,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 1715214,
+    "total_tokens": 1787711,
+    "cost_usd": 6.233097
+  },
+  "n_flags": 30,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 1,787,711 (48 LLM calls) | in=1,715,214 out=72,497 cache_read=0 | cost=$6.2331 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\review-saas-template-and-produce-jurisdiction\output\conformance-memorandum.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5b\review-saas-template-and-produce-jurisdiction
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5b/review-saas-template-and-produce-jurisdiction' --task 'intellectual-property/review-saas-template-and-produce-jurisdiction'
+=== GRADE intellectual-property/review-saas-template-and-produce-jurisdiction ===
+{
+  "task": "intellectual-property/review-saas-template-and-produce-jurisdiction",
+  "run_id": "eu_sonnet5b/review-saas-template-and-produce-jurisdiction",
+  "uncertainty": 0.6902,
+  "score": 0.8276,
+  "n_criteria": 58,
+  "n_pass": 48,
+  "n_low_confidence": 5,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 16087,
+    "output_tokens": 12330,
+    "cost_usd": 0.23321
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)

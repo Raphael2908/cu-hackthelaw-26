@@ -1,0 +1,61 @@
+=== RUN data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance ===
+{
+  "task": "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
+  "run_id": "eu_sonnet5/summarize-new-gdpr-enforcement-guidance",
+  "severity": "high",
+  "deliverable": "executive-regulatory-brief.docx",
+  "documents_included": [
+    "ap-decision-2025-0042-summary.docx",
+    "edpb-guidelines-03-2024-summary.docx",
+    "novabridge-gdpr-compliance-tracker.xlsx",
+    "novabridge-processing-overview.docx",
+    "outside-counsel-cover-email.eml"
+  ],
+  "n_findings": 17,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.058823529411764705,
+  "deviation_score": 0.98,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.9646,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-sonnet-4-6",
+    "llm_calls": 22,
+    "input_tokens": 202120,
+    "output_tokens": 35124,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 202120,
+    "total_tokens": 237244,
+    "cost_usd": 1.13322
+  },
+  "n_flags": 25,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 237,244 (22 LLM calls) | in=202,120 out=35,124 cache_read=0 | cost=$1.1332 (claude-sonnet-4-6)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\summarize-new-gdpr-enforcement-guidance\output\executive-regulatory-brief.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_sonnet5\summarize-new-gdpr-enforcement-guidance
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_sonnet5/summarize-new-gdpr-enforcement-guidance' --task 'data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance'
+=== GRADE data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance ===
+{
+  "task": "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
+  "run_id": "eu_sonnet5/summarize-new-gdpr-enforcement-guidance",
+  "uncertainty": 0.9646,
+  "score": 0.5435,
+  "n_criteria": 46,
+  "n_pass": 25,
+  "n_low_confidence": 0,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 11562,
+    "output_tokens": 8191,
+    "cost_usd": 0.15755
+  }
+}
+
+(--no-save: grader_results.jsonl not modified)
