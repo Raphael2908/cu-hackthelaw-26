@@ -17,6 +17,101 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [ ] **Source verification: show BOTH the quoting passage in the work AND the quoted passage in the
+      source (backend + frontend).** The source drawer (`components/SourceDrawer.tsx`) today shows
+      only the source side — its "DOCUMENT TEXT" is the cited corpus document's text (the authority /
+      firm-standard doc via `getCorpusDoc`), with the cited locator clause highlighted. It does **not**
+      show the part of the *submitted work* that quoted/relied on the source. A lawyer we interviewed
+      wants both visible side by side: the exact passage in the submitted work that cited this
+      source/standard, and the part of the source that was quoted — so the partner can directly check
+      "did the work represent the source correctly?" (citation_support) and "how does this clause
+      deviate from the standard?" (precedent_deviation). The data exists but isn't wired through: a
+      `Flag` carries `submission_id` + `source_ref`, and the submission's `Finding` has `clause_ref`
+      (the *work's* clause), `statement` (what the output asserted), and `citation.claim` (what it
+      claimed the source says).
+      - **Backend.** When the checker raises a flag it has both the submission and the source — have it
+        record the quoting passage on the flag (e.g. in `source_ref`/`evidence`): the work clause_ref,
+        the output's statement/claimed text, alongside the existing source locator + clause text. So
+        the flag self-describes both sides.
+      - **Frontend.** Reframe the drawer as a two-part comparison: **"In the submitted work"** (clause
+        ref + the exact statement/claim that cited this source) and **"In the source"** (the cited
+        locator clause text — already shown). Relabel the bare "Document text" so it's clearly the
+        source, not the work. Make it work for both citation_support (source = cited authority) and
+        precedent_deviation (source = firm standard).
+      - **Note:** overlaps the existing "side-by-side source diff for deviation flags" line
+        under *Now (depth)* — fold them together. **One rule:** still just surfacing two checkable
+        passages for the human to compare; the system never renders the verdict (keep the footer).
+- [ ] **Iterative planning — the partner critiques the plan and the planner revises (backend +
+      frontend).** Today the planner proposes a plan and the partner can only edit task fields
+      (assignee/severity) or regenerate from scratch — there's no way to give natural-language
+      direction ("make the liability review human-led", "add a task for the data-transfer clause",
+      "drop the recital summary", "split this into two") and have the planner return a *revised* plan
+      that respects it. Add a partner-input → re-plan loop so the plan is a conversation, not a
+      one-shot proposal. All partner input here is the human authoring the delegation; the planner
+      only ever proposes and the partner still approves before anything dispatches (the one rule).
+      - **Backend.** A revise endpoint (e.g. `POST /cases/{id}/plan/revise` with the partner's
+        feedback) + a provider `revise_plan(case, current_plan, feedback)` that takes the existing
+        proposed plan plus the partner's notes and returns a new PROPOSED plan (mock: deterministic
+        transform/fixture; real: re-prompt with the current plan + feedback, structured-output
+        parsing). Nothing dispatches. Record the revision + the partner's input as an accountability
+        event — the partner's direction is part of the delegation record.
+      - **Frontend.** On `plan/page.tsx`, a feedback box ("Tell the planner what to change…") that
+        submits the partner's views and re-renders the revised proposed plan; keep the per-field edits
+        and the approval gate, and show that a revision happened (version / iteration marker).
+      - **Guardrail (one rule):** the planner only proposes; the partner's input drives it and the
+        partner approves before anything runs. No auto-dispatch from a revision.
+      - **Sub-item — structured partner input: propose & edit the AI/associate split for hybrid
+        tasks.** A more structured form of the same "partner shapes the plan" loop. A hybrid task
+        already carries `ai_instruction` (what the AI does), which the planner sets and `TaskPatch`
+        can already edit — but the plan page shows it **read-only** and only lets the partner edit
+        assignee type + severity, and there's **no field for what the *associate* does** (the human
+        half is implicit). For each hybrid task, propose an explicit split and make both halves
+        editable before approval:
+        - **Backend.** Add a `human_instruction` (associate's part) field to the Task model alongside
+          `ai_instruction`; have the planner propose a default for both on hybrid tasks (mock fixture
+          + real prompt/parsing); add `human_instruction` to `TaskPatch` (it's already patchable for
+          `ai_instruction`).
+        - **Frontend.** In the plan table, hybrid rows show a two-part **"AI does … / Associate does
+          …"** suggestion, each inline-editable (same edit-on-`proposed` gating as assignee/severity,
+          saved via `patchTask`); make `ai_instruction` editable here too, not just displayed.
+        - **Downstream.** Surface `human_instruction` to the associate in the inbox (pairs with the
+          "make the AI/associate division of labour explicit" item below).
+- [ ] **Add a short justification to each planner output (for verifiability).** The planner proposes
+      tasks (title, assignee type, severity) with no stated reasoning, so the partner can't quickly
+      sanity-check *why* — why this is AI vs human, why this severity, why this task exists. Have the
+      planner emit a one-line `rationale` per task (and optionally a plan-level summary), surfaced in
+      the plan table so the partner can verify the reasoning before approving — and so the iterative
+      critique loop above has something concrete to push back on. Backend: add `rationale` to the task
+      the planner produces (mock fixture + real prompt/parsing). Frontend: show it per row on
+      `plan/page.tsx`, quiet/secondary. **One rule:** the rationale is a checkable explanation to aid
+      the partner's judgement, never a verdict or a licence to auto-act — the partner still edits and
+      approves.
+- [ ] **Editable plan at both individual-task and whole-plan granularity.** Plan editing today is
+      limited to per-task assignee/severity selects on `plan/page.tsx`. Make the proposed plan fully
+      editable before approval at two levels:
+      - **Individual task:** edit all of a task's fields inline — title, description, `ai_instruction`
+        / `human_instruction`, assignee type/id, severity. (title/description/`ai_instruction` are
+        already patchable via `TaskPatch`; just surface them as editable fields.)
+      - **Whole plan:** add a task, remove a task, and reorder — needs backend (add/delete-task
+        endpoints + `order_index` in `TaskPatch`) — plus the natural-language revise loop above.
+      Keep the edit-on-`proposed` gating and the approval gate throughout; nothing dispatches until
+      the partner approves.
+- [ ] **Make the AI/associate division of labour explicit per task in the associate view.** In the
+      inbox (`app/inbox/page.tsx`) a hybrid task already shows several blocks — the "AI instruction"
+      (indigo), the "AI first-pass review (you remain the owner)" (violet), the brief slice, and the
+      associate's own submission box — but nothing frames *which parts are the AI's work and which are
+      the associate's responsibility*. An associate scanning a task can't tell at a glance what was
+      machine-produced (a draft to verify) vs what they own and must do. Make the split unmistakable:
+      - **Consistent attribution.** Label every contribution block by who produced it — a small "AI"
+        vs "You" badge/tag (reuse `AssigneeTag`/the existing chip styling, not new chrome) on the
+        AI-first-pass block and the submission block, so the boundary is visual, not just colour.
+      - **At-a-glance "who does what"** for the task, keyed off `assignee_type`: for **hybrid**, "AI
+        drafted a first pass → you verify, amend, and own the final submission"; for **human**, "this
+        is yours — no AI pass" (and the checker doesn't grade human work); for the (rare) AI-surfaced
+        context, mark it clearly as machine output.
+      - **Reinforce the one rule:** the AI first pass is a *draft of checkable claims the associate
+        owns and must verify*, never finished work and never a verdict. Keep "you remain the owner"
+        framing prominent. No backend change — this is labelling/attribution in the associate UI.
 - [ ] **Separate "new case" from the case list with a foreground modal.** On the partner's cases page
       (`app/page.tsx`) the New-case form is a persistent left column (`Panel`, `lg:col-span-1`) always
       competing with the case list (`lg:col-span-2`) — the create form is on screen even when the
