@@ -1,0 +1,2834 @@
+[
+  {
+    "id": "antitrust-competition/extract-key-findings-from-european-competition-authority-decision",
+    "area": "antitrust-competition",
+    "title": "Extract Key Findings from European Competition Authority Decision \u2014 Structured Analysis Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 70,
+    "eu": 20,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic",
+      "TFEU/Art101-102"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "antitrust-competition/extract-pricing-data-from-document-production",
+    "area": "antitrust-competition",
+    "title": "Extract Pricing Data from Document Production \u2014 Antitrust Pricing Analysis Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 66,
+    "eu": 9,
+    "us": 5,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 10,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "antitrust-competition/draft-commitments-proposal",
+    "area": "antitrust-competition",
+    "title": "Draft EU Merger Remedy Commitments Proposal for Industrial Automation Acquisition",
+    "work_type": "draft",
+    "n_criteria": 61,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 7,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "antitrust-competition/draft-response-to-investigative-subpoena",
+    "area": "antitrust-competition",
+    "title": "Draft Response to DOJ Antitrust Division Investigative Subpoena with Privilege Log and Objections",
+    "work_type": "draft",
+    "n_criteria": 71,
+    "eu": 1,
+    "us": 2,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "antitrust-competition/extract-relevant-product-market-definitions-from-precedent-decisions",
+    "area": "antitrust-competition",
+    "title": "Extract Product Market Definitions from Precedent Antitrust Decisions \u2014 Pharmaceutical Merger Market Definition Analysis Memo",
+    "work_type": "research",
+    "n_criteria": 50,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 8,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "arbitration-international-dispute-resolution/draft-challenge-to-arbitrator-appointment",
+    "area": "arbitration-international-dispute-resolution",
+    "title": "Draft Challenge to Arbitrator Appointment \u2014 Written Submission to ICC International Court of Arbitration",
+    "work_type": "draft",
+    "n_criteria": 57,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "arbitration-international-dispute-resolution/identify-issues-in-counterpartys-document-production-requests",
+    "area": "arbitration-international-dispute-resolution",
+    "title": "Identify Issues in Counterparty's Document Production Requests \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 38,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "arbitration-international-dispute-resolution/draft-interim-measures-request",
+    "area": "arbitration-international-dispute-resolution",
+    "title": "Draft Emergency Application for Interim/Provisional Measures Before ICC Tribunal",
+    "work_type": "draft",
+    "n_criteria": 87,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 9,
+    "readable_docs": 9,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "banking-finance/identify-term-sheet-issues",
+    "area": "banking-finance",
+    "title": "Leveraged Acquisition Financing \u2014 Term Sheet Issue Identification",
+    "work_type": "review",
+    "n_criteria": 34,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 4,
+    "readable_docs": 3,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "capital-markets/identify-dd-request-list-issues/scenario-01",
+    "area": "capital-markets",
+    "title": "Issue Identification Memorandum: Review of Underwriters' Due Diligence Document Request List for Pre-IPO Biopharmaceutical Company",
+    "work_type": "review",
+    "n_criteria": 35,
+    "eu": 5,
+    "us": 7,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "capital-markets/identify-dd-request-list-issues/scenario-02",
+    "area": "capital-markets",
+    "title": "Issue Identification Memorandum: Review of Underwriters' Due Diligence Document Request List for Pre-IPO Biopharmaceutical Company",
+    "work_type": "review",
+    "n_criteria": 35,
+    "eu": 5,
+    "us": 7,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "capital-markets/draft-registration-statement-on-form-s",
+    "area": "capital-markets",
+    "title": "Draft Registration Statement on Form S-1 for Enterprise Software IPO",
+    "work_type": "draft",
+    "n_criteria": 90,
+    "eu": 2,
+    "us": 3,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "capital-markets/identify-issues-in-underwriting-agreement",
+    "area": "capital-markets",
+    "title": "Identify Issues in Draft Underwriting Agreement for Biotech IPO \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 38,
+    "eu": 1,
+    "us": 2,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "capital-markets/review-annual-report-filing-for-form-compliance",
+    "area": "capital-markets",
+    "title": "Review Annual Report (Form 10-K) Filing for Form Compliance \u2014 Form Check Memorandum",
+    "work_type": "review",
+    "n_criteria": 34,
+    "eu": 1,
+    "us": 15,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 5,
+    "readable_docs": 3,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-first-draft/scenario-02",
+    "area": "contracts",
+    "title": "Draft Data Processing Agreement Addendum First Version",
+    "work_type": "",
+    "n_criteria": 80,
+    "eu": 32,
+    "us": 1,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 9,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-term-negotiation/scenario-02",
+    "area": "contracts",
+    "title": "Negotiate Data Processing Agreement Addendum Contested Terms",
+    "work_type": "",
+    "n_criteria": 56,
+    "eu": 26,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR",
+      "Schrems",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 15,
+    "readable_docs": 13,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-first-draft/scenario-02",
+    "area": "contracts",
+    "title": "Draft License Agreement First Version",
+    "work_type": "",
+    "n_criteria": 105,
+    "eu": 25,
+    "us": 5,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-term-negotiation/scenario-03",
+    "area": "contracts",
+    "title": "Negotiate Standard Contractual Clauses Contested Terms",
+    "work_type": "",
+    "n_criteria": 37,
+    "eu": 24,
+    "us": 5,
+    "eu_markers": [
+      "CJEU",
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 13,
+    "readable_docs": 11,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-subsequent-turn-redline/scenario-04",
+    "area": "contracts",
+    "title": "Redline Trademark License Agreement Subsequent Turn",
+    "work_type": "",
+    "n_criteria": 92,
+    "eu": 21,
+    "us": 4,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 11,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-counterparty-paper-review/scenario-02",
+    "area": "contracts",
+    "title": "Review Data Processing Agreement Addendum Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 74,
+    "eu": 18,
+    "us": 4,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-counterparty-paper-review/scenario-04",
+    "area": "contracts",
+    "title": "Review Standard Contractual Clauses Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 62,
+    "eu": 18,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "MiFID/MAR/DORA",
+      "Schrems"
+    ],
+    "n_docs": 11,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-playbook-escalation/scenario-03",
+    "area": "contracts",
+    "title": "Escalate Standard Contractual Clauses Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 77,
+    "eu": 18,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 12,
+    "readable_docs": 11,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-first-draft/scenario-05",
+    "area": "contracts",
+    "title": "Draft Trademark License Agreement First Version",
+    "work_type": "",
+    "n_criteria": 90,
+    "eu": 18,
+    "us": 5,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 7,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/banking/intercreditor-agreement-playbook-escalation",
+    "area": "contracts",
+    "title": "Escalate Intercreditor Agreement Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 76,
+    "eu": 16,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 12,
+    "readable_docs": 11,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-subsequent-turn-redline/scenario-02",
+    "area": "contracts",
+    "title": "Redline License Agreement Subsequent Turn",
+    "work_type": "",
+    "n_criteria": 62,
+    "eu": 16,
+    "us": 5,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 9,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-counterparty-paper-review/scenario-01",
+    "area": "contracts",
+    "title": "Review Ai Vendor Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 83,
+    "eu": 14,
+    "us": 8,
+    "eu_markers": [
+      "EU-AI-Act",
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-channel-partnerships/channel-distribution-counterparty-paper-review/scenario-03",
+    "area": "contracts",
+    "title": "Review Reseller Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 68,
+    "eu": 13,
+    "us": 2,
+    "eu_markers": [
+      "EU-generic",
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 11,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-subsequent-turn-redline/scenario-02",
+    "area": "contracts",
+    "title": "Redline Data Processing Agreement Addendum Subsequent Turn",
+    "work_type": "",
+    "n_criteria": 46,
+    "eu": 13,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 12,
+    "readable_docs": 11,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/ip-licensing/technology-cross-license-agreement-first-turn-redline",
+    "area": "contracts",
+    "title": "Redline Technology Cross License Agreement First Turn",
+    "work_type": "",
+    "n_criteria": 45,
+    "eu": 13,
+    "us": 7,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 13,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/financing/credit-lending-playbook-escalation/scenario-02",
+    "area": "contracts",
+    "title": "Escalate Loan Agreement Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 99,
+    "eu": 12,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 13,
+    "readable_docs": 11,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-counterparty-paper-review/scenario-04",
+    "area": "contracts",
+    "title": "Review Saas Subscription Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 65,
+    "eu": 11,
+    "us": 6,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-counterparty-paper-review/scenario-05",
+    "area": "contracts",
+    "title": "Review Ai Vendor Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 54,
+    "eu": 10,
+    "us": 2,
+    "eu_markers": [
+      "EU-AI-Act",
+      "EU-SCC",
+      "EU-generic"
+    ],
+    "n_docs": 10,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/financing/credit-lending-playbook-escalation/scenario-03",
+    "area": "contracts",
+    "title": "Escalate Revolving Credit Facility Agreement Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 76,
+    "eu": 9,
+    "us": 1,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 13,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/ip-licensing/technology-cross-license-agreement-first-draft",
+    "area": "contracts",
+    "title": "Draft Technology Cross License Agreement First Version",
+    "work_type": "",
+    "n_criteria": 95,
+    "eu": 9,
+    "us": 1,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 11,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/master-services-agreement-counterparty-paper-review/scenario-02",
+    "area": "contracts",
+    "title": "Review Cro Services Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 65,
+    "eu": 8,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 11,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-first-draft/scenario-04",
+    "area": "contracts",
+    "title": "Draft Standard Contractual Clauses First Version",
+    "work_type": "",
+    "n_criteria": 59,
+    "eu": 8,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/financing/guaranty-agreement-playbook-escalation",
+    "area": "contracts",
+    "title": "Escalate Guaranty Agreement Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 85,
+    "eu": 8,
+    "us": 2,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 10,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/ip-licensing/technology-cross-license-agreement-subsequent-turn-redline",
+    "area": "contracts",
+    "title": "Redline Technology Cross License Agreement Subsequent Turn",
+    "work_type": "",
+    "n_criteria": 50,
+    "eu": 8,
+    "us": 4,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/master-services-agreement-counterparty-paper-review/scenario-03",
+    "area": "contracts",
+    "title": "Review Master Services Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 60,
+    "eu": 7,
+    "us": 4,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic"
+    ],
+    "n_docs": 10,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-first-turn-redline/scenario-02",
+    "area": "contracts",
+    "title": "Redline Data Processing Agreement Addendum First Turn",
+    "work_type": "",
+    "n_criteria": 64,
+    "eu": 7,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 11,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-first-draft/scenario-01",
+    "area": "contracts",
+    "title": "Draft Ai Vendor Agreement First Version",
+    "work_type": "",
+    "n_criteria": 93,
+    "eu": 6,
+    "us": 6,
+    "eu_markers": [
+      "EU-AI-Act"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/healthcare/clinical-trial-agreement-counterparty-paper-review",
+    "area": "contracts",
+    "title": "Review Clinical Trial Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 51,
+    "eu": 6,
+    "us": 4,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-first-turn-redline/scenario-05",
+    "area": "contracts",
+    "title": "Redline Trademark License Agreement First Turn",
+    "work_type": "",
+    "n_criteria": 29,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/master-services-agreement-first-turn-redline/scenario-01",
+    "area": "contracts",
+    "title": "Redline Advertising Agency Master Services Agreement First Turn",
+    "work_type": "",
+    "n_criteria": 74,
+    "eu": 5,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/master-services-agreement-first-draft/scenario-01",
+    "area": "contracts",
+    "title": "Draft Advertising Agency Master Services Agreement First Version",
+    "work_type": "",
+    "n_criteria": 120,
+    "eu": 4,
+    "us": 3,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-counterparty-paper-review/scenario-03",
+    "area": "contracts",
+    "title": "Review Data Licensing Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 73,
+    "eu": 4,
+    "us": 2,
+    "eu_markers": [
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-term-negotiation/scenario-02",
+    "area": "contracts",
+    "title": "Negotiate Api Access And Use Agreement Contested Terms",
+    "work_type": "",
+    "n_criteria": 60,
+    "eu": 4,
+    "us": 2,
+    "eu_markers": [
+      "EU-Regulation",
+      "EU-generic"
+    ],
+    "n_docs": 12,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/vendor-services-agreement-playbook-escalation/scenario-04",
+    "area": "contracts",
+    "title": "Escalate Vendor Agreement Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 67,
+    "eu": 3,
+    "us": 1,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 12,
+    "readable_docs": 11,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/corporate-ma/transition-intercompany-services-first-draft/scenario-02",
+    "area": "contracts",
+    "title": "Draft Transition Services Agreement First Version",
+    "work_type": "",
+    "n_criteria": 93,
+    "eu": 3,
+    "us": 4,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-first-draft/scenario-03",
+    "area": "contracts",
+    "title": "Draft Data Sharing Agreement First Version",
+    "work_type": "",
+    "n_criteria": 98,
+    "eu": 3,
+    "us": 3,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 9,
+    "readable_docs": 7,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/healthcare/manufacturing-supply-agreement-first-draft",
+    "area": "contracts",
+    "title": "Draft Manufacturing Supply Agreement First Version",
+    "work_type": "",
+    "n_criteria": 141,
+    "eu": 3,
+    "us": 1,
+    "eu_markers": [
+      "GDPR",
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 8,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/banking/repo-securities-lending-first-draft/scenario-01",
+    "area": "contracts",
+    "title": "Draft Global Master Repurchase Agreement First Version",
+    "work_type": "",
+    "n_criteria": 96,
+    "eu": 2,
+    "us": 8,
+    "eu_markers": [
+      "EU-Directive"
+    ],
+    "n_docs": 9,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-channel-partnerships/co-development-agreement-first-draft",
+    "area": "contracts",
+    "title": "Draft Co Development Agreement First Version",
+    "work_type": "",
+    "n_criteria": 77,
+    "eu": 2,
+    "us": 2,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 7,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-channel-partnerships/strategic-partnership-co-sell-first-draft/scenario-03",
+    "area": "contracts",
+    "title": "Draft Strategic Partnership Agreement First Version",
+    "work_type": "",
+    "n_criteria": 95,
+    "eu": 2,
+    "us": 3,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 12,
+    "readable_docs": 10,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-first-draft/scenario-02",
+    "area": "contracts",
+    "title": "Draft Api Access And Use Agreement First Version",
+    "work_type": "",
+    "n_criteria": 72,
+    "eu": 2,
+    "us": 9,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/saas-api-subscription-first-draft/scenario-04",
+    "area": "contracts",
+    "title": "Draft Saas Subscription Agreement First Version",
+    "work_type": "",
+    "n_criteria": 123,
+    "eu": 2,
+    "us": 5,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 9,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/corporate-ma/transition-intercompany-services-first-draft/scenario-01",
+    "area": "contracts",
+    "title": "Draft Intercompany Services Agreement First Version",
+    "work_type": "",
+    "n_criteria": 97,
+    "eu": 2,
+    "us": 8,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-counterparty-paper-review/scenario-03",
+    "area": "contracts",
+    "title": "Review Data Sharing Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 69,
+    "eu": 2,
+    "us": 6,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 10,
+    "readable_docs": 7,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-first-turn-redline/scenario-03",
+    "area": "contracts",
+    "title": "Redline Data Sharing Agreement First Turn",
+    "work_type": "",
+    "n_criteria": 29,
+    "eu": 2,
+    "us": 4,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-term-negotiation/scenario-04",
+    "area": "contracts",
+    "title": "Negotiate Data Sharing Agreement Contested Terms",
+    "work_type": "",
+    "n_criteria": 25,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 11,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/employment-compensation/severance-release-subsequent-turn-redline",
+    "area": "contracts",
+    "title": "Redline Executive Severance And Change In Control Agreement Subsequent Turn",
+    "work_type": "",
+    "n_criteria": 28,
+    "eu": 2,
+    "us": 2,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 12,
+    "readable_docs": 10,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/financing/credit-lending-playbook-escalation/scenario-01",
+    "area": "contracts",
+    "title": "Escalate Credit Agreement Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 78,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 11,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/ip-licensing/ip-assignment-agreement-first-draft",
+    "area": "contracts",
+    "title": "Draft Ip Assignment Agreement First Version",
+    "work_type": "",
+    "n_criteria": 101,
+    "eu": 2,
+    "us": 7,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 8,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-counterparty-paper-review/scenario-05",
+    "area": "contracts",
+    "title": "Review License Collaboration Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 48,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-first-draft/scenario-03",
+    "area": "contracts",
+    "title": "Draft License Collaboration Agreement First Version",
+    "work_type": "",
+    "n_criteria": 118,
+    "eu": 2,
+    "us": 8,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-subsequent-turn-redline/scenario-03",
+    "area": "contracts",
+    "title": "Redline License Collaboration Agreement Subsequent Turn",
+    "work_type": "",
+    "n_criteria": 50,
+    "eu": 2,
+    "us": 1,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 17,
+    "readable_docs": 13,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-channel-partnerships/strategic-partnership-co-sell-counterparty-paper-review/scenario-01",
+    "area": "contracts",
+    "title": "Review Co Marketing Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 41,
+    "eu": 1,
+    "us": 5,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 9,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/master-services-agreement-first-draft/scenario-02",
+    "area": "contracts",
+    "title": "Draft Cro Services Agreement First Version",
+    "work_type": "",
+    "n_criteria": 124,
+    "eu": 1,
+    "us": 6,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 11,
+    "readable_docs": 10,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/master-services-agreement-term-negotiation/scenario-01",
+    "area": "contracts",
+    "title": "Negotiate Advertising Agency Master Services Agreement Contested Terms",
+    "work_type": "",
+    "n_criteria": 50,
+    "eu": 1,
+    "us": 1,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 13,
+    "readable_docs": 10,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/commercial-vendor-customer/statement-of-work-first-draft",
+    "area": "contracts",
+    "title": "Draft Statement Of Work First Version",
+    "work_type": "",
+    "n_criteria": 116,
+    "eu": 1,
+    "us": 2,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/corporate-ma/loi-mou-counterparty-paper-review/scenario-01",
+    "area": "contracts",
+    "title": "Review Letter Of Intent Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 60,
+    "eu": 1,
+    "us": 17,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 7,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "contracts/data-privacy-security/privacy-addendum-playbook-escalation/scenario-04",
+    "area": "contracts",
+    "title": "Escalate Data Processing Agreement Addendum Out Of Policy Terms",
+    "work_type": "",
+    "n_criteria": 43,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 10,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/ip-licensing/license-agreement-counterparty-paper-review/scenario-02",
+    "area": "contracts",
+    "title": "Review Software License Agreement Counterparty Paper",
+    "work_type": "",
+    "n_criteria": 66,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "contracts/real-estate/easement-agreement-term-negotiation",
+    "area": "contracts",
+    "title": "Negotiate Easement Agreement Contested Terms",
+    "work_type": "",
+    "n_criteria": 53,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 15,
+    "readable_docs": 13,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/assess-impact-of-new-gdpr-adequacy-decision-on-cross",
+    "area": "corporate-governance",
+    "title": "Assess Impact of New GDPR Adequacy Decision on Cross-Border Data Transfer Framework",
+    "work_type": "analyze",
+    "n_criteria": 37,
+    "eu": 23,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 24,
+    "readable_docs": 20,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+    "area": "corporate-governance",
+    "title": "Map EU AI Act Transparency Obligations to Existing Product Documentation \u2014 Gap Analysis Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 47,
+    "eu": 23,
+    "us": 0,
+    "eu_markers": [
+      "EU-AI-Act",
+      "EU-Regulation",
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/compare-ai-disclosure-requirements-across-jurisdictions",
+    "area": "corporate-governance",
+    "title": "Compare AI Disclosure Requirements Across Jurisdictions \u2014 Regulatory Comparison Memorandum for Clinical Decision Support Tool",
+    "work_type": "research",
+    "n_criteria": 56,
+    "eu": 22,
+    "us": 0,
+    "eu_markers": [
+      "EU-AI-Act",
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/draft-data-retention-and-destruction-policy",
+    "area": "corporate-governance",
+    "title": "Draft Comprehensive Data Retention and Destruction Policy for Cross-Border Digital Health Company",
+    "work_type": "draft",
+    "n_criteria": 48,
+    "eu": 16,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/triage-vendor-ai-contracts-for-compliance-with-eu-ai-liability-directive",
+    "area": "corporate-governance",
+    "title": "Triage Vendor AI Contracts for Compliance with EU AI Liability Directive \u2014 Regulatory Gap Analysis Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 57,
+    "eu": 14,
+    "us": 0,
+    "eu_markers": [
+      "EU-AI-Act",
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/analyze-eu-ai-act-high",
+    "area": "corporate-governance",
+    "title": "EU AI Act High-Risk Requirements Gap Analysis Memorandum for Autonomous Vehicle AI Provider",
+    "work_type": "analyze",
+    "n_criteria": 66,
+    "eu": 13,
+    "us": 0,
+    "eu_markers": [
+      "EU-AI-Act",
+      "EU-Regulation"
+    ],
+    "n_docs": 7,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/assess-impact-of-eu-ai-act-on-company-ai-product-portfolio",
+    "area": "corporate-governance",
+    "title": "Assess Impact of EU AI Act on Company AI Product Portfolio \u2014 Regulatory Impact Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 58,
+    "eu": 13,
+    "us": 0,
+    "eu_markers": [
+      "EU-AI-Act",
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/draft-internal-ai-acceptable-use-policy",
+    "area": "corporate-governance",
+    "title": "Draft Internal AI Acceptable Use Policy for Healthcare Company",
+    "work_type": "draft",
+    "n_criteria": 59,
+    "eu": 9,
+    "us": 0,
+    "eu_markers": [
+      "EU-AI-Act"
+    ],
+    "n_docs": 10,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-governance/draft-corporate-code-of-conduct",
+    "area": "corporate-governance",
+    "title": "Draft Comprehensive Corporate Code of Conduct for Recently Public Biopharmaceutical Company",
+    "work_type": "draft",
+    "n_criteria": 76,
+    "eu": 5,
+    "us": 7,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 10,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-governance/draft-updated-code-of-conduct",
+    "area": "corporate-governance",
+    "title": "Draft Updated Code of Business Conduct and Ethics for Pharmaceutical Company Addressing SEC Clawback Rules, DOJ Compliance Guidance, and EU CS3D",
+    "work_type": "draft",
+    "n_criteria": 43,
+    "eu": 5,
+    "us": 14,
+    "eu_markers": [
+      "EU-Directive",
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-governance/map-sec-human-capital-disclosure-requirements-to-existing-hr-data",
+    "area": "corporate-governance",
+    "title": "Map SEC Human Capital Disclosure Requirements to Existing HR Data \u2014 Regulatory Gap Analysis Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 66,
+    "eu": 4,
+    "us": 11,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-governance/review-nda-playbook-review",
+    "area": "corporate-governance",
+    "title": "Review DataPulse Draft NDA Against Hightower Playbook and Prepare Deviation Report",
+    "work_type": "review",
+    "n_criteria": 57,
+    "eu": 3,
+    "us": 8,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 3,
+    "readable_docs": 3,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-governance/draft-compliance-regulatory",
+    "area": "corporate-governance",
+    "title": "Draft Code of Business Conduct and Ethics for Newly Public Biopharmaceutical Company",
+    "work_type": "draft",
+    "n_criteria": 73,
+    "eu": 2,
+    "us": 24,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 10,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-governance/draft-litigation-hold-notice",
+    "area": "corporate-governance",
+    "title": "Draft Comprehensive Litigation Hold Notice for Whistleblower Retaliation and FCPA Matter",
+    "work_type": "draft",
+    "n_criteria": 65,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-ma/compare-merger-filing-requirements-across-multiple-jurisdictions",
+    "area": "corporate-ma",
+    "title": "Compare Merger Filing Requirements across Multiple Jurisdictions \u2014 Jurisdictional Analysis Memorandum",
+    "work_type": "research",
+    "n_criteria": 64,
+    "eu": 6,
+    "us": 11,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 7,
+    "readable_docs": 4,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-ma/generate-due-diligence-checklist-for-technology-company-acquisition",
+    "area": "corporate-ma",
+    "title": "Generate Comprehensive Due Diligence Checklist for Industrial Robotics & Automation Company Acquisition",
+    "work_type": "draft",
+    "n_criteria": 77,
+    "eu": 3,
+    "us": 4,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 4,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-ma/compare-pa-vs-commitment-letter",
+    "area": "corporate-ma",
+    "title": "Purchase Agreement vs. Debt Commitment Letter Cross-Check \u2014 Term Deviation Report for Leveraged Buyout",
+    "work_type": "review",
+    "n_criteria": 37,
+    "eu": 2,
+    "us": 6,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 4,
+    "readable_docs": 3,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-ma/draft-asset-purchase-agreement/scenario-01",
+    "area": "corporate-ma",
+    "title": "Draft Asset Purchase Agreement and Ancillary Documents for Carve-Out Acquisition of Enterprise Software Division",
+    "work_type": "draft",
+    "n_criteria": 161,
+    "eu": 2,
+    "us": 11,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 11,
+    "readable_docs": 11,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-ma/draft-due-diligence-request-list/scenario-01",
+    "area": "corporate-ma",
+    "title": "Draft Due Diligence Request List for Acquisition of Healthcare IT Platform",
+    "work_type": "draft",
+    "n_criteria": 69,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 5,
+    "readable_docs": 3,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-ma/draft-due-diligence-request-list/scenario-02",
+    "area": "corporate-ma",
+    "title": "Draft Due Diligence Request List for Acquisition of Healthcare IT Platform",
+    "work_type": "draft",
+    "n_criteria": 69,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 5,
+    "readable_docs": 3,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "corporate-ma/track-third-party-consents",
+    "area": "corporate-ma",
+    "title": "Track Third-Party Consents and Draft Consent Solicitation Letters for Healthcare Diagnostics Acquisition",
+    "work_type": "draft",
+    "n_criteria": 60,
+    "eu": 2,
+    "us": 6,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 9,
+    "readable_docs": 9,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-ma/draft-data-room-population-plan/scenario-01",
+    "area": "corporate-ma",
+    "title": "Draft Sell-Side Data Room Population Plan for SaaS Company Stock Purchase",
+    "work_type": "draft",
+    "n_criteria": 53,
+    "eu": 1,
+    "us": 6,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "corporate-ma/draft-data-room-population-plan/scenario-02",
+    "area": "corporate-ma",
+    "title": "Draft Sell-Side Data Room Population Plan for SaaS Company Stock Purchase",
+    "work_type": "draft",
+    "n_criteria": 54,
+    "eu": 1,
+    "us": 11,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-standard-contractual-clauses-addendum",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft Standard Contractual Clauses Addendum for Cross-Border Data Processing Agreement",
+    "work_type": "draft",
+    "n_criteria": 62,
+    "eu": 64,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/identify-privacy-and-data-protection-issues-in-counterparty-transfer-agreement",
+    "area": "data-privacy-cybersecurity",
+    "title": "Identify Privacy and Data Protection Issues in Counterparty Data Transfer Agreement \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 42,
+    "eu": 54,
+    "us": 5,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-data-processing-agreement",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft GDPR-Compliant Data Processing Agreement for Cross-Border Health Data Analytics Engagement",
+    "work_type": "draft",
+    "n_criteria": 62,
+    "eu": 47,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "Schrems",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 8,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/extract-privacy-compliance-obligations-from-multi",
+    "area": "data-privacy-cybersecurity",
+    "title": "Extract Privacy Compliance Obligations from Multi-Jurisdictional Statutes for Health-Tech Platform \u2014 Compliance Obligation Matrix",
+    "work_type": "research",
+    "n_criteria": 56,
+    "eu": 41,
+    "us": 1,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 6,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/triage-vendor-contracts-for-gdpr-cross",
+    "area": "data-privacy-cybersecurity",
+    "title": "Triage Vendor Contracts for GDPR Cross-Border Transfer Exposure \u2014 Risk Assessment Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 47,
+    "eu": 41,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 11,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/analyze-counterparty-markup-of-cross",
+    "area": "data-privacy-cybersecurity",
+    "title": "Analyze Counterparty Markup of Cross-Border Data Transfer Agreement \u2014 Deviation Report",
+    "work_type": "analyze",
+    "n_criteria": 61,
+    "eu": 39,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/compare-privacy-program-documentation-against-applicable-data-protection-regulations",
+    "area": "data-privacy-cybersecurity",
+    "title": "Analyze Privacy Program Compliance Gaps Across GDPR, HIPAA, and CCPA/CPRA Frameworks",
+    "work_type": "analyze",
+    "n_criteria": 62,
+    "eu": 36,
+    "us": 0,
+    "eu_markers": [
+      "CJEU",
+      "EU-SCC",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 13,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-external-privacy-notice",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft External Privacy Notice for Digital Health Platform",
+    "work_type": "draft",
+    "n_criteria": 58,
+    "eu": 33,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR",
+      "Schrems",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/compare-privacy-impact-assessment-against-regulatory-guidance",
+    "area": "data-privacy-cybersecurity",
+    "title": "Gap Analysis Memorandum: Privacy Impact Assessment vs. EDPB and ICO DPIA Guidance for AI Health Platform",
+    "work_type": "analyze",
+    "n_criteria": 52,
+    "eu": 30,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "Schrems",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-markup-of-data-processing-agreement",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft Markup of Data Processing Agreement with Redline and Commentary Memorandum for Pharma Controller",
+    "work_type": "draft",
+    "n_criteria": 67,
+    "eu": 27,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/compare-breach-notification-schedule-against-multi",
+    "area": "data-privacy-cybersecurity",
+    "title": "Gap Analysis Memorandum: Breach Notification Schedule vs. Multi-Jurisdiction Regulatory Guidance",
+    "work_type": "analyze",
+    "n_criteria": 41,
+    "eu": 25,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-markup-of-cross",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft Markup of Cross-Border Data Transfer Agreement for Clinical Trial Data Processing",
+    "work_type": "draft",
+    "n_criteria": 57,
+    "eu": 25,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/map-gdpr-data-subject-rights-requirements-to-existing-internal-controls",
+    "area": "data-privacy-cybersecurity",
+    "title": "Map GDPR Data Subject Rights Requirements to Existing Internal Controls \u2014 Gap Analysis Report",
+    "work_type": "analyze",
+    "n_criteria": 68,
+    "eu": 24,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/review-incident-response-plan-against-regulatory-requirements-and-industry-standards",
+    "area": "data-privacy-cybersecurity",
+    "title": "Review Incident Response Plan Against Regulatory Requirements and Industry Standards \u2014 Issue Identification Memorandum",
+    "work_type": "review",
+    "n_criteria": 39,
+    "eu": 23,
+    "us": 0,
+    "eu_markers": [
+      "EU-Directive",
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements",
+    "area": "data-privacy-cybersecurity",
+    "title": "Gap Analysis Report: Privacy Notice vs. CCPA/CPRA, HIPAA, and GDPR Disclosure Requirements for Digital Health Company",
+    "work_type": "analyze",
+    "n_criteria": 37,
+    "eu": 22,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-updated-privacy-policy",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft Updated Privacy Policy for AI-Powered Mental Health Screening Tool Launch",
+    "work_type": "draft",
+    "n_criteria": 68,
+    "eu": 22,
+    "us": 1,
+    "eu_markers": [
+      "CJEU",
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/audit-privacy-policy-compliance/scenario-01",
+    "area": "data-privacy-cybersecurity",
+    "title": "Privacy Policy Compliance Audit \u2014 Issue Identification Memorandum for Fintech App",
+    "work_type": "analyze",
+    "n_criteria": 50,
+    "eu": 20,
+    "us": 1,
+    "eu_markers": [
+      "CJEU",
+      "EU-SCC",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/audit-privacy-policy-compliance/scenario-02",
+    "area": "data-privacy-cybersecurity",
+    "title": "Privacy Policy Compliance Audit \u2014 Issue Identification Memorandum for Fintech App",
+    "work_type": "analyze",
+    "n_criteria": 49,
+    "eu": 20,
+    "us": 1,
+    "eu_markers": [
+      "CJEU",
+      "EU-SCC",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
+    "area": "data-privacy-cybersecurity",
+    "title": "Summarize New GDPR Enforcement Guidance \u2014 Executive Regulatory Brief for SaaS Workforce Analytics Company",
+    "work_type": "analyze",
+    "n_criteria": 46,
+    "eu": 20,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-cybersecurity-incident-response-policy",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft Cybersecurity Incident Response Policy for Public Medical Device Manufacturer",
+    "work_type": "draft",
+    "n_criteria": 89,
+    "eu": 19,
+    "us": 10,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/map-regulatory-notification-deadlines-for-multi",
+    "area": "data-privacy-cybersecurity",
+    "title": "Map Regulatory Notification Deadlines for Multi-Jurisdiction Data Breach \u2014 Deadline Matrix and Action Plan",
+    "work_type": "analyze",
+    "n_criteria": 53,
+    "eu": 19,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/review-counterparty-data-processing-agreement",
+    "area": "data-privacy-cybersecurity",
+    "title": "Review Counterparty Data Processing Agreement \u2014 Issue Identification Memorandum",
+    "work_type": "review",
+    "n_criteria": 46,
+    "eu": 19,
+    "us": 1,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/extract-data-flow-details-from-processing-records",
+    "area": "data-privacy-cybersecurity",
+    "title": "Extract Data Flow Details from Processing Records \u2014 Data Mapping Report",
+    "work_type": "analyze",
+    "n_criteria": 53,
+    "eu": 14,
+    "us": 0,
+    "eu_markers": [
+      "EU-Directive",
+      "EU-Regulation",
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 10,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/identify-issues-in-transfer-impact-assessment",
+    "area": "data-privacy-cybersecurity",
+    "title": "Identify Issues in Transfer Impact Assessment for Cross-Border EU Data Transfers",
+    "work_type": "review",
+    "n_criteria": 33,
+    "eu": 14,
+    "us": 1,
+    "eu_markers": [
+      "CJEU",
+      "EU-SCC",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 8,
+    "readable_docs": 8,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/extract-document-requests-from-regulatory-inquiry-letter",
+    "area": "data-privacy-cybersecurity",
+    "title": "Extract and Categorize Document Requests from FTC CID and DPC Inquiry into Unified Response Tracker",
+    "work_type": "analyze",
+    "n_criteria": 52,
+    "eu": 13,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/compare-data-protection-remediation-plan-against-regulatory-undertaking-commitments",
+    "area": "data-privacy-cybersecurity",
+    "title": "Gap Analysis: Data Protection Remediation Plan vs. ICO Regulatory Undertaking Commitments",
+    "work_type": "analyze",
+    "n_criteria": 41,
+    "eu": 11,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/analyze-gdpr-amendment-impact-on-data-processing-agreement-portfolio",
+    "area": "data-privacy-cybersecurity",
+    "title": "Analyze GDPR Amendment Impact on Data Processing Agreement Portfolio \u2014 Regulatory Gap Analysis Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 70,
+    "eu": 10,
+    "us": 1,
+    "eu_markers": [
+      "EU-Regulation",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 11,
+    "readable_docs": 10,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/analyze-counterparty-markup-of-data-processing-agreement",
+    "area": "data-privacy-cybersecurity",
+    "title": "Analyze Counterparty Markup of Data Processing Agreement \u2014 Deviation Report",
+    "work_type": "analyze",
+    "n_criteria": 59,
+    "eu": 8,
+    "us": 2,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-supervisory-authority-breach-notification",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft GDPR Article 33 Breach Notification to Bavarian Data Protection Authority (BayLDA) for Ransomware Incident Involving Health Data",
+    "work_type": "draft",
+    "n_criteria": 69,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 15,
+    "readable_docs": 13,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/analyze-cpra-compliance-gaps-against-current-privacy-program",
+    "area": "data-privacy-cybersecurity",
+    "title": "Analyze CPRA Compliance Gaps Against Current Privacy Program \u2014 Gap Analysis Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 58,
+    "eu": 4,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/draft-response-to-regulatory-inquiry-letter",
+    "area": "data-privacy-cybersecurity",
+    "title": "Draft Response to California AG Formal Inquiry Letter on Health Data Sharing Practices",
+    "work_type": "draft",
+    "n_criteria": 67,
+    "eu": 3,
+    "us": 0,
+    "eu_markers": [
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/research-data-localization-requirements-for-planned-market-expansion",
+    "area": "data-privacy-cybersecurity",
+    "title": "Research Data Localization Requirements for Planned Market Expansion into Brazil, Indonesia, Turkey, Nigeria, and Vietnam",
+    "work_type": "research",
+    "n_criteria": 64,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 7,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "data-privacy-cybersecurity/compare-data-processing-agreement-against-internal-privacy-standards",
+    "area": "data-privacy-cybersecurity",
+    "title": "Compare Vendor Data Processing Agreement Against Internal Privacy Standards \u2014 Deviation Report",
+    "work_type": "review",
+    "n_criteria": 41,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "emerging-companies-venture-capital/draft-investors-rights-agreement",
+    "area": "emerging-companies-venture-capital",
+    "title": "Draft Investors' Rights Agreement for Series B Preferred Stock Financing",
+    "work_type": "draft",
+    "n_criteria": 79,
+    "eu": 9,
+    "us": 6,
+    "eu_markers": [
+      "GDPR",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "funds-asset-management/extract-reporting-obligations-from-advisory-agreement",
+    "area": "funds-asset-management",
+    "title": "Extract Reporting Obligations from Investment Advisory Agreement for Compliance Obligations Matrix",
+    "work_type": "analyze",
+    "n_criteria": 56,
+    "eu": 1,
+    "us": 3,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 3,
+    "readable_docs": 3,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "healthcare-life-sciences/draft-privacy-impact-assessment",
+    "area": "healthcare-life-sciences",
+    "title": "Draft Privacy Impact Assessment for AI-Powered Healthcare Patient Engagement Platform",
+    "work_type": "draft",
+    "n_criteria": 59,
+    "eu": 9,
+    "us": 3,
+    "eu_markers": [
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 9,
+    "readable_docs": 9,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "healthcare-life-sciences/identify-clinical-trial-agreement-issues/scenario-01",
+    "area": "healthcare-life-sciences",
+    "title": "Clinical Trial Agreement Issue Identification \u2014 Legal Memorandum for Hospital Network",
+    "work_type": "analyze",
+    "n_criteria": 47,
+    "eu": 8,
+    "us": 6,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "healthcare-life-sciences/identify-clinical-trial-agreement-issues/scenario-02",
+    "area": "healthcare-life-sciences",
+    "title": "Clinical Trial Agreement Issue Identification \u2014 Legal Memorandum for Hospital Network",
+    "work_type": "analyze",
+    "n_criteria": 47,
+    "eu": 8,
+    "us": 6,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "immigration/extract-deficiencies-from-internal-audit-report",
+    "area": "immigration",
+    "title": "Extract Deficiencies from Internal Audit Report \u2014 Immigration Compliance Deficiency Matrix",
+    "work_type": "analyze",
+    "n_criteria": 69,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 5,
+    "readable_docs": 3,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/review-saas-template-and-produce-jurisdiction",
+    "area": "intellectual-property",
+    "title": "Review SaaS Template and Produce Jurisdiction-Specific Conformance Memorandum (Germany, Brazil, Japan)",
+    "work_type": "review",
+    "n_criteria": 58,
+    "eu": 39,
+    "us": 0,
+    "eu_markers": [
+      "EU-Regulation",
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/draft-data-processing-addendum",
+    "area": "intellectual-property",
+    "title": "Draft Data Processing Addendum for Healthcare Analytics Vendor Onboarding",
+    "work_type": "draft",
+    "n_criteria": 65,
+    "eu": 38,
+    "us": 0,
+    "eu_markers": [
+      "EU-AI-Act",
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 7,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/update-data-processing-agreement-template-for-new-gdpr-adequacy-decision",
+    "area": "intellectual-property",
+    "title": "Update Data Processing Agreement Template for New GDPR Adequacy Decision and Renewed UK Transfer Framework",
+    "work_type": "draft",
+    "n_criteria": 52,
+    "eu": 32,
+    "us": 0,
+    "eu_markers": [
+      "CJEU",
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/identify-issues-in-counterparty-data-processing-addendum",
+    "area": "intellectual-property",
+    "title": "Identify Issues in Counterparty Data Processing Addendum \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 42,
+    "eu": 23,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 4,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/review-master-services-agreement-for-regulatory-compliance",
+    "area": "intellectual-property",
+    "title": "Review Master Services Agreement for Regulatory Compliance \u2014 Compliance Deviation Report",
+    "work_type": "review",
+    "n_criteria": 41,
+    "eu": 23,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/draft-technology-license-agreement",
+    "area": "intellectual-property",
+    "title": "Draft Technology License Agreement for LiDAR Platform Licensing to Automotive OEM Integrator",
+    "work_type": "draft",
+    "n_criteria": 73,
+    "eu": 22,
+    "us": 1,
+    "eu_markers": [
+      "EU-generic",
+      "GDPR",
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 7,
+    "readable_docs": 7,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/lmr-employment",
+    "area": "intellectual-property",
+    "title": "Cross-Border Digital Asset Custody Expansion \u2014 Regulatory Approval Requirements Memo",
+    "work_type": "research",
+    "n_criteria": 78,
+    "eu": 22,
+    "us": 9,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 4,
+    "readable_docs": 2,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/review-counterparty-data-processing-agreement-and-mark-up-toward-company-positions",
+    "area": "intellectual-property",
+    "title": "Review Counterparty Data Processing Agreement and Mark Up Toward Company Positions \u2014 Redline DPA with Commentary",
+    "work_type": "review",
+    "n_criteria": 51,
+    "eu": 17,
+    "us": 8,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 4,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/review-data-processing-agreement-against-company-data-protection-playbook",
+    "area": "intellectual-property",
+    "title": "Review Data Processing Agreement Against Company Data Protection Playbook \u2014 Deviation Report",
+    "work_type": "review",
+    "n_criteria": 46,
+    "eu": 14,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR",
+      "Schrems"
+    ],
+    "n_docs": 4,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/draft-markup-of-counterparty-data-processing-addendum",
+    "area": "intellectual-property",
+    "title": "Draft Markup of Counterparty Data Processing Addendum \u2014 Redlined DPA with Commentary",
+    "work_type": "draft",
+    "n_criteria": 72,
+    "eu": 13,
+    "us": 1,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/draft-vendor-onboarding-questionnaire",
+    "area": "intellectual-property",
+    "title": "Draft Comprehensive Vendor Onboarding Questionnaire for Healthcare Technology Company",
+    "work_type": "draft",
+    "n_criteria": 74,
+    "eu": 10,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR",
+      "Schrems",
+      "UK-GDPR/ICO"
+    ],
+    "n_docs": 12,
+    "readable_docs": 12,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/draft-markup-of-counterparty-saas-agreement",
+    "area": "intellectual-property",
+    "title": "Draft Markup of Counterparty SaaS Agreement with Redlined Commentary for Biopharma Clinical Data Platform",
+    "work_type": "review",
+    "n_criteria": 90,
+    "eu": 8,
+    "us": 4,
+    "eu_markers": [
+      "EU-SCC",
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/identify-technology-license-agreement-issues/scenario-01",
+    "area": "intellectual-property",
+    "title": "Technology License Agreement Issue Identification \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 35,
+    "eu": 7,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/identify-technology-license-agreement-issues/scenario-02",
+    "area": "intellectual-property",
+    "title": "Technology License Agreement Issue Identification \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 35,
+    "eu": 7,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/review-data-processing-agreement-template-against-eu-and-us-requirements",
+    "area": "intellectual-property",
+    "title": "Review Data Processing Agreement Template Against EU and US Requirements \u2014 Compliance Gap Memorandum",
+    "work_type": "review",
+    "n_criteria": 47,
+    "eu": 7,
+    "us": 1,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/draft-master-services-agreement-from-term-sheet-and-deal-points",
+    "area": "intellectual-property",
+    "title": "Draft Master Services Agreement from Term Sheet and Deal Points for Multi-Year SaaS Consulting Engagement",
+    "work_type": "draft",
+    "n_criteria": 94,
+    "eu": 6,
+    "us": 3,
+    "eu_markers": [
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/identify-issues-in-joint-development-agreement",
+    "area": "intellectual-property",
+    "title": "Identify Issues in Joint Development Agreement \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 47,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "EU-SCC",
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/identify-issues-in-vendor-cloud-infrastructure-proposal",
+    "area": "intellectual-property",
+    "title": "Identify Issues in Vendor Cloud Infrastructure Proposal \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 44,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/triage-counterparty-redlines-to-company-dpa-template",
+    "area": "intellectual-property",
+    "title": "Triage Counterparty Redlines to Company DPA Template \u2014 Deviation Report with Risk Classification",
+    "work_type": "review",
+    "n_criteria": 50,
+    "eu": 6,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic",
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/analyze-counterparty-markup-of-saas-subscription-agreement",
+    "area": "intellectual-property",
+    "title": "Analyze Counterparty Markup of SaaS Subscription Agreement \u2014 Deviation Report",
+    "work_type": "analyze",
+    "n_criteria": 72,
+    "eu": 4,
+    "us": 2,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/identify-issues-in-technology-licensing-term-sheet",
+    "area": "intellectual-property",
+    "title": "Identify Issues in Technology Licensing Term Sheet \u2014 Issue Memorandum",
+    "work_type": "review",
+    "n_criteria": 45,
+    "eu": 4,
+    "us": 5,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/review-counterparty-redlines-to-standard-nda-template",
+    "area": "intellectual-property",
+    "title": "Review Counterparty Redlines to Standard NDA Template \u2014 Deviation Report with Risk Assessment",
+    "work_type": "review",
+    "n_criteria": 43,
+    "eu": 4,
+    "us": 4,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 6,
+    "readable_docs": 6,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/triage-counterparty-redlines-to-company-msa-template",
+    "area": "intellectual-property",
+    "title": "Triage Counterparty Redlines to Company MSA Template \u2014 Deviation Report with Risk Classification",
+    "work_type": "review",
+    "n_criteria": 57,
+    "eu": 3,
+    "us": 0,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 5,
+    "readable_docs": 5,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/compare-executed-software-license-agreement-against-last-pre",
+    "area": "intellectual-property",
+    "title": "Compare Executed Software License Agreement against Last Pre-Execution Draft \u2014 Deviation Report",
+    "work_type": "review",
+    "n_criteria": 52,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "EU-generic"
+    ],
+    "n_docs": 4,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "intellectual-property/research-trade-secret-protections-for-departing-employee",
+    "area": "intellectual-property",
+    "title": "Research Trade Secret Protections for Departing Employee \u2014 In-House Legal Memorandum",
+    "work_type": "research",
+    "n_criteria": 62,
+    "eu": 2,
+    "us": 2,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 9,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "intellectual-property/draft-closing-checklist-memorandum",
+    "area": "intellectual-property",
+    "title": "Draft Closing Checklist Memorandum for IP & Technology Asset Purchase Transaction",
+    "work_type": "draft",
+    "n_criteria": 97,
+    "eu": 1,
+    "us": 1,
+    "eu_markers": [
+      "GDPR"
+    ],
+    "n_docs": 8,
+    "readable_docs": 7,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "international-trade-sanctions/analyze-cross",
+    "area": "international-trade-sanctions",
+    "title": "Analyze Cross-Border Distribution Agreement for Regulatory and Commercial Risks \u2014 Risk Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 61,
+    "eu": 18,
+    "us": 0,
+    "eu_markers": [
+      "EU-Directive",
+      "EU-Regulation",
+      "EU-SCC",
+      "EU-generic",
+      "GDPR",
+      "TFEU/Art101-102"
+    ],
+    "n_docs": 5,
+    "readable_docs": 4,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "international-trade-sanctions/draft-trade-compliance-policy-manual",
+    "area": "international-trade-sanctions",
+    "title": "Draft Comprehensive Trade Compliance Policy Manual for Multinational Advanced Materials Manufacturer",
+    "work_type": "draft",
+    "n_criteria": 78,
+    "eu": 3,
+    "us": 4,
+    "eu_markers": [
+      "EU-Regulation"
+    ],
+    "n_docs": 10,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "international-trade-sanctions/compare-ownership-structure-against-sanctioned-parties-list",
+    "area": "international-trade-sanctions",
+    "title": "Compare AML Ownership Structure against Sanctioned Parties Lists \u2014 Compliance Assessment Memorandum",
+    "work_type": "analyze",
+    "n_criteria": 54,
+    "eu": 2,
+    "us": 0,
+    "eu_markers": [
+      "EU-Regulation"
+    ],
+    "n_docs": 7,
+    "readable_docs": 6,
+    "eu_dominant": true,
+    "eu_pure": true
+  },
+  {
+    "id": "international-trade-sanctions/draft-response-to-export-control-charging-letter",
+    "area": "international-trade-sanctions",
+    "title": "Draft Response to BIS Export Control Charging Letter \u2014 Administrative Response Brief",
+    "work_type": "draft",
+    "n_criteria": 52,
+    "eu": 1,
+    "us": 0,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 10,
+    "readable_docs": 8,
+    "eu_dominant": false,
+    "eu_pure": true
+  },
+  {
+    "id": "international-trade-sanctions/identify-issues-in-cfius-mandatory-declaration",
+    "area": "international-trade-sanctions",
+    "title": "Identify Issues in Draft CFIUS Mandatory Declaration \u2014 Issue Memorandum for Semiconductor Acquisition by PRC-Linked Fund",
+    "work_type": "review",
+    "n_criteria": 35,
+    "eu": 1,
+    "us": 1,
+    "eu_markers": [
+      "MiFID/MAR/DORA"
+    ],
+    "n_docs": 8,
+    "readable_docs": 6,
+    "eu_dominant": false,
+    "eu_pure": false
+  },
+  {
+    "id": "tax/draft-cross-border-acquisition-tax-memo",
+    "area": "tax",
+    "title": "Cross-Border Acquisition Tax Structure Memo",
+    "work_type": "draft",
+    "n_criteria": 124,
+    "eu": 3,
+    "us": 0,
+    "eu_markers": [
+      "EU-Directive",
+      "EU-generic"
+    ],
+    "n_docs": 22,
+    "readable_docs": 22,
+    "eu_dominant": true,
+    "eu_pure": true
+  }
+]
