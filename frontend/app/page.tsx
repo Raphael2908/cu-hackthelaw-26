@@ -213,7 +213,7 @@ export default function CasesPage() {
                 </ul>
               ) : (
                 <span className="mt-1 block text-[11px] leading-snug text-muted">
-                  PDF, DOCX, or text. The planner scopes tasks over what you upload.
+                  PDF, DOCX, PowerPoint, or text. The planner scopes tasks over what you upload.
                 </span>
               )}
             </Field>
