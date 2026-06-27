@@ -68,7 +68,7 @@ cut from the bottom if time runs short.
         plus the partner reply wording in `ItemDetail.tsx` ("Answer the associate's question"). Decide
         whether `kind` stays `"question"` semantically (just relabelled in the UI) or broadens — don't
         leave the two sides describing the channel differently.
-- [ ] **Block debrief generation while tasks are still pending (backend + frontend).** Closing a case
+- [x] **Block debrief generation while tasks are still pending (backend + frontend).** Closing a case
       (`POST /cases/{id}/close`, `backend/app/api/routers/cases.py`) immediately flips it to `closed`
       and generates the debrief with **no guard** — so a partner can produce a "case summary at close"
       while work is still mid-flight. A debrief drawn from an incomplete record is misleading. Gate it
@@ -85,6 +85,14 @@ cut from the bottom if time runs short.
         first"), surfacing the outstanding count (reuse the cockpit's queue / awaiting_human /
         needs_reply numbers). Handle the `409` gracefully if the state changed under them.
       - Once closed, the existing flow is unchanged (debrief generates, "Regenerate" stays available).
+      - **Done.** Backend: `close_case` (`api/routers/cases.py`) now `409`s with a readable breakdown
+        when any task is non-terminal; `views.pending_summary()` defines terminal = `signed_off`/
+        `escalated`/`cleared` and buckets the rest (awaiting_decision / with_associate / not_run), and
+        the cockpit view exposes a complete `pending` count. Frontend: `debrief/page.tsx` fetches the
+        cockpit, disables Close/Regenerate while `pending.total > 0`, shows an amber "Not ready to
+        close" banner with the breakdown, and handles the `409`. Tests: `test_close_blocked_while_
+        tasks_pending` + updated happy path drain everything before close. 27 backend tests green,
+        ruff clean, frontend `tsc` clean.
 - [ ] **Signpost the actor vs. task on each audit entry, and make both read as clickable.** On the
       audit timeline each entry's metadata line is `timestamp · actor · taskTitle`
       (`app/cases/[id]/audit/page.tsx`, the `Entry` component ~lines 266–280) — three near-identical

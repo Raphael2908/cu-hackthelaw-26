@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from app.core.audit import record_accountability
 from app.core.auth import CurrentUser, get_current_user
 from app.db.repo import get_repo
-from app.db.tables import CASES, CORPUS, DEBRIEFS, PLANS
+from app.db.tables import CASES, CORPUS, DEBRIEFS, PLANS, TASKS
 from app.fixtures import firm_standard, process_doc
 from app.providers.factory import get_llm_provider
 from app.schemas.models import CaseCreate
@@ -133,12 +133,33 @@ def get_audit(case_id: str) -> dict:
     return views.audit_view(get_repo(), case_id)
 
 
+def _pending_close_message(p: dict) -> str:
+    parts = []
+    if p["awaiting_decision"]:
+        parts.append(f"{p['awaiting_decision']} awaiting your decision")
+    if p["with_associate"]:
+        parts.append(f"{p['with_associate']} with an associate")
+    if p["not_run"]:
+        parts.append(f"{p['not_run']} not yet started")
+    n = p["total"]
+    return (
+        f"Cannot close the case: {n} task{'s' if n != 1 else ''} still pending "
+        f"({', '.join(parts)}). Resolve every task before generating the debrief."
+    )
+
+
 @router.post("/cases/{case_id}/close")
 def close_case(case_id: str, user: CurrentUser = Depends(get_current_user)) -> dict:
+    """Close the case and generate the debrief — but only once every task is resolved. A debrief
+    drawn from an in-flight record would misrepresent the matter, so a case with any pending task is
+    refused (409). This is the authoritative guard; the frontend also disables the button."""
     repo = get_repo()
     case = repo.get(CASES, case_id)
     if not case:
         raise HTTPException(404, "Case not found.")
+    pending = views.pending_summary(repo.list(TASKS, case_id=case_id))
+    if pending["total"] > 0:
+        raise HTTPException(409, _pending_close_message(pending))
     repo.update(CASES, case_id, {"status": "closed", "closed_at": datetime.now(UTC).isoformat()})
     return debrief_svc.generate_debrief(
         repo, case=case, provider=get_llm_provider(), actor=user.email

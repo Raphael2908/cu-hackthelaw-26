@@ -19,6 +19,24 @@ def _new_case_with_plan(client):
     return case, plan
 
 
+def _resolve_remaining(client, case_id):
+    """Drive every still-pending task to a terminal state so the case can be closed: submit any work
+    still with an associate (human + hybrid in the inbox), then decide everything now in review."""
+    for item in client.get("/api/inbox", headers=ASSOC_HEADERS).json():
+        t = item["task"]
+        if t.get("case_id") == case_id and t["status"] in ("dispatched", "in_progress", "returned"):
+            client.post(
+                f"/api/tasks/{t['id']}/submit",
+                json={"summary": "Reviewed; matches the standard.", "findings": []},
+                headers=ASSOC_HEADERS,
+            )
+    for card in client.get(f"/api/cases/{case_id}/cockpit").json()["queue"]:
+        client.post(
+            f"/api/tasks/{card['task']['id']}/decision",
+            json={"action": "approve", "note": "Signed off."},
+        )
+
+
 def test_approval_gate_blocks_dispatch(client):
     """Nothing is dispatched before the partner approves the plan (architecture.md §14.7)."""
     _, plan = _new_case_with_plan(client)
@@ -103,9 +121,29 @@ def test_happy_path_end_to_end(client):
     assert {"plan_proposed", "plan_approved", "decision_recorded"} <= acc_types
     assert audit["supervision"], "flags should appear in the supervision stream"
 
-    # Close → debrief generates from the record.
-    debrief = client.post(f"/api/cases/{case['id']}/close").json()
-    assert "Case debrief" in debrief["content"]
+    # Close requires every task resolved first — resolve the rest, then close → debrief generates.
+    _resolve_remaining(client, case["id"])
+    closed = client.post(f"/api/cases/{case['id']}/close")
+    assert closed.status_code == 200
+    assert "Case debrief" in closed.json()["content"]
+
+
+def test_close_blocked_while_tasks_pending(client):
+    """A debrief drawn from an in-flight record would misrepresent the matter: closing is refused
+    while any task is still pending, and no debrief is generated."""
+    case, plan = _new_case_with_plan(client)
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+
+    # Straight after approval, work is mid-flight (review queue + associate inbox).
+    blocked = client.post(f"/api/cases/{case['id']}/close")
+    assert blocked.status_code == 409
+    assert "pending" in blocked.json()["detail"].lower()
+    assert client.get(f"/api/cases/{case['id']}/debrief").status_code == 404
+    assert client.get(f"/api/cases/{case['id']}").json()["status"] == "open"
+
+    # Once everything is resolved, the same call succeeds.
+    _resolve_remaining(client, case["id"])
+    assert client.post(f"/api/cases/{case['id']}/close").status_code == 200
 
 
 def test_all_planted_defects_surface(client):

@@ -4,6 +4,31 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Gate case close on a fully-resolved record
+
+**Where we are.** Closing a case generated the debrief with no guard, so a partner could produce a
+"case summary at close" while work was still in flight — a debrief drawn from an incomplete record
+misrepresents the matter. Closing is now gated on every task being resolved (the one rule: nothing
+is signed off until the human has actually supervised it).
+
+**Built**
+- **Backend (authoritative).** `views.pending_summary()` defines terminal states
+  (`signed_off`/`escalated`/`cleared`) and buckets the rest into `awaiting_decision`
+  (submitted/checked/in_review), `with_associate` (dispatched/in_progress/returned/
+  awaiting_clarification), and `not_run` (proposed/approved). `close_case` (`api/routers/cases.py`)
+  now `409`s with a readable breakdown if `total > 0`; the case stays open and no debrief is written.
+  The `cockpit` view also exposes a complete `pending` count (across every status, incl. the
+  proposed/approved/submitted/checked that no lane shows) as the frontend readiness signal.
+- **Frontend.** `debrief/page.tsx` fetches the cockpit, disables Close/Regenerate while
+  `pending.total > 0`, shows an amber "Not ready to close" banner with the breakdown, and refreshes
+  the count on a `409`. Added `PendingSummary` to `lib/types.ts` + the `Cockpit` type.
+- **Tests.** New `test_close_blocked_while_tasks_pending` (409 + no debrief + still open, then succeeds
+  once resolved); the happy-path test gained a `_resolve_remaining` drain before close. 27 backend
+  tests green, ruff clean, frontend `tsc --noEmit` clean. Verified live: pending `{total:3,...}` →
+  `409` with the breakdown → debrief 404 → close succeeds after resolving.
+
+---
+
 ## Hint-text declutter — trim redundant helper copy
 
 **Where we are.** A partner-facing readability pass: several screens carried long muted explainer

@@ -4,6 +4,26 @@ from app.core.audit import verify_chain
 from app.db.repo import Repo
 from app.db.tables import AUDIT_EVENTS, FLAGS, RISK_SCORES, SUBMISSIONS, TASK_MESSAGES, TASKS
 
+# A task is "resolved" once it reaches one of these. Everything else is still in flight — it needs
+# to run, come back from an associate, or get the partner's decision. Gates case close / debrief.
+TERMINAL_STATUSES = frozenset({"signed_off", "escalated", "cleared"})
+
+
+def pending_summary(tasks: list[dict]) -> dict:
+    """Group not-yet-resolved tasks by what's holding them up — a debrief-readiness check. A debrief
+    drawn from an incomplete record would misrepresent the matter, so closing is gated on total == 0
+    (architecture.md §14: nothing is signed off until the human has actually supervised it)."""
+    pending = [t for t in tasks if t["status"] not in TERMINAL_STATUSES]
+    in_set = lambda *s: [t for t in pending if t["status"] in s]  # noqa: E731
+    return {
+        "total": len(pending),
+        "awaiting_decision": len(in_set("submitted", "checked", "in_review")),
+        "with_associate": len(
+            in_set("dispatched", "in_progress", "returned", "awaiting_clarification")
+        ),
+        "not_run": len(in_set("proposed", "approved")),
+    }
+
 
 def latest_risk(repo: Repo, task_id: str) -> dict | None:
     scores = repo.list(RISK_SCORES, task_id=task_id)
@@ -86,6 +106,9 @@ def cockpit(repo: Repo, case_id: str) -> dict:
         "escalated": escalated,
         "awaiting_human": inbox,
         "needs_reply": needs_reply,
+        # Complete pending count across ALL statuses (incl. proposed/approved/submitted/checked that
+        # no lane shows) so the debrief page can gate "close" on a fully-resolved case.
+        "pending": pending_summary(tasks),
     }
 
 

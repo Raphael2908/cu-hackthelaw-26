@@ -170,6 +170,13 @@ export interface PlanResponse {
   tasks: Task[];
 }
 
+export interface PendingSummary {
+  total: number;
+  awaiting_decision: number; // submitted / checked / in_review — awaiting the partner's decision
+  with_associate: number; // dispatched / in_progress / returned / awaiting_clarification
+  not_run: number; // proposed / approved — planned but not yet started
+}
+
 export interface Cockpit {
   queue: Card[];
   auto_clear_lane: Card[];
@@ -178,6 +185,7 @@ export interface Cockpit {
   escalated: Card[];
   awaiting_human: Card[];
   needs_reply: Card[];
+  pending: PendingSummary;
 }
 
 export interface TaskDetail {

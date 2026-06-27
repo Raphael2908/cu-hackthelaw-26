@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { closeCase, getCase, getDebrief } from "@/lib/api";
+import { closeCase, getCase, getCockpit, getDebrief } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Case, DebriefDoc } from "@/lib/types";
+import type { Case, DebriefDoc, PendingSummary } from "@/lib/types";
 import { Button, Panel, Spinner } from "@/components/ui";
 import { CaseSubNav } from "@/components/CaseSubNav";
 import { DebriefReport } from "@/components/DebriefReport";
@@ -13,14 +13,22 @@ export default function DebriefPage() {
   const { id } = useParams<{ id: string }>();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [debrief, setDebrief] = useState<DebriefDoc | null>(null);
+  const [pending, setPending] = useState<PendingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadCase = () => getCase(id).then(setCaseData).catch(() => {});
+  // The cockpit view carries the complete pending count (across every status, not just the lanes),
+  // so it's the readiness signal for whether the case can be closed.
+  const loadPending = () =>
+    getCockpit(id)
+      .then((ck) => setPending(ck.pending))
+      .catch(() => {});
 
   useEffect(() => {
     loadCase();
+    loadPending();
     getDebrief(id)
       .then(setDebrief)
       .catch((e) => {
@@ -39,6 +47,8 @@ export default function DebriefPage() {
       await loadCase();
     } catch (e) {
       setError(e instanceof ApiError ? e.detail : "Could not close the case.");
+      // The 409 carries the live pending breakdown; refresh it so the gate reflects reality.
+      await loadPending();
     } finally {
       setClosing(false);
     }
@@ -47,6 +57,9 @@ export default function DebriefPage() {
   const closed = caseData?.status === "closed";
   const parsed = debrief ? splitDebrief(debrief.content) : null;
   const generatedAt = debrief?.created_at ?? caseData?.closed_at;
+  // Block close/regenerate until every task is resolved — a debrief from an in-flight record would
+  // misrepresent the matter. The backend enforces this too (409); this just disables the button.
+  const blocked = !closed && (pending?.total ?? 0) > 0;
 
   return (
     <div>
@@ -64,7 +77,11 @@ export default function DebriefPage() {
               </Button>
             ) : null}
             {!closed ? (
-              <Button onClick={onClose} disabled={closing}>
+              <Button
+                onClick={onClose}
+                disabled={closing || blocked}
+                title={blocked && pending ? pendingReason(pending) : undefined}
+              >
                 {closing
                   ? "Closing…"
                   : debrief
@@ -78,6 +95,15 @@ export default function DebriefPage() {
             )}
           </div>
         </div>
+
+        {blocked && pending ? (
+          <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <span aria-hidden>⏳</span>
+            <span>
+              <span className="font-semibold">Not ready to close.</span> {pendingReason(pending)}
+            </span>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -149,7 +175,12 @@ export default function DebriefPage() {
               Close the case to generate a summary of every task, flag, and decision from the record.
             </p>
             {!closed ? (
-              <Button onClick={onClose} disabled={closing} className="mt-1">
+              <Button
+                onClick={onClose}
+                disabled={closing || blocked}
+                title={blocked && pending ? pendingReason(pending) : undefined}
+                className="mt-1"
+              >
                 {closing ? "Closing…" : "Close case & generate debrief"}
               </Button>
             ) : null}
@@ -158,6 +189,18 @@ export default function DebriefPage() {
       </div>
     </div>
   );
+}
+
+// A friendly one-liner of what's still pending, built from the cockpit's complete pending breakdown.
+function pendingReason(p: PendingSummary): string {
+  const parts: string[] = [];
+  if (p.awaiting_decision) parts.push(`${p.awaiting_decision} awaiting your decision`);
+  if (p.with_associate) parts.push(`${p.with_associate} with an associate`);
+  if (p.not_run) parts.push(`${p.not_run} not yet started`);
+  const n = p.total;
+  return `${n} task${n === 1 ? "" : "s"} still pending (${parts.join(
+    ", "
+  )}). Resolve them in the cockpit before closing.`;
 }
 
 // Lift the title (H1) and Goal out of the markdown so they can headline the letterhead; the rest of
