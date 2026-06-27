@@ -39,6 +39,21 @@ cut from the bottom if time runs short.
       - **Docs:** add a short "Gestalt grouping" subsection to `frontend/DESIGN.md`. Guardrail: every
         signal stays individually visible with its number — re-grouping and progressive disclosure
         only, never a fused verdict.
+- [ ] **Surface async-dispatch health / stalled tasks in the cockpit.** Dispatch now runs on a
+      separate Celery worker over Redis (architecture §8), not the in-process pool. The cockpit only
+      polls every 3s and shows an error if the *fetch* fails — it can't tell "still working" from
+      "the worker or Redis is down / the task is stuck." Add a frontend signal: detect tasks sitting
+      in a pre-review state (dispatched/in_progress/checked) past a threshold and show a "still
+      processing… / taking longer than expected" hint, distinct from the AI-pipeline failure that
+      already fail-safes to escalation. Pairs with the live-progress item below. Keep it a checkable
+      status, never a verdict.
+- [ ] **Wire the reassign action into the cockpit.** The backend exposes `POST /tasks/{id}/reassign`
+      (and a `task_reassigned` audit event), and `reassignTask()` + `getAssociates()` already exist in
+      `lib/api.ts` — but no component calls them, so a partner can't move work between a person and the
+      AI, or hand it to a different associate. Add a partner-only reassign control in `ItemDetail` (pick
+      assignee type → associate from `getAssociates()` → optional note), routed through the coordinator.
+      It's a delegation action, so it must write to the accountability audit log; never auto-dispatch
+      without the explicit partner action (the one rule holds).
 - [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
       process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
       (a) an **elapsed timer** while it runs, and (b) **stream the model's thinking live** into the
