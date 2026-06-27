@@ -17,6 +17,92 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [ ] **Separate "new case" from the case list with a foreground modal.** On the partner's cases page
+      (`app/page.tsx`) the New-case form is a persistent left column (`Panel`, `lg:col-span-1`) always
+      competing with the case list (`lg:col-span-2`) — the create form is on screen even when the
+      partner just wants to scan existing cases. Replace it with an on-demand foreground:
+      - Add a **"New case" button** on the cases page (e.g. top-right of the list header). The list of
+        current cases becomes the default, full-width view.
+      - Pressing it opens the existing new-case card as a **foreground modal/overlay** (the same form,
+        unchanged) over a **dimmed backdrop**, with the case list visible-but-receded behind it.
+      - On successful create the modal **dismisses and the list comes back into focus** — with the new
+        case now present in it. Build it in the product's visual language (the existing `Panel`/
+        `Field`/`.input` styling, `brand` tokens), not a generic modal chrome. Include the basics:
+        Esc to close, backdrop-click to dismiss, focus-trap, and restore focus to the "New case"
+        button on close.
+      - **Resolve the routing interaction:** `onCreate` currently `router.push`es to the new case's
+        plan page (the "split case creation from plan generation" flow). That conflicts with "the
+        modal closes and the list refocuses". Decide one: either (a) keep routing to the plan page
+        (the modal is just the entry point, and the partner lands on plan to generate it), or (b) stay
+        on the cases page, close the modal, refresh the list, and let the partner open the new case to
+        generate its plan. Pick one and keep the create→plan story coherent; don't do both.
+- [ ] **Bring the rich-text editor to the partner's view too.** The partner also types into bare
+      textareas in `components/ItemDetail.tsx`: the decision **note** (`note`, ~lines 366–376), the
+      **amendment** text (`amendment`, ~377–385), and the **reply to the associate** (`reply`,
+      ~291–297). Give these the same markdown editor as the associate's submission/concern boxes —
+      Write/Preview + light formatting toolbar — so amendments and remarks can be written legibly
+      (lists, emphasis, inline references). Reuse the single shared editor component (see the
+      rich-text-editor item below) rather than a second implementation; the note/amendment still save
+      via `decideTask` and the reply via `postMessage`, unchanged. Render the saved markdown wherever
+      these are read back (the audit trail decision notes, the associate's inbox thread) using the
+      existing `Markdown` component so authoring and display stay consistent. Guardrail: this is a
+      free-text editor for the human's own words — it stays the partner's recorded decision/remark,
+      never an agent-generated verdict.
+- [ ] **Generalise the associate's "ask the partner a question" box to questions *or* concerns, on
+      the rich-text editor.** Today the associate→partner channel is framed narrowly as a *question*
+      (`app/inbox/page.tsx`): the button "Ask the partner a question" (~line 238), the box heading
+      "Question for the partner — this hands the task to them until they reply." (~246), the
+      placeholder "What do you need clarified before you can finish?…" (~252), and "Send question"
+      (~257). An associate may also want to **raise a concern / flag something** before submitting, and
+      the current wording discourages that. Reword to a generic prompt — e.g. button "Message the
+      partner", heading "Raise a question or concern — this hands the task to them until they reply.",
+      placeholder "Ask a question or raise a concern…", send "Send to partner". Keep the behaviour
+      (still routes through `postMessage`, still hands the task back via `awaiting_clarification`).
+      - **Use the rich-text editor here too.** This box should reuse the same markdown editor as the
+        submission box (see the rich-text-editor item below) — Write/Preview + light toolbar — not a
+        bare textarea, so concerns can be written legibly. Build the editor once and use it in both
+        places.
+      - **Keep downstream labels consistent.** If the channel is no longer "questions only", reflect it
+        on the partner side: the cockpit lane title "Questions from associates"
+        (`cockpit/page.tsx:65`) and the `m.kind === "question"` filtering (`cockpit/page.tsx:289`),
+        plus the partner reply wording in `ItemDetail.tsx` ("Answer the associate's question"). Decide
+        whether `kind` stays `"question"` semantically (just relabelled in the UI) or broadens — don't
+        leave the two sides describing the channel differently.
+- [ ] **Block debrief generation while tasks are still pending (backend + frontend).** Closing a case
+      (`POST /cases/{id}/close`, `backend/app/api/routers/cases.py`) immediately flips it to `closed`
+      and generates the debrief with **no guard** — so a partner can produce a "case summary at close"
+      while work is still mid-flight. A debrief drawn from an incomplete record is misleading. Gate it
+      on every task being resolved.
+      - **Define done.** Terminal task states are `signed_off`, `escalated`, `cleared` (see
+        `coordinator`). Everything else is **pending**: `proposed`/`approved` (planned but not run),
+        `dispatched`/`in_progress`/`returned`/`awaiting_clarification` (an associate hasn't gotten
+        back), and `submitted`/`checked`/`in_review` (awaiting the partner's decision).
+      - **Backend guard (authoritative).** The close endpoint should reject with `409` if any task is
+        in a non-terminal status, returning the count/breakdown of what's outstanding. This is the
+        real enforcement — the button being disabled is not enough.
+      - **Frontend.** On `debrief/page.tsx`, disable "Close case & generate debrief" while pending
+        tasks exist and say why ("N tasks still need a decision / are with an associate — resolve them
+        first"), surfacing the outstanding count (reuse the cockpit's queue / awaiting_human /
+        needs_reply numbers). Handle the `409` gracefully if the state changed under them.
+      - Once closed, the existing flow is unchanged (debrief generates, "Regenerate" stays available).
+- [ ] **Signpost the actor vs. task on each audit entry, and make both read as clickable.** On the
+      audit timeline each entry's metadata line is `timestamp · actor · taskTitle`
+      (`app/cases/[id]/audit/page.tsx`, the `Entry` component ~lines 266–280) — three near-identical
+      muted spans separated by `·`. Two problems: (1) nothing signposts that one is **WHO** (the
+      person/agent who did it) and the other is **WHICH TASK** it's on — a reader can't tell them
+      apart without already knowing; (2) both are buttons (actor → filter by `actor`, task → follow
+      `task_id`) but only signal interactivity via `hover:text-brand` + a `title` tooltip, so their
+      clickability is invisible until hover. Fix both:
+      - **Signpost the roles.** Label each: a small leading icon or word — e.g. a person glyph / "by"
+        for the actor, a task-or-document glyph / "on" for the task (`by Dana Okafor · on Review DPA
+        liability…`). Keep it terse; this is the audit trail, not prose.
+      - **Show they're clickable.** Give the two buttons an affordance consistent with the product
+        (e.g. underline-on-default or a subtle chip/link treatment with the `brand` hover), not just a
+        hover colour shift. The actor filters the trail to that person/agent; the task "follows" it —
+        align the styling with the existing filter bar (the "Who" dropdown and the "Following:" chip)
+        so it reads as the same filtering vocabulary.
+      - Keep the `Technical details` disclosure and the decision/flag tag as-is; this is metadata-line
+        only. No verdict semantics involved — purely affordance + labelling.
 - [ ] **Give associates a rich-text editor for their submission + document upload.** The associate's
       submission is currently a bare `<textarea>` bound to `summary` (`app/inbox/page.tsx` →
       `submitTask({ summary, findings })`). Upgrade it to a markdown editor in the spirit of a
