@@ -62,3 +62,68 @@ Need >=2 tasks for a correlation (Spearman rho). This is the only point so far.
 Hypothesis (to test as N grows): higher uncertainty -> lower Harvey quality.
 
 =================== RUN data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements ===================
+{
+  "task": "data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "run_id": "eu_haiku5/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "severity": "high",
+  "deliverable": "privacy-notice-gap-analysis.docx",
+  "documents_included": [
+    "aldersgate-dd-questionnaire-privacy.docx",
+    "consumer-rights-metrics-fy2024.xlsx",
+    "data-processing-inventory.xlsx",
+    "dpo-appointment-scc-summary.docx",
+    "soc2-management-letter-excerpt.docx",
+    "stellaridge-hipaa-notice.docx",
+    "stellaridge-privacy-notice.docx",
+    "symptomai-product-roadmap.docx"
+  ],
+  "n_findings": 20,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.0,
+  "deviation_score": 0.98,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.994,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-haiku-4-5",
+    "llm_calls": 5,
+    "input_tokens": 225735,
+    "output_tokens": 53705,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 225735,
+    "total_tokens": 279440,
+    "cost_usd": 0.49426
+  },
+  "n_flags": 37,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 279,440 (5 LLM calls) | in=225,735 out=53,705 cache_read=0 | cost=$0.4943 (claude-haiku-4-5)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\compare-privacy-notice-against-statutory-disclosure-requirements\output\privacy-notice-gap-analysis.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\compare-privacy-notice-against-statutory-disclosure-requirements
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_haiku5/compare-privacy-notice-against-statutory-disclosure-requirements' --task 'data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements'
+=================== CORRELATE data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements ===================
+{
+  "task": "data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "run_id": "eu_haiku5/compare-privacy-notice-against-statutory-disclosure-requirements",
+  "uncertainty": 0.994,
+  "quality": 0.91,
+  "quality_reasoning": "The deliverable is a high-quality, substantive gap analysis that systematically identifies 20 discrete compliance gaps across CCPA/CPRA, HIPAA, and GDPR with precise regulatory citations, specific source document references (SOC 2 letter observations, DPO memo action items, product roadmap sections), and concrete factual detail (dates, names, dollar figures, acuity scores), though it falls marginally short of a perfect score because it surfaces gaps and flags prospective risks without providing prioritized remediation recommendations or a structured risk-severity matrix, and Finding 20 acknowledges a document it cannot review rather than flagging the limitation as a separate process gap.",
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 9160,
+    "output_tokens": 162,
+    "cost_usd": 0.02991
+  }
+}
+
+Data points: 2  ->  C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\results.jsonl
+Spearman rho (uncertainty vs quality), n=2: +1.000
+Negative rho supports: higher supervision uncertainty predicts lower Harvey quality.
+
+=================== RUN intellectual-property/identify-issues-in-counterparty-data-processing-addendum ===================
