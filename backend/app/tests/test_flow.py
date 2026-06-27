@@ -32,6 +32,17 @@ def test_plan_proposes_assignee_type_and_severity(client):
     assert {t["severity"] for t in plan["tasks"]} == {"low"}
 
 
+def test_plan_decomposes_one_task_per_process_section(client):
+    """The planner walks the process doc and emits one task per section, so the plan tracks the
+    process doc rather than a fixed list (architecture.md §6)."""
+    from app.fixtures import process_doc
+
+    _, plan = _new_case_with_plan(client)
+    sections = set(process_doc()["task_types"])
+    assert {t["task_type"] for t in plan["tasks"]} == sections
+    assert len(plan["tasks"]) == len(sections)
+
+
 def test_happy_path_end_to_end(client):
     case, plan = _new_case_with_plan(client)
     plan_id = plan["plan"]["id"]

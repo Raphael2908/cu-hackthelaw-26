@@ -72,10 +72,31 @@ class MockLLMProvider(LLMProvider):
         drafts: list[dict],
         associates: list[dict],
     ) -> list[dict]:
-        # Raw task scoping only. The planner SERVICE applies severity (the partner's choice),
-        # the process-section label, a default assignee and ordering — so mock and real are
-        # symmetric and severity is never a model inference (architecture.md §7.1).
-        return [dict(t) for t in fixtures.mock_plan()["tasks"]]
+        # Decompose the matter by walking the process doc's sections IN DOCUMENT ORDER and
+        # emitting one task per section, so the plan reflects the process doc, not a fixed list.
+        # Raw scoping only: the planner SERVICE applies severity (the partner's choice), the
+        # process-section label, a default assignee and ordering — so mock and real stay symmetric
+        # and severity is never a model inference (architecture.md §6, §7.1).
+        scoping = fixtures.mock_plan_by_type()
+        fallback_doc_id = drafts[0]["id"] if drafts else None
+        tasks: list[dict] = []
+        for task_type, section in process_doc.get("task_types", {}).items():
+            spec = scoping.get(task_type)
+            if spec is None:
+                # A process-doc section with no scripted scoping: still cover it deterministically.
+                label = section.get("label", task_type)
+                spec = {
+                    "title": label,
+                    "description": f"Review the draft against the process-doc section: {label}.",
+                    "assignee_type": "ai",
+                    "target_document_id": fallback_doc_id,
+                    "input_brief_slice": "",
+                    "ai_instruction": None,
+                }
+            task = dict(spec)
+            task["task_type"] = task_type
+            tasks.append(task)
+        return tasks
 
     def generate_debrief(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
