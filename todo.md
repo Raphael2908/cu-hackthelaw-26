@@ -63,13 +63,16 @@ cut from the bottom if time runs short.
       Next.js App Router streaming / route handlers. **Guardrail (architecture §14):** streamed
       thoughts are transient UX only — never persist them as the audit record, which stays decisions
       + checkable evidence.
-- [ ] **Hide the plan-approval button when there is no plan.** "Approve plan" currently renders even
+- [x] **Hide the plan-approval button when there is no plan.** "Approve plan" currently renders even
       when the case has no proposed plan. Gate it on a plan existing in `proposed` status (partner
-      only).
-- [ ] **Split case creation from plan generation.** Creating a case should not also generate the
+      only). Done: `plan/page.tsx` now treats a 404 as the expected "no plan yet" state (not an
+      error) and renders an empty-state panel with a partner-only **Generate plan** button instead of
+      the proposal banner + dead Approve button.
+- [x] **Split case creation from plan generation.** Creating a case should not also generate the
       plan in the same click. Create the case first, then expose plan generation as a separate,
       explicit action (the home `onCreate` currently chains createCase → uploadCaseDocuments →
-      createPlan → route).
+      createPlan → route). Done: `onCreate` now creates + uploads, then routes to the case's plan
+      page where generation is the explicit next step; the create button no longer plans.
 
 ## Now (depth — the centrepiece, protect these)
 - [ ] Tune the uncertainty composite weights + `SAMPLE_RATE` against a small labelled set.

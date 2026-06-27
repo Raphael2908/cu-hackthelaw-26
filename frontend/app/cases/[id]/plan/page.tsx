@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   approvePlan,
+  createPlan,
   getCase,
   getCorpus,
   getPlan,
@@ -28,6 +29,7 @@ export default function PlanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,20 +38,27 @@ export default function PlanPage() {
   }, []);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
-      const [c, p, corp] = await Promise.all([getCase(id), getPlan(id), getCorpus()]);
+      // Case + corpus always load; a missing plan (404) is an expected state for a freshly created
+      // case, not an error — leave `plan` null so the empty state offers generation.
+      const [c, corp] = await Promise.all([getCase(id), getCorpus()]);
       setCaseData(c);
-      setPlan(p.plan);
-      setTasks([...p.tasks].sort((a, b) => a.order_index - b.order_index));
       setCorpus(corp);
+      try {
+        const p = await getPlan(id);
+        setPlan(p.plan);
+        setTasks([...p.tasks].sort((a, b) => a.order_index - b.order_index));
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) {
+          setPlan(null);
+          setTasks([]);
+        } else {
+          throw e;
+        }
+      }
     } catch (e) {
-      setError(
-        e instanceof ApiError
-          ? e.status === 404
-            ? "No plan for this case yet. Generate one from the Cases page."
-            : e.detail
-          : "Failed to load plan."
-      );
+      setError(e instanceof ApiError ? e.detail : "Failed to load plan.");
     } finally {
       setLoading(false);
     }
@@ -81,6 +90,19 @@ export default function PlanPage() {
     }
   };
 
+  const onGenerate = async () => {
+    setGenerating(true);
+    setError(null);
+    try {
+      await createPlan(id);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not generate a plan.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const onApprove = async () => {
     if (!plan) return;
     setApproving(true);
@@ -100,6 +122,30 @@ export default function PlanPage() {
       <div className="mx-auto max-w-7xl px-6 py-6">
         {loading ? (
           <Spinner label="Loading plan…" />
+        ) : !plan ? (
+          // No plan yet (e.g. a freshly created case). Generating one is an explicit partner
+          // action — never auto-run on case creation.
+          <Panel className="p-8 text-center">
+            <div className="text-sm font-semibold text-ink">No plan for this case yet</div>
+            <p className="mx-auto mt-1 max-w-md text-xs text-muted">
+              The planner proposes tasks with an assignee type and severity for you to edit and
+              approve. Generating a plan does not dispatch anything — nothing runs until you approve.
+            </p>
+            {role === "partner" ? (
+              <Button className="mt-4" onClick={onGenerate} disabled={generating}>
+                {generating ? "Generating plan…" : "Generate plan"}
+              </Button>
+            ) : (
+              <p className="mt-3 text-xs text-muted">
+                Switch to Partner in the header to generate a plan.
+              </p>
+            )}
+            {error ? (
+              <div className="mx-auto mt-4 max-w-md">
+                <ErrorNote message={error} />
+              </div>
+            ) : null}
+          </Panel>
         ) : (
           <>
             {/* Proposal banner */}

@@ -83,7 +83,8 @@ export default function CasesPage() {
     setError(null);
     try {
       const created = await createCase({ title, brief_text: brief, goal, severity });
-      // Attach any uploaded documents BEFORE planning so the planner scopes tasks over them.
+      // Attach any uploaded documents up front so the planner scopes tasks over them when the
+      // partner generates the plan.
       if (files.length) {
         setBusy("upload");
         await uploadCaseDocuments(created.id, files);
@@ -93,10 +94,8 @@ export default function CasesPage() {
       setGoal("");
       setSeverity("medium");
       setFiles([]);
-      await load();
-      // Offer plan generation immediately by routing through it.
-      setBusy("plan");
-      await createPlan(created.id);
+      // Plan generation is a separate, explicit step — route to the plan page where the partner
+      // generates and reviews the proposed tasks before anything is dispatched.
       router.push(`/cases/${created.id}/plan`);
     } catch (e) {
       setError(e instanceof ApiError ? e.detail : "Could not create the case.");
@@ -221,13 +220,13 @@ export default function CasesPage() {
             <Button type="submit" disabled={!!busy || !title.trim()} className="w-full">
               {busy === "upload"
                 ? "Uploading documents…"
-                : busy === "create" || busy === "plan"
-                  ? "Creating & planning…"
-                  : "Create case & generate plan"}
+                : busy === "create"
+                  ? "Creating case…"
+                  : "Create case"}
             </Button>
             <p className="text-[11px] leading-snug text-muted">
-              Creating a case runs the planner to propose tasks. Nothing is dispatched until you
-              approve the plan.
+              Creating a case takes you to its plan, where you generate and review the proposed
+              tasks. Nothing is dispatched until you approve the plan.
             </p>
           </form>
         </Panel>
