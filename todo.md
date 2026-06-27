@@ -45,7 +45,7 @@ cut from the bottom if time runs short.
 - [ ] Debrief: include carry-forward notes derived from flags the partner amended.
 
 ## Production scale-up (next)
-- [ ] **PPTX ingestion.** Add `.pptx` to document upload — extract slide text via `python-pptx`,
+- [x] **PPTX ingestion.** Add `.pptx` to document upload — extract slide text via `python-pptx`,
       alongside the existing PDF/DOCX/text extractors in `services/documents.py`. Same path: each
       becomes a `case_id`-tagged `draft` corpus document the planner scopes over.
 - [ ] **Celery + Redis dispatch.** Replace the in-process background thread pool

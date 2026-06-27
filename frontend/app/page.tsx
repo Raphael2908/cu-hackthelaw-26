@@ -160,7 +160,7 @@ export default function CasesPage() {
               <input
                 type="file"
                 multiple
-                accept=".pdf,.docx,.txt,.md,.markdown"
+                accept=".pdf,.docx,.pptx,.txt,.md,.markdown"
                 onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
                 className="input"
               />
