@@ -4,6 +4,32 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## README run/build realigned + demo video embedded (2026-06-27)
+
+**Where we are.** Doc-only pass. The README's "Quick start" had drifted from how the project is
+actually run: it led with `make` and showed a bare `docker compose up` as an afterthought, and the
+test count was stale (54). Realigned it to the real run path — Docker Compose is the way to build
+and run after the user fills in their Anthropic key — and embedded the demo video. No code changed.
+
+**Done**
+- **Quick start now leads with Docker** (`README.md`). `cp .env.example .env` → set
+  `ANTHROPIC_API_KEY` + `PROVIDER_MODE=real` (or leave untouched for keyless mock) →
+  `docker compose up -d --build` (the path `/run-build` drives), wait for backend `healthy`, open
+  `localhost:3000`. Added the frontend/API/health URLs, stop/reset (`down` vs `down -v`), logs, and
+  the shared-SQLite-volume + root-`.env` notes. `make` kept below as secondary local dev; clarified
+  real-mode keys live in `backend/.env` for `make` vs the root `.env` for Docker.
+- **Fixed the stale test count** 54 → **78** (verified: 78 `def test_` across
+  `backend/app/tests/test_*.py`).
+- **Demo video embedded** — replaced the "coming soon" placeholder with a clickable YouTube
+  thumbnail → https://youtu.be/8IT96NAoXOo (GitHub markdown can't embed a playable iframe; a
+  thumbnail linking to the watch page is the convention). `todo.md` Presentation item ticked.
+
+**What's next.** None outstanding for this pass. (The "Frontend cannot talk to backend in Docker"
+todo bug is unaffected — the run-build skill confirms `localhost:8000` is correct for the
+client-rendered frontend, so the README Quick start needs no change there.)
+
+---
+
 ## Live "With AI" cockpit lane — shipped (is-alive stream + elapsed timer)
 
 **Where we are.** The headline post-approval confusion is fixed. The cockpit now partitions in-flight

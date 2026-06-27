@@ -97,29 +97,41 @@ Human and hybrid tasks land in the associate inbox, with the hybrid AI instructi
 | ![Debrief](docs/screenshots/06-debrief.png) | ![Associate inbox](docs/screenshots/07-inbox.png) |
 
 ## Demo video
-_Coming soon._
+
+[![Watch the demo](https://img.youtube.com/vi/8IT96NAoXOo/hqdefault.jpg)](https://youtu.be/8IT96NAoXOo)
 
 ## Quick start
 
+Fill in your Anthropic key, then bring the whole stack up with Docker Compose — redis + backend +
+worker + frontend, rebuilt fresh so the latest code runs (this is what the `/run-build` skill drives):
+
+```bash
+cp .env.example .env             # then set ANTHROPIC_API_KEY + PROVIDER_MODE=real in .env
+                                 # (leave it untouched to boot keyless in mock mode)
+docker compose up -d --build     # rebuild images + start detached
+# wait until `docker compose ps` shows backend "healthy", then open http://localhost:3000
+```
+
+- Cockpit / frontend: http://localhost:3000
+- API base: http://localhost:8000/api  (health: http://localhost:8000/healthz)
+- backend + worker share one SQLite volume and read the root `.env` (mounted read-only).
+- Stop: `docker compose down` (keeps the SQLite volume) · full reset: `docker compose down -v`.
+- Logs: `docker compose logs -f` (or `… backend` / `worker` / `frontend`).
+
+Mock mode is the default — keyless, offline, deterministic. Real mode needs `ANTHROPIC_API_KEY` +
+`PROVIDER_MODE=real`; `CELLAR_ENABLED=true` resolves cited EU law live against the official EU
+Cellar API.
+
+### Local dev without Docker (make)
+
 ```bash
 make install        # backend (uv) + frontend (npm) deps
-make dev            # FastAPI on :8000 + Next.js on :3000
-# then open http://localhost:3000
+make dev            # FastAPI on :8000 + Next.js on :3000 — then open http://localhost:3000
+# or run the pieces: make backend · make frontend · make worker (Celery, needs Redis)
+make test           # 78 backend tests, fully offline   ·   make lint   # ruff
 ```
 
-Or run the two halves separately, or the full stack in Docker:
-
-```bash
-make backend        # cd backend && uv run uvicorn app.main:app --reload   (:8000)
-make frontend       # cd frontend && npm run dev                            (:3000)
-make worker         # Celery worker for off-request dispatch (needs Redis)
-make test           # 54 backend tests, fully offline
-
-docker compose up   # redis + backend + worker + frontend together
-```
-
-Mock mode is the default — keyless and deterministic. To use a real model, set `ANTHROPIC_API_KEY`
-and `PROVIDER_MODE=real` in `backend/.env` (and `CELLAR_ENABLED=true` to resolve cited EU law live).
+For `make`, real-mode keys go in `backend/.env` (the Docker path uses the root `.env`).
 
 ## What's here
 - `architecture.md` — the design spine (read this first).
