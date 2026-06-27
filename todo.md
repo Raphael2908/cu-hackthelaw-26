@@ -11,11 +11,18 @@ cut from the bottom if time runs short.
       URL differs between local dev and Compose.
 
 ## Presentation
-- [ ] Update the README with demo videos and screenshots.
-- [ ] Create the demo video.
-- [ ] Create a PNG architecture diagram and add it to the README.
+- [x] Update the README with screenshots (full partner-first walkthrough in `docs/screenshots/`).
+- [ ] Create the demo video. _(README has a "Demo video — coming soon" placeholder ready for the embed.)_
+- [x] Create a PNG architecture diagram and add it to the README (landscape, high-res
+      `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [ ] **Cockpit worker-task progress: elapsed timer + streamed thoughts.** In the cockpit,
+      while a `worker→checker→ranker` task runs, show (a) a live **elapsed timer** per task and
+      (b) **stream the worker model's thinking** into the task view as it's produced. Scope of
+      the broader streaming item below, applied to the cockpit's per-task worker runs.
+      **Guardrail (architecture §14):** streamed thoughts are transient UX only — never persist
+      them as the audit record (decisions + checkable evidence only).
 - [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
       process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
       (a) an **elapsed timer** while it runs, and (b) **stream the model's thinking live** into the

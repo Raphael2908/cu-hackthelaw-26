@@ -4,6 +4,28 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Presentation assets — README diagrams + screenshots
+
+**Where we are.** The README is now presentation-ready. Done bar the demo video (placeholder in
+place).
+
+**Done**
+- **Landscape, high-res diagrams.** Regenerated `system-design/architecture.png` (7752×3474) and
+  `happy_path.png` (5985×3954) as balanced landscape diagrams via Mermaid → Chrome render, replacing
+  the portrait/low-res originals. Corrected the happy-path copy to the locked design (severity is the
+  partner's up-front choice, not derived from the process doc). Both embedded in a new README
+  **Architecture** section.
+- **Screenshots.** Captured seven real screens (mock mode, offline, deterministic) into
+  `docs/screenshots/`: cases, plan-approval gate, cockpit (three independent signals + flag panel),
+  one-click source verification, the two-stream hash-chained audit, debrief, and associate inbox.
+  Driven through the live API + Playwright (system Chrome). Added a README **Screenshots** walkthrough
+  and a **Demo video — coming soon** placeholder.
+
+**What's next**
+- Record the demo video and embed it under the placeholder.
+
+---
+
 ## Celery + Redis dispatch — thread pool retired
 
 **Where we are.** The committed scale-up path (architecture.md §8) is in: the in-process
