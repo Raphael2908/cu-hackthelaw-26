@@ -3,6 +3,24 @@
 Newest first. Build order protects the supervision layer (depth) over delegation (breadth);
 cut from the bottom if time runs short.
 
+## Frontend / UX
+- [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
+      process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
+      (a) an **elapsed timer** while it runs, and (b) **stream the model's thinking live** into the
+      UI via the Anthropic streaming API (`stream=True`), surfaced to the frontend (SSE /
+      `ReadableStream`). When implementing, pull current docs with Context7
+      (`~/.claude/skills/context7-mcp`): Anthropic Messages streaming + extended thinking, and
+      Next.js App Router streaming / route handlers. **Guardrail (architecture §14):** streamed
+      thoughts are transient UX only — never persist them as the audit record, which stays decisions
+      + checkable evidence.
+- [ ] **Hide the plan-approval button when there is no plan.** "Approve plan" currently renders even
+      when the case has no proposed plan. Gate it on a plan existing in `proposed` status (partner
+      only).
+- [ ] **Split case creation from plan generation.** Creating a case should not also generate the
+      plan in the same click. Create the case first, then expose plan generation as a separate,
+      explicit action (the home `onCreate` currently chains createCase → uploadCaseDocuments →
+      createPlan → route).
+
 ## Now (depth — the centrepiece, protect these)
 - [ ] Tune the uncertainty composite weights + `SAMPLE_RATE` against a small labelled set.
 - [ ] Cockpit polish: keyboard-navigable queue, side-by-side source diff for deviation flags.
