@@ -227,6 +227,12 @@ cut from the bottom if time runs short.
       assignee type → associate from `getAssociates()` → optional note), routed through the coordinator.
       It's a delegation action, so it must write to the accountability audit log; never auto-dispatch
       without the explicit partner action (the one rule holds).
+- [ ] **Cockpit worker-task progress: elapsed timer + streamed thoughts.** In the cockpit,
+      while a `worker→checker→ranker` task runs, show (a) a live **elapsed timer** per task and
+      (b) **stream the worker model's thinking** into the task view as it's produced. Scope of
+      the broader streaming item below, applied to the cockpit's per-task worker runs.
+      **Guardrail (architecture §14):** streamed thoughts are transient UX only — never persist
+      them as the audit record (decisions + checkable evidence only).
 - [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
       process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
       (a) an **elapsed timer** while it runs, and (b) **stream the model's thinking live** into the
