@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Hints frame each tab in the partner's language so the destination is recognisable from the nav
+// (H2 match-real-world / H6 recognition; addresses cognitive-walkthrough gap G3 — see DESIGN.md).
 const TABS = [
-  { slug: "plan", label: "Plan" },
-  { slug: "cockpit", label: "Cockpit" },
-  { slug: "audit", label: "Audit" },
-  { slug: "debrief", label: "Debrief" },
+  { slug: "plan", label: "Plan", hint: "Propose & approve who does what" },
+  { slug: "cockpit", label: "Cockpit", hint: "Review flagged work & decide" },
+  { slug: "audit", label: "Audit", hint: "Trace who did what, when" },
+  { slug: "debrief", label: "Debrief", hint: "Case summary at close" },
 ];
 
 export function CaseSubNav({ caseId, title }: { caseId: string; title?: string }) {
@@ -31,6 +33,8 @@ export function CaseSubNav({ caseId, title }: { caseId: string; title?: string }
               <Link
                 key={tab.slug}
                 href={href}
+                title={tab.hint}
+                aria-label={`${tab.label} — ${tab.hint}`}
                 className={`border-b-2 px-3.5 py-2.5 text-sm font-medium transition-colors ${
                   active
                     ? "border-brand text-brand"
@@ -38,6 +42,9 @@ export function CaseSubNav({ caseId, title }: { caseId: string; title?: string }
                 }`}
               >
                 {tab.label}
+                <span className="ml-2 hidden text-[11px] font-normal text-muted xl:inline">
+                  {tab.hint}
+                </span>
               </Link>
             );
           })}

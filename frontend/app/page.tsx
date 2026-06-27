@@ -3,12 +3,32 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createCase, createPlan, listCases, uploadCaseDocuments } from "@/lib/api";
+import { createCase, createPlan, getCockpit, listCases, uploadCaseDocuments } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Case, Severity } from "@/lib/types";
+import type { Case, Cockpit, Severity } from "@/lib/types";
 import { Button, ErrorNote, Panel, Spinner } from "@/components/ui";
 
 const SEVERITIES: Severity[] = ["low", "medium", "high", "extreme"];
+
+// At-a-glance state for one case (walkthrough gap G1 — see DESIGN.md). Lets the partner tell which
+// case needs them from the list, without opening each cockpit (H1 visibility).
+type CaseSummary = {
+  inReview: number;
+  hardFlags: number;
+  awaitingHuman: number;
+  decided: number;
+  cleared: number;
+};
+
+function summarise(ck: Cockpit): CaseSummary {
+  return {
+    inReview: ck.queue.length,
+    hardFlags: ck.queue.filter((c) => c.risk?.has_hard_flag || c.top_flag?.hard).length,
+    awaitingHuman: ck.awaiting_human.length,
+    decided: ck.decided.length,
+    cleared: ck.auto_clear_lane.length,
+  };
+}
 
 const DEMO = {
   title: "Project Atlas — supplier agreement review",
@@ -19,6 +39,7 @@ const DEMO = {
 export default function CasesPage() {
   const router = useRouter();
   const [cases, setCases] = useState<Case[] | null>(null);
+  const [summaries, setSummaries] = useState<Record<string, CaseSummary>>({});
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
@@ -36,6 +57,24 @@ export default function CasesPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // Pull each case's cockpit summary in parallel; degrade silently per-case (a case with no plan
+  // yet simply shows no status line rather than blocking the list).
+  useEffect(() => {
+    if (!cases) return;
+    let cancelled = false;
+    Promise.allSettled(cases.map((c) => getCockpit(c.id))).then((results) => {
+      if (cancelled) return;
+      const next: Record<string, CaseSummary> = {};
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled") next[cases[i].id] = summarise(r.value);
+      });
+      setSummaries(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cases]);
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,6 +267,7 @@ export default function CasesPage() {
                         <p className="mt-1 text-[11px] text-muted">
                           Created by {c.created_by}
                         </p>
+                        <StatusLine summary={summaries[c.id]} />
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -294,5 +334,59 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="mb-1 block text-xs font-medium text-ink-soft">{label}</span>
       {children}
     </label>
+  );
+}
+
+// At-a-glance case state. Pills only appear when their count is non-zero, so the card stays quiet
+// until something actually needs the partner (H1 visibility, H8 minimalism).
+function StatusLine({ summary }: { summary?: CaseSummary }) {
+  if (!summary) return null;
+  const { inReview, hardFlags, awaitingHuman, decided, cleared } = summary;
+  const pills: { key: string; label: string; cls: string }[] = [];
+  if (hardFlags > 0)
+    pills.push({
+      key: "hard",
+      label: `${hardFlags} hard flag${hardFlags === 1 ? "" : "s"}`,
+      cls: "bg-red-50 text-red-700 ring-red-200",
+    });
+  if (inReview > 0)
+    pills.push({
+      key: "review",
+      label: `${inReview} in review`,
+      cls: "bg-amber-50 text-amber-700 ring-amber-200",
+    });
+  if (awaitingHuman > 0)
+    pills.push({
+      key: "human",
+      label: `${awaitingHuman} awaiting human`,
+      cls: "bg-sky-50 text-sky-700 ring-sky-200",
+    });
+  if (decided > 0)
+    pills.push({
+      key: "decided",
+      label: `${decided} decided`,
+      cls: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    });
+  if (cleared > 0)
+    pills.push({
+      key: "cleared",
+      label: `${cleared} auto-cleared`,
+      cls: "bg-slate-100 text-slate-600 ring-slate-200",
+    });
+
+  if (pills.length === 0)
+    return <p className="mt-2 text-[11px] text-muted">No work dispatched yet.</p>;
+
+  return (
+    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+      {pills.map((p) => (
+        <span
+          key={p.key}
+          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${p.cls}`}
+        >
+          {p.label}
+        </span>
+      ))}
+    </div>
   );
 }
