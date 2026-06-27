@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
+
+# A source lookup the worker can hand to review_document so the model can fetch a real EU source by
+# CELEX on demand (Anthropic tool-use). A plain callable — not the CellarConnector type — so this
+# module gains no import and there is no provider -> cellar cycle. Returns a corpus-doc-shaped dict
+# on a hit, None on absence. The worker owns the implementation (and the corpus caching).
+SourceLookup = Callable[[str], "dict | None"]
 
 
 class ProviderError(Exception):
@@ -59,9 +66,17 @@ class LLMProvider(ABC):
 
     @abstractmethod
     def review_document(
-        self, *, draft: dict, firm_standard: dict, process_section: str, run_index: int = 0
+        self,
+        *,
+        draft: dict,
+        firm_standard: dict,
+        process_section: str,
+        run_index: int = 0,
+        source_lookup: SourceLookup | None = None,
     ) -> ReviewResult:
-        """Review a draft document against the firm standard → structured findings (depth)."""
+        """Review a draft document against the firm standard → structured findings (depth). When
+        `source_lookup` is given, a capable provider may call it (tool-use) to ground a citation in
+        the real source by CELEX while drafting; providers without tool-use ignore it."""
 
     @abstractmethod
     def check_citation_support(self, *, claim: str, source: dict) -> CitationCheck:

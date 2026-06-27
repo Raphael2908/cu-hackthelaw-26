@@ -72,7 +72,9 @@ cut from the bottom if time runs short.
 - [x] Live EU Cellar API connector (keep fixtures as the offline fallback). Opt-in `CELLAR_ENABLED`;
       `providers/cellar.py` (Null default + Http impl behind `get_cellar()`); citation-support fetches
       a source by CELEX on a corpus miss and caches it; outage → soft "unverifiable" flag, never a
-      false fabrication (architecture §7.1/§9/§14.1).
+      false fabrication (architecture §7.1/§9/§14.1). Uses the **official CELLAR API** (REST content
+      negotiation for XHTML/Formex + SPARQL metadata), not HTML scraping. The **worker** also grounds
+      citations against real Cellar sources while drafting via Anthropic tool-use (`fetch_eu_source`).
 - [ ] Real auth (SSO/JWKS); per-firm process-doc + standard management. (No Postgres/Supabase —
       SQLite is the production store.)
 

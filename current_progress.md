@@ -4,6 +4,44 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## EU Cellar — official API (not scraping) + worker grounding via tool-use
+
+**Where we are.** Two follow-ups to the Cellar connector, on the same branch/PR. (1) The connector
+now uses the **official CELLAR API** instead of scraping rendered HTML. (2) The **worker** can ground
+its citations against real Cellar sources while drafting (Anthropic tool-use) — it's no longer only
+the checker that touches Cellar. Both opt-in (`CELLAR_ENABLED`), default off, suite stays offline.
+
+**Built**
+- **Official API, not scraping (`providers/cellar.py`).** `HttpCellarConnector` now negotiates
+  `application/xhtml+xml` (Formex XML for pre-2014 docs) and parses the result with a
+  namespace-agnostic `xml.etree.ElementTree` walk that handles **both** XHTML and Formex; the old
+  regex strip survives only as a defensive fallback when the payload isn't well-formed XML. Title +
+  resource-type come from a best-effort **SPARQL** query (`/webapi/rdf/sparql`, CDM ontology); `kind`
+  still derives from the CELEX sector as the reliable default and SPARQL only refines it. A proper
+  `User-Agent` is sent. New config: `CELLAR_SPARQL_PATH`, `CELLAR_USER_AGENT`. The tri-state contract
+  (found / absent / raise) and the §14.1 hard-vs-soft flag logic are unchanged.
+- **Worker grounding via tool-use.** Added an optional `source_lookup` callable to
+  `LLMProvider.review_document` (a plain `Callable`, so `base.py` gains no import and there's no
+  provider→cellar cycle). The real Anthropic provider runs a bounded **tool-use loop** exposing a
+  `fetch_eu_source` tool; the mock ignores it (offline, deterministic). `worker.run_review` builds a
+  corpus-first, cache-on-hit `source_lookup` (repo access stays in the service) and passes it **only
+  when `CELLAR_ENABLED`**, so mock/offline is unchanged and tool-free. The coordinator is untouched —
+  worker and checker both resolve `get_cellar()` by default. The checker's multi-run review calls
+  stay un-grounded to bound tool-call cost.
+- Tests stay offline: `test_cellar.py` now drives `HttpCellarConnector` with a path-routing
+  `MockTransport` (content vs SPARQL) — XHTML parse, Formex parse, malformed→regex fallback, SPARQL
+  title precedence + type→kind refinement, SPARQL failure swallowed, status mapping — plus worker
+  tests (source_lookup caches into the corpus; the tool is offered only when enabled). `make test`
+  green (39, was 32), `make lint` clean.
+
+**What's next**
+- Confirm the exact SPARQL query + `Accept` headers with live `curl`s before `CELLAR_ENABLED=true`
+  (the one external unknown, isolated to `HttpCellarConnector`).
+- Still open: tune the `plan_case`/`review_document` prompts + harden structured-output parsing
+  (`max_tokens` already raised). Perplexity web search; real SSO/JWKS auth.
+
+---
+
 ## Live EU Cellar connector — citation signal can resolve real EU law
 
 **Where we are.** The citation-support signal (architecture.md §7.1) is no longer limited to the

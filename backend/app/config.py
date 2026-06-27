@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     CELLAR_BASE_URL: str = "http://publications.europa.eu"
     CELLAR_LANGUAGE: str = "en"
     CELLAR_TIMEOUT: float = 10.0
+    CELLAR_SPARQL_PATH: str = "/webapi/rdf/sparql"  # CDM knowledge graph, for title/type metadata
+    CELLAR_USER_AGENT: str = "supervision-cockpit/1.0 (legal-AI-supervision; +contact)"
 
     # --- Risk signal tuning (architecture.md §7) ---
     SAMPLE_RATE: float = 0.2
