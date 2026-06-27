@@ -17,6 +17,61 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [ ] **Cut redundant hint/helper text that clutters the view.** Several screens carry long muted
+      explainer sentences (the `text-[11px]`/`text-xs text-muted` paragraphs) that restate what the
+      adjacent control already makes obvious — visual noise for a time-poor partner. Trim them: keep
+      a hint only where it carries information the UI can't show on its own; delete the rest, or fold
+      it into a one-line label / a hover title. Known offenders to review (not exhaustive — grep the
+      `text-muted` explainer spans per file): the severity blurb and the upload + create helper
+      paragraphs in `app/page.tsx`; the "Severity is a deliberate policy choice…" sentence in
+      `plan/page.tsx`; the explainer lines scattered through `components/ItemDetail.tsx` (the most
+      hint-heavy file) and the cockpit lane sub-captions in `app/cases/[id]/cockpit/page.tsx`. Prefer
+      progressive disclosure (tooltip / "?" affordance) over an always-on paragraph where the context
+      genuinely helps a first-timer.
+      - **Guardrail (do NOT strip these):** some muted text is load-bearing, not decoration — the
+        one-rule framing that keeps the product honest ("these are points to check, not verdicts",
+        "nothing is dispatched until you approve", the debrief honesty footer, the "uncertainty is
+        measured, not self-reported" notes). Those stay. Remove redundancy and decoration, never the
+        checkable-claim/never-a-verdict messaging.
+- [ ] **Reshape the case debrief into an issue-centric memo (backend + frontend).** A senior partner
+      found the debrief unnatural: it's laid out by the system's data-model entity types — four flat,
+      parallel sections **Tasks / Flags raised / Partner decisions / Carry forward** (one per SQLite
+      table + a footer) — not the way a lawyer reads a closed matter. The partner thinks *per issue*
+      ("the liability cap — what did we find, what did I decide, is it resolved?"), but that single
+      issue is **shattered across three sections** (its task in §1, its flag in §2, the decision in
+      §3), forcing the reader to mentally re-join the tables. Also: `DecisionCard` references its task
+      by a truncated UUID (`task 3f9a2b1c`) while `TaskCard` shows only the title and no ID — so the
+      decision→task link is literally unfollowable in the UI. The cockpit already got the
+      figure/ground + group-the-exceptions treatment (commit `b79c2ff`); the debrief is the surface
+      that didn't. **Do it properly — compose the join server-side, where the objects still have
+      their relationships, instead of regex-parsing it back out of flattened markdown.**
+      - **Backend — `services/debrief.py` + provider `generate_debrief` (mock + real).** Stop
+        emitting three independent lists. Build, per task, an *issue record* that already joins the
+        task to its flags (`repo.list(FLAGS, task_id=...)`) and its decision
+        (`repo.list(DECISIONS, task_id=...)`). Partition tasks into **needs-attention** (has a flag
+        and/or a recorded decision) vs **cleared without flags**. Emit a structured payload the
+        frontend can render without guessing — prefer changing `DebriefDoc.content` from a markdown
+        blob to a typed JSON shape (e.g. `{ goal, summary_counts, issues[], cleared[], carry_forward[] }`
+        where each `issue` = `{ task_title, severity, status, flags[], decision }`), carrying real
+        task **titles** (not UUIDs) and keeping each flag's `source_ref` so the partner can still
+        reach the source in one click. Update the mock fixture/generator and the real Anthropic
+        prompt + structured-output parsing together; add/adjust a backend test for the new shape.
+      - **Frontend — `components/DebriefReport.tsx` + `debrief/page.tsx`.** Rebuild around the new
+        payload (delete the string-parsing in `parseSections`/`renderCard` and the brittle regexes in
+        `TaskCard`/`FlagCard`/`DecisionCard`). Layout, top to bottom: (1) a **synthesis line** in the
+        letterhead — `N tasks · N hard flags · N rejected · N to carry forward` (counts, never a
+        verdict); (2) **Needs-attention items, ordered worst-first** (severity/hard-flag sort, the
+        same ordering the cockpit uses), each as **one composed card** showing task title + severity
+        + status, its flag(s) with signal-type chip and a source link, and **your decision** (action
+        + note) together — no cross-referencing; (3) **Cleared without flags** collapsed into a
+        compact expandable summary showing just the count (progressive disclosure, like the cockpit's
+        secondary lanes); (4) **Carry forward** kept prominent as the action list. Keep the printable
+        letterhead + honesty footer.
+      - **Guardrail (the one rule).** This is recomposition and ordering only — flags stay checkable
+        flags, the decision stays the *partner's own recorded* decision, the synthesis is counts.
+        Never fuse them into an agent pass/fail. Worst-first ordering is a sort, not a judgment.
+      - **Docs:** note the debrief reshape in `frontend/DESIGN.md` (same figure/ground + exceptions-
+        over-routine rationale as the cockpit) and log it in `current_progress.md`.
 - [x] **Declutter the partner cockpit with Gestalt grouping.** A senior partner found the cockpit
       unreadable — too many competing sections and overloaded cards. Reduce visual load and make the
       per-item review read as a clear process, without hiding any signal (the one rule holds; see
@@ -47,6 +102,11 @@ cut from the bottom if time runs short.
       processing… / taking longer than expected" hint, distinct from the AI-pipeline failure that
       already fail-safes to escalation. Pairs with the live-progress item below. Keep it a checkable
       status, never a verdict.
+- [ ] **Add an explicit task filter to the audit page.** The audit view already filters by task,
+      but only implicitly — clicking an entry "follows" its `task_id` (the `task`/`setTask` state +
+      `taskTitles`). Add a task selector to the filter bar alongside the "Who" actor dropdown
+      (`app/cases/[id]/audit/page.tsx`), so a partner can pick a task directly instead of having to
+      find one of its entries first. Reuse the existing `task` state and the `clearFilters` reset.
 - [ ] **Wire the reassign action into the cockpit.** The backend exposes `POST /tasks/{id}/reassign`
       (and a `task_reassigned` audit event), and `reassignTask()` + `getAssociates()` already exist in
       `lib/api.ts` — but no component calls them, so a partner can't move work between a person and the
