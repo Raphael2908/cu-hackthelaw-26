@@ -146,6 +146,26 @@ def test_async_dispatch_returns_immediately_then_completes(client, monkeypatch):
     assert client.get(f"/api/cases/{case['id']}/audit").json()["chain_valid"] is True
 
 
+def test_reject_moves_task_to_escalated_lane(client):
+    """A partner reject escalates the task; the cockpit surfaces it in its own escalations lane,
+    separate from signed-off work (architecture.md §8, §14.6)."""
+    case, plan = _new_case_with_plan(client)
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    top = client.get(f"/api/cases/{case['id']}/cockpit").json()["queue"][0]
+
+    decision = client.post(
+        f"/api/tasks/{top['task']['id']}/decision",
+        json={"action": "reject", "note": "Redraft the liability cap from scratch."},
+    )
+    assert decision.status_code == 200
+
+    cockpit = client.get(f"/api/cases/{case['id']}/cockpit").json()
+    escalated_ids = {c["task"]["id"] for c in cockpit["escalated"]}
+    decided_ids = {c["task"]["id"] for c in cockpit["decided"]}
+    assert top["task"]["id"] in escalated_ids
+    assert top["task"]["id"] not in decided_ids
+
+
 def test_associate_cannot_approve_plan(client):
     _, plan = _new_case_with_plan(client)
     r = client.post(f"/api/plans/{plan['plan']['id']}/approve", headers=ASSOC_HEADERS)
