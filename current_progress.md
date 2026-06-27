@@ -4,6 +4,30 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Explicit task filter on the audit page
+
+**Where we are.** The audit trail already filtered by task, but only *implicitly*: a partner had to
+find an entry for the task and click it to "follow" its `task_id`. There was no way to pick a task
+directly. Added an explicit selector so the audit filter bar reads as one consistent vocabulary
+(Everything/Decisions/Flags · Who · Task).
+
+**Built**
+- **Frontend only (`app/cases/[id]/audit/page.tsx`).** Added a **"Task"** `<select>` to the filter
+  bar, styled like the existing "Who" actor dropdown. Options come from a new `tasks` memo derived
+  from audit entries that carry a `task_id` (mirroring the `actors` memo) — titled via the existing
+  `taskTitles` map with a `task <id>` fallback — so it only offers tasks that actually have events.
+  It binds to the existing `task` state (`"all"` ⇄ `null`), composing with the existing filter
+  predicate (`e.task_id !== task`), the URL deep-link seed (the cockpit can still pre-select a task),
+  and `clearFilters`. Replaced the passive "Following: …" chip.
+- **No new plumbing.** Reused `task`/`setTask`, `taskTitles`, the predicate, and the reset — no
+  backend, no new API calls, no new state. No verdict semantics touched (a filter affordance only).
+- **Layout fix.** The filter bar's outer `flex-wrap` let the Task dropdown drop to its own line on
+  narrow screens (Who up top, Task below). Wrapped **Who + Task** in their own default-nowrap flex
+  container so they stay paired — they now wrap together as a unit instead of splitting.
+- **Verified.** Frontend `tsc --noEmit` clean.
+
+---
+
 ## Plan as a working surface + associate-view attribution (Cluster A, increment 1)
 
 **Where we are.** Starting "Cluster A" — making the plan a real working/negotiation surface — with

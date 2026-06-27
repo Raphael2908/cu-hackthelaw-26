@@ -64,6 +64,15 @@ export default function AuditPage() {
     return [...set].sort();
   }, [all]);
 
+  // Tasks that actually have events in this trail, so the filter only offers what it can show.
+  const tasks = useMemo(() => {
+    const ids = new Set<string>();
+    all.forEach(({ e }) => e.task_id && ids.add(e.task_id));
+    return [...ids]
+      .map((tid) => ({ id: tid, title: taskTitles[tid] ?? `task ${tid.slice(0, 8)}` }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [all, taskTitles]);
+
   const visible = all.filter(({ e, kind }) => {
     if (show === "decisions" && kind !== "decision") return false;
     if (show === "flags" && kind !== "flag") return false;
@@ -153,27 +162,42 @@ export default function AuditPage() {
                 ))}
               </div>
 
-              <label className="flex items-center gap-2 text-xs font-medium text-ink-soft">
-                Who
-                <select
-                  value={actor}
-                  onChange={(e) => setActor(e.target.value)}
-                  className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
-                >
-                  <option value="all">Everyone</option>
-                  {actors.map((a) => (
-                    <option key={a} value={a}>
-                      {humanizeActor(a)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {/* Who + Task stay paired: they wrap together as a unit, never apart. */}
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-xs font-medium text-ink-soft">
+                  Who
+                  <select
+                    value={actor}
+                    onChange={(e) => setActor(e.target.value)}
+                    className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                  >
+                    <option value="all">Everyone</option>
+                    {actors.map((a) => (
+                      <option key={a} value={a}>
+                        {humanizeActor(a)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              {task ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand">
-                  Following: {taskTitles[task] ?? `task ${task.slice(0, 8)}`}
-                </span>
-              ) : null}
+                {tasks.length > 0 ? (
+                  <label className="flex items-center gap-2 text-xs font-medium text-ink-soft">
+                    Task
+                    <select
+                      value={task ?? "all"}
+                      onChange={(e) => setTask(e.target.value === "all" ? null : e.target.value)}
+                      className="max-w-[14rem] truncate rounded-lg border border-line bg-white px-2.5 py-1.5 text-xs text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                    >
+                      <option value="all">Any task</option>
+                      {tasks.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+              </div>
 
               {filtering ? (
                 <button

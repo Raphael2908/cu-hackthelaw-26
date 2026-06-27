@@ -17,6 +17,26 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [ ] **Let the partner add free-text instructions when creating a case — and feed them to the
+      planner (backend + frontend).** The new-case form (`app/page.tsx`) captures the matter's
+      structured fields (title, goal, uploaded documents) but gives the partner no place to write
+      their own direction for *how* the work should be approached — e.g. "keep all liability review
+      human-led", "focus on the data-transfer clauses", "the client is risk-averse on indemnities".
+      Add an optional **"Specific instructions for the planner"** free-text field to the create form,
+      persist it on the case, and pass it into plan generation so the planner can respect it when it
+      proposes tasks/assignees/severity.
+      - **Backend.** Add an optional `instructions` (free text) field to the case model; thread it
+        through case creation and into the planner — `provider.generate_plan(case, ...)` should
+        receive the partner's instructions (mock: deterministic influence/passthrough into the
+        fixture; real: include them in the plan prompt). Record the instructions as part of the
+        delegation record (accountability audit) — they're the partner authoring the delegation.
+      - **Frontend.** Add the field to the new-case form (`app/page.tsx`), reusing the existing
+        `Field`/`.input` styling; send it via `createCase`. Pairs with the "new case as a foreground
+        modal" item below (same form) and the iterative-planning revise loop (this is the *initial*
+        steer; the revise loop is the *follow-up* steer).
+      - **Guardrail (the one rule):** this is the human shaping the delegation up front; the planner
+        still only proposes and the partner still approves before anything dispatches. The
+        instructions never auto-act.
 - [ ] **Source verification: show BOTH the quoting passage in the work AND the quoted passage in the
       source (backend + frontend).** The source drawer (`components/SourceDrawer.tsx`) today shows
       only the source side — its "DOCUMENT TEXT" is the cited corpus document's text (the authority /
@@ -335,11 +355,18 @@ cut from the bottom if time runs short.
       processing… / taking longer than expected" hint, distinct from the AI-pipeline failure that
       already fail-safes to escalation. Pairs with the live-progress item below. Keep it a checkable
       status, never a verdict.
-- [ ] **Add an explicit task filter to the audit page.** The audit view already filters by task,
+- [x] **Add an explicit task filter to the audit page.** The audit view already filters by task,
       but only implicitly — clicking an entry "follows" its `task_id` (the `task`/`setTask` state +
       `taskTitles`). Add a task selector to the filter bar alongside the "Who" actor dropdown
       (`app/cases/[id]/audit/page.tsx`), so a partner can pick a task directly instead of having to
       find one of its entries first. Reuse the existing `task` state and the `clearFilters` reset.
+      - **Done.** `audit/page.tsx` now has a **"Task"** `<select>` in the filter bar styled like the
+        "Who" actor dropdown. Options come from a new `tasks` memo derived from audit entries that
+        carry a `task_id` (mirroring the `actors` memo), titled via the existing `taskTitles` map
+        with a `task <id>` fallback — so it only offers tasks that have events. It binds to the
+        existing `task` state (`"all"` ⇄ `null`), composing with the existing filter predicate, the
+        URL deep-link seed, and `clearFilters`. Replaced the passive "Following: …" chip; no backend,
+        no new API calls, no new state. `tsc --noEmit` clean.
 - [ ] **Wire the reassign action into the cockpit.** The backend exposes `POST /tasks/{id}/reassign`
       (and a `task_reassigned` audit event), and `reassignTask()` + `getAssociates()` already exist in
       `lib/api.ts` — but no component calls them, so a partner can't move work between a person and the
