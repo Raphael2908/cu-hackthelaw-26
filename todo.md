@@ -67,8 +67,12 @@ cut from the bottom if time runs short.
 
 ## Real integrations
 - [x] Run on real Anthropic (`PROVIDER_MODE=real`, `ENV=production`); SQLite stays the store.
-- [ ] Tune the real review/plan prompts; verify structured output parsing; raise `max_tokens`.
-- [ ] Live EU Cellar API connector (keep fixtures as the offline fallback).
+- [ ] Tune the real review/plan prompts; verify structured output parsing. (`max_tokens` raised
+      2048 → 32768 in `providers/real/anthropic_llm.py` — done; prompts + parsing still to do.)
+- [x] Live EU Cellar API connector (keep fixtures as the offline fallback). Opt-in `CELLAR_ENABLED`;
+      `providers/cellar.py` (Null default + Http impl behind `get_cellar()`); citation-support fetches
+      a source by CELEX on a corpus miss and caches it; outage → soft "unverifiable" flag, never a
+      false fabrication (architecture §7.1/§9/§14.1).
 - [ ] Real auth (SSO/JWKS); per-firm process-doc + standard management. (No Postgres/Supabase —
       SQLite is the production store.)
 

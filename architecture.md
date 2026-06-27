@@ -285,6 +285,16 @@ links straight to the cited passage. Live external sources retrieved by agents (
 Perplexity, on the roadmap) are recorded the same way — every fetched source kept with its URL for
 one-click verification, so it stays a checkable claim, never a verdict.
 
+**Live EU Cellar (opt-in, `CELLAR_ENABLED`).** The citation-support signal (§7.1) resolves a cited
+CELEX against `corpus_documents` first; on a miss, if Cellar is enabled, it fetches the document live
+from the EU Publications Office (`providers/cellar.py`, behind a factory like the LLM provider) and
+**caches it as a `corpus_document`**, so the support check runs against real EU law and the cached
+source is one-click-openable like any other. The connector defaults **off**, so the seeded fixtures
+remain the network-free fallback and the test suite never touches the network. It distinguishes a
+genuine *absence* (no such CELEX → the existing hard "fabricated" flag) from a transient *failure*
+(outage → a soft "unverifiable" flag, claim excluded from the rate), so an outage can never be
+mistaken for a fabricated citation (§14.1).
+
 ---
 
 ## 10. Auth

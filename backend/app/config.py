@@ -42,6 +42,15 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-opus-4-8"
 
+    # --- EU Cellar (live citation source, architecture.md §7.1/§9) --- opt-in. Default OFF so the
+    # stack stays fully offline (fixtures only) and tests never touch the network. When enabled, the
+    # citation-support signal fetches a source by CELEX from the EU Publications Office on a local
+    # miss; the seeded fixtures remain the offline fallback.
+    CELLAR_ENABLED: bool = False
+    CELLAR_BASE_URL: str = "http://publications.europa.eu"
+    CELLAR_LANGUAGE: str = "en"
+    CELLAR_TIMEOUT: float = 10.0
+
     # --- Risk signal tuning (architecture.md §7) ---
     SAMPLE_RATE: float = 0.2
     DISAGREEMENT_RUNS: int = 3

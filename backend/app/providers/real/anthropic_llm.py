@@ -42,7 +42,7 @@ class AnthropicLLMProvider(LLMProvider):
         try:
             msg = self._client.messages.create(
                 model=self._model,
-                max_tokens=2048,
+                max_tokens=32768,
                 system=system,
                 messages=[{"role": "user", "content": user}],
             )
@@ -117,7 +117,7 @@ class AnthropicLLMProvider(LLMProvider):
         )
         msg = self._client.messages.create(
             model=self._model,
-            max_tokens=2048,
+            max_tokens=32768,
             system=sys,
             messages=[{"role": "user", "content": user}],
         )

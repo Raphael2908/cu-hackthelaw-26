@@ -4,6 +4,48 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Live EU Cellar connector — citation signal can resolve real EU law
+
+**Where we are.** The citation-support signal (architecture.md §7.1) is no longer limited to the
+seeded fixtures. With `CELLAR_ENABLED` on, a cited CELEX that isn't in the corpus is fetched live
+from the EU Publications Office, cached, and checked against the real source. Default is **off**, so
+the stack and the test suite stay fully offline. Also raised the real-provider `max_tokens`
+2048 → 32768 (both call sites) so large documents/plans don't truncate.
+
+**Built**
+- `providers/cellar.py` — a `CellarConnector` seam behind a `get_cellar()` factory, mirroring the
+  LLM provider: `NullCellarConnector` (the default — always reports absence, keeps the stack
+  offline/network-free) and `HttpCellarConnector` (lazy-imports `httpx`, fetches by CELEX via REST
+  content negotiation `GET {base}/resource/celex/{CELEX}`, strips HTML → plain text, maps the CELEX
+  sector → `legislation`/`case_law`). `get_cellar()` is `@lru_cache`d and returns the Null impl
+  unless `CELLAR_ENABLED`.
+- `services/checker.py` — `citation_support`/`run_checks` resolve a CELEX from the corpus first,
+  then fetch live on a miss and **cache the fetched doc into `CORPUS`** (so it's one-click-openable
+  via `GET /api/corpus/{id}`, like any seeded source). The `coordinator` is unchanged — it flows
+  through the `get_cellar()` default.
+- **The §14.1 guardrail, enforced + tested.** A fetch that *authoritatively* reports no such CELEX
+  stays a **hard "fabricated"** flag; a fetch that *fails* (network/outage) is a **soft
+  "unverifiable"** flag and the claim is dropped from the support-rate denominator — so an outage
+  can never masquerade as a fabricated citation. The connector returns `None` for absence and
+  **raises** (`RetryableError`/`ProviderError`) for transient failure to make this distinction
+  load-bearing.
+- Config + env: four mock-safe `CELLAR_*` settings (`ENABLED=false`, `BASE_URL`, `LANGUAGE`,
+  `TIMEOUT`) + `.env.example` section. Architecture §9 documents the opt-in source.
+- Tests stay offline: new `test_cellar.py` (10 cases) covers the hit (resolve + cache), absence
+  (hard fabricated), and outage (soft unverifiable, excluded from rate) paths via an injected fake,
+  plus `HttpCellarConnector` parsing/status handling via `httpx.MockTransport`. `make test` green
+  (32, was 19), `make lint` clean. Existing tests unchanged — the Null default keeps them
+  network-free.
+
+**What's next**
+- Confirm the exact EU Cellar `Accept` header / endpoint with a couple of live `curl`s before
+  flipping `CELLAR_ENABLED=true` (the one external unknown; isolated to `HttpCellarConnector`).
+- Still open on the real-provider todo: tune the `plan_case`/`review_document` prompts and harden
+  structured-output parsing (only the `max_tokens` part of that item is done).
+- Perplexity web search; real SSO/JWKS auth before any non-demo use.
+
+---
+
 ## Presentation assets — README diagrams + screenshots
 
 **Where we are.** The README is now presentation-ready. Done bar the demo video (placeholder in
