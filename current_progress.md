@@ -4,6 +4,37 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Planner authors a per-task worker system prompt for AI tasks
+
+**Where we are.** The planner now writes a **specific worker instruction** for every task it
+delegates to an AI worker, instead of leaving the `ai_instruction` field null. The seam already
+existed (`build_task_spec` layers `ai_instruction` onto the section instruction; the provider wraps
+it in the fixed envelope) — what was missing was telling the planner to populate it. A prompt-only
+change to the real provider. All §14 guardrails held: the fixed no-verdict / checkable-claims /
+STRICT-JSON envelope still comes from the provider *after* the planner's layer, so the planner can't
+weaken it; severity stays the partner's dial; delegation stays Trust-Matrix nature-based.
+
+**Built**
+- **`plan_case` system prompt (`providers/real/anthropic_llm.py`)** gains a WORKER INSTRUCTION block:
+  for `ai`/`hybrid` tasks the model must write a self-contained, task-specific worker brief into
+  `ai_instruction` (objective, document/clauses in scope, the section's focus points, matched to the
+  section `kind` it reads from `TASK TYPES`); for `human` tasks `ai_instruction` is `null`. It is
+  told **not** to restate the output format / JSON shape / "checkable claims" framing (the envelope
+  adds that) and **never** to instruct a pass/fail verdict (§14.1). The closing JSON-contract
+  sentence now describes `ai_instruction` as "a tailored worker instruction for ai/hybrid, else null".
+- No schema/plumbing/frontend change — `ai_instruction` already flows through `build_task_spec` and
+  renders on the plan page + (hybrid) inbox. Mock untouched (it replays fixtures, has no system
+  prompt), so the offline demo is unchanged.
+- `make lint` clean, `make test` green (62). `test_flexible_worker.py` already proves a non-null
+  `ai_instruction` reaches the worker, so the mechanism stays covered.
+
+**What's next**
+- Eval/tune the generated worker prompts on real cases (quality is real-model-dependent) — folds
+  into the open `plan_case`/`review_document` prompt-tuning item.
+- Optional: enrich `mock_plan.json` so the offline demo also shows generated worker prompts.
+
+---
+
 ## Flexible worker — the planner tasks it; not every task is a firm-standard review
 
 **Where we are.** The worker is no longer hardcoded to "review a DRAFT against the FIRM STANDARD."

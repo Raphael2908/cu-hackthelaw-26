@@ -188,8 +188,13 @@ spec**: a `kind` (the output shape — `review | summarize | extract | draft`), 
 `services/task_spec.py::build_task_spec` and calls the single provider entry point
 `LLMProvider.run_task` (the old `review_document` is now a thin `kind="review"` shim). The provider
 composes the system prompt from the instruction + a fixed "surface checkable claims, never a verdict,
-STRICT JSON" envelope with the per-kind output schema; the planner's per-task `ai_instruction` (which
-used to be stored and never consumed) is layered on top. **Every kind still emits the universal
+STRICT JSON" envelope with the per-kind output schema; the planner's per-task `ai_instruction` is
+layered on top. For every task it delegates to an AI worker (`assignee_type` `ai`/`hybrid`) the
+planner **authors that `ai_instruction` as a task-specific worker prompt** — the concrete objective,
+the document/clauses in scope, the section's focus points, tailored to the section's `kind` — while a
+`human` task leaves it `null`. It is only the task-specific layer: the fixed envelope (added by the
+provider) still carries the no-verdict / checkable-claims / JSON framing, so the planner cannot weaken
+it. **Every kind still emits the universal
 `findings` list** — the checkable-claims seam the checker reads — while the type-specific product
 goes in `payload`, so flexible output never reshapes what supervision consumes. All fields default to
 the original review behaviour, so a section that omits them behaves exactly as before.

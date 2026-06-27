@@ -150,7 +150,7 @@ class AnthropicLLMProvider(LLMProvider):
         try:
             with self._client.messages.stream(
                 model=self._model,
-                max_tokens=settings.ANTHROPIC_MAX_TOKENS,
+                max_tokens=32768,
                 system=system,
                 messages=[{"role": "user", "content": user}],
             ) as stream:
@@ -328,10 +328,22 @@ class AnthropicLLMProvider(LLMProvider):
             "Do NOT route by the matter's severity: severity is the partner's separate up-front "
             "triage dial, set elsewhere — a high-severity matter can still contain low-stakes, "
             "checkable tasks that are right for AI. Judge stakes per task, not per matter.\n\n"
+            "WORKER INSTRUCTION (ai_instruction). For every task you delegate to an AI worker "
+            "(assignee_type 'ai' or 'hybrid'), WRITE a specific worker instruction in "
+            "ai_instruction — a self-contained brief tailored to THIS task: the objective, the "
+            "specific document and clauses in scope, the points this process section should "
+            "focus on, and what the worker should produce, appropriate to the section's kind "
+            "(review | summarize | extract | draft — read it from TASK TYPES). For 'human' tasks "
+            "set ai_instruction to null (no AI worker runs). Do NOT restate the output format, the "
+            "JSON shape, or the 'surface checkable claims' framing — that fixed envelope is added "
+            "automatically; ai_instruction is only the task-specific layer on top. The worker "
+            "surfaces checkable claims, so NEVER instruct it to reach a pass/fail/approve/reject "
+            "verdict.\n\n"
             "Bind target_document_id to one of the supplied DOCUMENTS. Return STRICT JSON "
             '{"tasks": [...]} where each task has title, description, task_type, assignee_type, '
-            "target_document_id, input_brief_slice, ai_instruction|null. The plan is a proposal — "
-            "severity is set by the partner, not here."
+            "target_document_id, input_brief_slice, and ai_instruction (a tailored worker "
+            "instruction for ai/hybrid tasks, else null). The plan is a proposal — severity is set "
+            "by the partner, not here."
         )
         types = json.dumps(process_doc.get("task_types", {}))
         docs = json.dumps([{"id": d["id"], "title": d["title"]} for d in drafts])
@@ -345,4 +357,10 @@ class AnthropicLLMProvider(LLMProvider):
         user = json.dumps(
             {"case": case, "tasks": tasks, "flags": flags, "decisions": decisions}, default=str
         )
-        return self._complete_text(sys, user)
+        msg = self._client.messages.create(
+            model=self._model,
+            max_tokens=32768,
+            system=sys,
+            messages=[{"role": "user", "content": user}],
+        )
+        return "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")

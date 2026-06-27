@@ -55,6 +55,11 @@ cut from the bottom if time runs short.
 - [ ] Flexible-worker follow-ups: let the partner edit `worker_instruction`/`checklist` per task
       pre-approval (`TaskPatch`); show the instruction/checklist on the plan page; surface a `draft`
       task's `payload` in the associate inbox; tune the real per-kind prompts.
+- [x] **Planner authors a per-task worker system prompt.** The real `plan_case` prompt now tells the
+      planner to write a specific, task-specific worker instruction into `ai_instruction` for every
+      `ai`/`hybrid` task (null for `human`), tailored to the section `kind`, layered under the fixed
+      no-verdict envelope (architecture.md §6). Prompt-only; mock unchanged. Tuning the generated
+      prompts on real cases stays open (below).
 
 ## Next (breadth)
 - [x] **Planner delegation guided by the Trust Matrix.** The `plan_case` system prompt reads each
