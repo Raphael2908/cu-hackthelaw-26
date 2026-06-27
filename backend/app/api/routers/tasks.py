@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from app.core.audit import record_accountability
 from app.core.auth import CurrentUser, get_current_user
@@ -14,7 +14,7 @@ from app.schemas.models import (
     SubmissionCreate,
     TaskPatch,
 )
-from app.services import coordinator, views
+from app.services import coordinator, documents, views
 
 router = APIRouter()
 
@@ -46,9 +46,60 @@ def inbox(user: CurrentUser = Depends(get_current_user)) -> list[dict]:
                     "ai_first_pass": views.ai_first_pass(repo, t["id"]),  # hybrid only
                     "last_submission": views.latest_submission(repo, t["id"]),
                     "messages": views.messages(repo, t["id"]),
+                    "attachments": views.task_attachments(repo, t["id"]),
                 }
             )
     return out
+
+
+@router.get("/tasks/{task_id}/attachments")
+def list_task_attachments(task_id: str) -> list[dict]:
+    return views.task_attachments(get_repo(), _task_or_404(task_id)["id"])
+
+
+@router.post("/tasks/{task_id}/attachments", status_code=201)
+async def attach_task_documents(
+    task_id: str,
+    files: list[UploadFile] = File(...),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[dict]:
+    """An associate attaches supporting documents to their work on a task. Each file's text is
+    extracted and stored as a case+task-tagged `attachment` corpus document (reachable in the source
+    drawer), and recorded in the accountability audit so the attachment is traceable to the task."""
+    repo = get_repo()
+    task = _task_or_404(task_id)
+    created: list[dict] = []
+    for upload in files:
+        raw = await upload.read()
+        try:
+            text = documents.extract_text(upload.filename or "document", raw)
+        except ValueError as e:
+            raise HTTPException(415, str(e)) from e
+        doc = repo.insert(
+            CORPUS,
+            {
+                "celex": None,
+                "kind": "attachment",
+                "title": upload.filename or "Attachment",
+                "source_url": f"upload://task/{task_id}/{upload.filename}",
+                "text": text,
+                "case_id": task["case_id"],
+                "task_id": task_id,
+                "planted_defects": [],
+                "ground_truth": {},
+            },
+        )
+        created.append({"id": doc["id"], "title": doc["title"]})
+
+    record_accountability(
+        repo,
+        type="documents_attached",
+        actor=user.email,
+        case_id=task["case_id"],
+        task_id=task_id,
+        payload={"document_ids": [d["id"] for d in created], "n": len(created)},
+    )
+    return created
 
 
 @router.get("/tasks/{task_id}")

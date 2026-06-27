@@ -289,7 +289,7 @@ cut from the bottom if time runs short.
         "Filter the trail to this person/agent" / "…this task" to match the filter-bar vocabulary
         (clicking still drives the same `setActor`/`setTask` filters). Technical-details disclosure and
         the decision/flag tag untouched. `tsc --noEmit` clean.
-- [ ] **Give associates a rich-text editor for their submission + document upload.** The associate's
+- [x] **Give associates a rich-text editor for their submission + document upload.** The associate's
       submission is currently a bare `<textarea>` bound to `summary` (`app/inbox/page.tsx` →
       `submitTask({ summary, findings })`). Upgrade it to a markdown editor in the spirit of a
       GitHub-style comment box — **Write / Preview tabs**, a light formatting toolbar (heading, bold,
@@ -311,10 +311,15 @@ cut from the bottom if time runs short.
         so the associate's file lands in the case corpus (tagged to the task), rather than adding a
         new submission-attachment table. Record the attachment in the audit/submission record so it's
         traceable. Keep submissions checkable claims that re-enter the flow — never an auto-decision.
-      - **Partial — editor done, upload remains.** The shared `MarkdownEditor` (Write/Preview +
-        toolbar) shipped and is wired into the submission box (and the question/concern box, and the
-        partner's note/amendment/reply in `ItemDetail`). **Remaining:** only the **attach-files /
-        document-upload** part on submission (the backend-seam decision above).
+      - **Done.** Editor: the shared `MarkdownEditor` is wired into the submission box (and the
+        question/concern box, and the partner's note/amendment/reply). Upload: `POST
+        /tasks/{id}/attachments` stores each file as a **case+task-tagged `attachment` corpus doc**
+        (reusing the corpus, no new table) and records a `documents_attached` accountability event;
+        `views.task_attachments` surfaces them on the inbox item + task detail. Frontend: a "📎 Attach
+        files" control + attached-files list in the inbox submission area (`attachTaskDocuments`), and
+        the partner sees the **associate's attachments** in `ItemDetail` Step 2, each openable in the
+        source drawer (generalised to accept a plain corpus-doc ref). Test
+        `test_associate_attaches_documents_to_a_task`; 54 backend tests green, ruff + tsc clean.
       - **Partial (editor done; upload deferred).** Built the shared `components/MarkdownEditor.tsx`
         — Write/Preview segmented toggle (same look as the audit/role toggles) + a light formatting
         toolbar (H, B, I, link, code, bulleted/numbered list; buttons wrap/prefix the textarea

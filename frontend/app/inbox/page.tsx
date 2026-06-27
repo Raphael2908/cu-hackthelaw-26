@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getInbox, postMessage, submitTask } from "@/lib/api";
+import { attachTaskDocuments, getInbox, postMessage, submitTask } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
 import type { InboxItem } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
@@ -80,7 +80,7 @@ export default function InboxPage() {
 }
 
 function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => void }) {
-  const { task, target_document, ai_first_pass, messages } = item;
+  const { task, target_document, ai_first_pass, messages, attachments } = item;
   const [summary, setSummary] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +88,7 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
   const [asking, setAsking] = useState(false);
   const [question, setQuestion] = useState("");
   const [askingBusy, setAskingBusy] = useState(false);
+  const [attaching, setAttaching] = useState(false);
 
   const returned = task.status === "returned";
   const waiting = task.status === "awaiting_clarification";
@@ -106,6 +107,22 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
       setError(e instanceof ApiError ? e.detail : "Submission failed.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const onAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-selecting the same file
+    if (!files.length) return;
+    setAttaching(true);
+    setError(null);
+    try {
+      await attachTaskDocuments(task.id, files);
+      onSubmitted(); // refresh so the new attachment shows
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : "Could not attach the file(s).");
+    } finally {
+      setAttaching(false);
     }
   };
 
@@ -268,6 +285,43 @@ function InboxCard({ item, onSubmitted }: { item: InboxItem; onSubmitted: () => 
                 rows={3}
                 placeholder="Summarise your review and conclusion…"
               />
+
+              {/* Supporting documents the associate attaches to their work — case+task-tagged. */}
+              <div className="mt-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    className={`cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand ring-1 ring-inset ring-line hover:bg-brand-soft ${
+                      attaching || !canWork ? "pointer-events-none opacity-50" : ""
+                    }`}
+                  >
+                    {attaching ? "Attaching…" : "📎 Attach files"}
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.docx,.pptx,.txt,.md,.markdown"
+                      onChange={onAttach}
+                      disabled={attaching || !canWork}
+                      className="hidden"
+                    />
+                  </label>
+                  <span className="text-[11px] text-muted">
+                    {attachments.length > 0
+                      ? `${attachments.length} attached`
+                      : "PDF, DOCX, PowerPoint, or text — supporting documents for your work."}
+                  </span>
+                </div>
+                {attachments.length > 0 ? (
+                  <ul className="mt-1.5 space-y-1">
+                    {attachments.map((a) => (
+                      <li key={a.id} className="flex items-center gap-1.5 text-xs text-ink-soft">
+                        <span aria-hidden>📄</span>
+                        <span className="truncate">{a.title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+
               {error ? (
                 <div className="mt-2">
                   <ErrorNote message={error} />

@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from app.core.audit import verify_chain
 from app.db.repo import Repo
-from app.db.tables import AUDIT_EVENTS, FLAGS, RISK_SCORES, SUBMISSIONS, TASK_MESSAGES, TASKS
+from app.db.tables import (
+    AUDIT_EVENTS,
+    CORPUS,
+    FLAGS,
+    RISK_SCORES,
+    SUBMISSIONS,
+    TASK_MESSAGES,
+    TASKS,
+)
 
 # A task is "resolved" once it reaches one of these. Everything else is still in flight — it needs
 # to run, come back from an associate, or get the partner's decision. Gates case close / debrief.
@@ -47,6 +55,13 @@ def messages(repo: Repo, task_id: str) -> list[dict]:
     return repo.list(TASK_MESSAGES, task_id=task_id)
 
 
+def task_attachments(repo: Repo, task_id: str) -> list[dict]:
+    """Files the associate attached to this task — stored as case+task-tagged corpus docs, returned
+    with their corpus id so the partner can open each in the source drawer."""
+    docs = repo.list(CORPUS, kind="attachment", task_id=task_id)
+    return [{"id": d["id"], "title": d["title"]} for d in docs]
+
+
 def task_card(repo: Repo, task: dict) -> dict:
     """A queue row: the task + its risk breakdown + the single most salient flag."""
     flags = repo.list(FLAGS, task_id=task["id"])
@@ -71,6 +86,7 @@ def task_detail(repo: Repo, task: dict) -> dict:
         "flags": repo.list(FLAGS, task_id=task["id"]),
         "risk": latest_risk(repo, task["id"]),
         "messages": messages(repo, task["id"]),
+        "attachments": task_attachments(repo, task["id"]),
     }
 
 

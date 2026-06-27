@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { decideTask, getAssociates, getTaskDetail, postMessage, reassignTask } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Associate, Flag, TaskDetail } from "@/lib/types";
+import type { Associate, Flag, FlagSourceRef, FlagWorkRef, TaskDetail } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
 import {
   AssigneeTag,
@@ -44,7 +44,11 @@ export function ItemDetail({
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<Flag | null>(null);
+  // The source drawer opens either a flag (both sides) or a plain corpus doc (an attachment).
+  const [source, setSource] = useState<{
+    sourceRef: FlagSourceRef;
+    workRef?: FlagWorkRef | null;
+  } | null>(null);
   const [role, setRole] = useState<Role>("partner");
 
   const [action, setAction] = useState<Action | null>(null);
@@ -180,7 +184,7 @@ export function ItemDetail({
   }
   if (!detail) return null;
 
-  const { task, submission, flags, risk, messages } = detail;
+  const { task, submission, flags, risk, messages, attachments } = detail;
   const decided = task.status === "signed_off" || task.status === "escalated";
   const awaitingClar = task.status === "awaiting_clarification";
   const returned = task.status === "returned";
@@ -245,6 +249,35 @@ export function ItemDetail({
         ) : (
           <p className="text-sm text-muted">No work has been submitted for this task yet.</p>
         )}
+
+        {/* Documents the associate attached to their work — each openable in the source drawer. */}
+        {attachments.length > 0 ? (
+          <div className="mt-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+              Associate&apos;s attachments ({attachments.length})
+            </div>
+            <ul className="mt-1.5 space-y-1.5">
+              {attachments.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-line bg-canvas px-3 py-1.5"
+                >
+                  <span className="flex min-w-0 items-center gap-1.5 text-sm text-ink-soft">
+                    <span aria-hidden>📄</span>
+                    <span className="truncate">{a.title}</span>
+                  </span>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setSource({ sourceRef: { corpus_document_id: a.id } })}
+                    className="!py-1 !text-[11px]"
+                  >
+                    View →
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </Step>
 
       {/* Step 3 — the three checks (the steer) and the flags (the concrete things to verify), merged.
@@ -306,7 +339,11 @@ export function ItemDetail({
           ) : (
             <div className="space-y-3">
               {flags.map((flag) => (
-                <FlagCard key={flag.id} flag={flag} onView={() => setSource(flag)} />
+                <FlagCard
+                  key={flag.id}
+                  flag={flag}
+                  onView={() => setSource({ sourceRef: flag.source_ref, workRef: flag.work_ref })}
+                />
               ))}
             </div>
           )}
@@ -525,8 +562,8 @@ export function ItemDetail({
       </Step>
 
       <SourceDrawer
-        sourceRef={source?.source_ref ?? null}
-        workRef={source?.work_ref ?? null}
+        sourceRef={source?.sourceRef ?? null}
+        workRef={source?.workRef ?? null}
         onClose={() => setSource(null)}
       />
     </div>

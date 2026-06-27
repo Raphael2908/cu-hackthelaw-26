@@ -4,6 +4,28 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Associates attach supporting documents to their work
+
+**Where we are.** The shared markdown editor already covered the associate's free-text; the remaining
+piece — letting them attach supporting files to their submission — is in. Traceable to the task and
+reachable in one click by the partner.
+
+**Built**
+- **Backend.** `POST /tasks/{id}/attachments` (multipart): each file's text is extracted and stored
+  as a **case+task-tagged `attachment` corpus document** (reuses the corpus — no new table — so it's
+  reachable via `GET /corpus/{id}` in the source drawer), and a `documents_attached` accountability
+  event is recorded (traceable to the task). `views.task_attachments` surfaces them on the inbox item
+  and `task_detail`. Test `test_associate_attaches_documents_to_a_task`.
+- **Frontend.** Inbox: a "📎 Attach files" control + attached-files list under the submission editor
+  (`attachTaskDocuments`, refresh on upload). Partner: `ItemDetail` Step 2 lists the **associate's
+  attachments**, each with a "View →" that opens the source drawer — generalised the drawer state to
+  accept either a flag (both sides) or a plain corpus-doc ref. `Attachment` type + `attachments` on
+  `InboxItem`/`TaskDetail`.
+- **Verified.** 54 backend tests green, ruff clean, frontend `tsc` clean. Live (clean DB): attach →
+  surfaced on task detail + `documents_attached` in the case audit + openable as a corpus doc.
+
+---
+
 ## New case moved into a foreground modal
 
 **Where we are.** The new-case form was a persistent left column always competing with the case

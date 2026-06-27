@@ -199,12 +199,17 @@ export interface Cockpit {
   pending: PendingSummary;
 }
 
+export interface Attachment {
+  id: string; // corpus document id — openable in the source drawer
+  title: string;
+}
 export interface TaskDetail {
   task: Task;
   submission: Submission | null;
   flags: Flag[];
   risk: Risk | null;
   messages: TaskMessage[];
+  attachments: Attachment[];
 }
 
 export interface InboxItem {
@@ -213,6 +218,7 @@ export interface InboxItem {
   ai_first_pass: Submission | null;
   last_submission: Submission | null;
   messages: TaskMessage[];
+  attachments: Attachment[];
 }
 
 export interface AuditEvent {

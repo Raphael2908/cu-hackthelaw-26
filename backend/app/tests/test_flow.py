@@ -136,6 +136,29 @@ def test_whole_plan_edit_add_remove_reorder(client):
     assert client.post(f"/api/cases/{case['id']}/plan/tasks").status_code == 409
 
 
+def test_associate_attaches_documents_to_a_task(client):
+    case, plan = _new_case_with_plan(client)
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    human = next(
+        i["task"]
+        for i in client.get("/api/inbox", headers=ASSOC_HEADERS).json()
+        if i["task"]["assignee_type"] == "human"
+    )
+    tid = human["id"]
+
+    r = client.post(
+        f"/api/tasks/{tid}/attachments",
+        files={"files": ("analysis.txt", b"My supporting analysis.", "text/plain")},
+        headers=ASSOC_HEADERS,
+    )
+    assert r.status_code == 201 and len(r.json()) == 1
+    # Surfaced on the task detail, and recorded in the accountability audit (traceable to the task).
+    detail = client.get(f"/api/tasks/{tid}").json()
+    assert any(a["title"] == "analysis.txt" for a in detail["attachments"])
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    assert "documents_attached" in {e["type"] for e in audit["accountability"]}
+
+
 def test_flags_carry_both_sides_for_verification(client):
     """Citation + deviation flags carry a work_ref (the quoting passage in the submitted work)
     alongside source_ref (the quoted source), so the partner can compare both sides."""

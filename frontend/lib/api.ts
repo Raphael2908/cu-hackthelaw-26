@@ -41,6 +41,13 @@ export const uploadCaseDocuments = (caseId: string, files: File[]) => {
   return apiFetch<UploadedDoc[]>(`/cases/${caseId}/documents`, { method: "POST", body: form });
 };
 
+// An associate attaches supporting documents to their work on a task (case+task-tagged, audited).
+export const attachTaskDocuments = (taskId: string, files: File[]) => {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  return apiFetch<UploadedDoc[]>(`/tasks/${taskId}/attachments`, { method: "POST", body: form });
+};
+
 // --- Plan ---
 export const createPlan = (caseId: string) =>
   apiFetch<PlanResponse>(`/cases/${caseId}/plan`, { method: "POST" });
