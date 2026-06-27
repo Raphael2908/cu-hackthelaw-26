@@ -24,7 +24,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   const headers = new Headers(init?.headers);
   headers.set("X-User-Email", identity.email);
   headers.set("X-User-Role", role);
-  if (init?.body && !headers.has("Content-Type")) {
+  // Let the browser set the multipart boundary for FormData uploads; only default JSON otherwise.
+  if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 

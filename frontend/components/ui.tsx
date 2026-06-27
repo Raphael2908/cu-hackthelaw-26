@@ -3,9 +3,10 @@
 import type { ReactNode } from "react";
 import type { Severity, SignalType, TaskStatus } from "@/lib/types";
 
-// --- Severity badge: high=red, medium=amber, low=slate ---
+// --- Severity badge: extreme=rose, high=red, medium=amber, low=slate ---
 export function SeverityBadge({ severity }: { severity: Severity }) {
   const map: Record<Severity, string> = {
+    extreme: "bg-rose-100 text-rose-800 ring-rose-300",
     high: "bg-red-50 text-red-700 ring-red-200",
     medium: "bg-amber-50 text-amber-700 ring-amber-200",
     low: "bg-slate-100 text-slate-600 ring-slate-200",

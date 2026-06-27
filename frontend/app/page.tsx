@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createCase, createPlan, listCases } from "@/lib/api";
+import { createCase, createPlan, listCases, uploadCaseDocuments } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Case } from "@/lib/types";
+import type { Case, Severity } from "@/lib/types";
 import { Button, ErrorNote, Panel, Spinner } from "@/components/ui";
+
+const SEVERITIES: Severity[] = ["low", "medium", "high", "extreme"];
 
 const DEMO = {
   title: "Project Atlas — supplier agreement review",
@@ -22,6 +24,8 @@ export default function CasesPage() {
   const [title, setTitle] = useState("");
   const [brief, setBrief] = useState("");
   const [goal, setGoal] = useState("");
+  const [severity, setSeverity] = useState<Severity>("medium");
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = () =>
@@ -39,10 +43,17 @@ export default function CasesPage() {
     setBusy("create");
     setError(null);
     try {
-      const created = await createCase({ title, brief_text: brief, goal });
+      const created = await createCase({ title, brief_text: brief, goal, severity });
+      // Attach any uploaded documents BEFORE planning so the planner scopes tasks over them.
+      if (files.length) {
+        setBusy("upload");
+        await uploadCaseDocuments(created.id, files);
+      }
       setTitle("");
       setBrief("");
       setGoal("");
+      setSeverity("medium");
+      setFiles([]);
       await load();
       // Offer plan generation immediately by routing through it.
       setBusy("plan");
@@ -128,11 +139,52 @@ export default function CasesPage() {
                 className="input resize-none"
               />
             </Field>
+            <Field label="Severity">
+              <select
+                value={severity}
+                onChange={(e) => setSeverity(e.target.value as Severity)}
+                className="input"
+              >
+                {SEVERITIES.map((s) => (
+                  <option key={s} value={s}>
+                    {s[0].toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-[11px] leading-snug text-muted">
+                Your up-front risk call for this matter — applied to every task. Higher severity
+                keeps more work in the review queue. You can adjust per task in the plan.
+              </span>
+            </Field>
+            <Field label="Documents (optional)">
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.docx,.txt,.md,.markdown"
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                className="input"
+              />
+              {files.length ? (
+                <ul className="mt-2 space-y-1">
+                  {files.map((f) => (
+                    <li key={f.name} className="truncate text-[11px] text-ink-soft">
+                      {f.name} · {(f.size / 1024).toFixed(0)} KB
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="mt-1 block text-[11px] leading-snug text-muted">
+                  PDF, DOCX, or text. The planner scopes tasks over what you upload.
+                </span>
+              )}
+            </Field>
 
             <Button type="submit" disabled={!!busy || !title.trim()} className="w-full">
-              {busy === "create" || busy === "plan"
-                ? "Creating & planning…"
-                : "Create case & generate plan"}
+              {busy === "upload"
+                ? "Uploading documents…"
+                : busy === "create" || busy === "plan"
+                  ? "Creating & planning…"
+                  : "Create case & generate plan"}
             </Button>
             <p className="text-[11px] leading-snug text-muted">
               Creating a case runs the planner to propose tasks. Nothing is dispatched until you

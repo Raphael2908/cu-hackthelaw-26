@@ -4,6 +4,52 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Real mode + bulk document upload + partner-chosen severity
+
+**Where we are.** Committed to the real Anthropic provider and added case document upload. The stack
+runs against Claude on SQLite, end to end.
+
+**Decisions locked**
+- **Real, not mock, from here on.** `.env` sets `PROVIDER_MODE=real` and `ENV=production`, so a
+  missing key now fails loudly at boot (`config.py` validator). The mock-safe default stays in
+  `config.py`, and `conftest.py` still forces mock, so the test suite runs offline with no key.
+- **SQLite is the production store too — no Supabase/Postgres.** The earlier "Phase 1: swap
+  `SqliteRepo` → Postgres" plan is dropped. SQLite (one file) is what we run for real; the repo seam
+  stays, but we are not migrating off it.
+- **Severity is the partner's up-front choice at case creation** (`low | medium | high | extreme`,
+  with `extreme` newly added) — a dropdown, not derived from the process doc and never
+  model-inferred. It defaults every task in the plan; the partner can still override per task.
+
+**Built**
+- Bulk document upload at case creation: `POST/GET /api/cases/{id}/documents` (PDF via `pypdf`,
+  DOCX via `python-docx`, text decoded UTF-8; multipart via `python-multipart`). Uploads become
+  `case_id`-tagged `draft` corpus docs; the planner prefers a case's uploads and falls back to the
+  seeded demo drafts. Best-effort text extraction only — no OCR for scanned PDFs (rejected as 415).
+- Planner severity/assignee/ordering enrichment moved provider → service (`services/planner.py`), so
+  mock and real are symmetric and real mode no longer `KeyError`s on `severity`. Providers now
+  return raw task scoping only. Added defensive `target_document_id` validation.
+- `extreme` severity wired through ranker weights (1.0), the severity types (backend + frontend),
+  and the badge. Auto-clear still only triggers on `low`, so `extreme` never auto-clears.
+- Frontend: severity dropdown + multi-file upload on the create form, multipart-aware `apiClient`,
+  `uploadCaseDocuments` wrapper, create → upload → plan flow.
+- **Async dispatch (real-mode latency fix).** Approving a plan used to run every task's
+  worker→checker→ranker pipeline synchronously inside the request — minutes of real model calls, so
+  the approve request effectively hung (a 6-task plan processed ~4 tasks in 10 min). Dispatch now
+  runs on a background thread pool (`core/background.py`, `ASYNC_DISPATCH`, `DISPATCH_WORKERS=4`):
+  approve returns immediately and the cockpit polls (every 3s) to surface tasks as each finishes.
+  The audit chain write is now lock-guarded so concurrent workers can't fork it; tests run inline
+  (`ASYNC_DISPATCH=false`) for deterministic assertions. Pipeline failures fail safe → escalate to a
+  human, recorded in the audit log.
+- Docker: `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` (real `.env` mounted
+  read-only; SQLite on a named volume).
+
+**What's next**
+- Tune the real `plan_case` / `review_document` prompts for quality; raise `max_tokens` for large
+  documents (currently 2048 — may truncate).
+- Replace stub auth with real SSO/JWKS before any non-demo use.
+
+---
+
 ## Scaffold stood up — initial build
 
 **Where we are.** Full spine scaffolded against the brief, runnable offline in mock mode.

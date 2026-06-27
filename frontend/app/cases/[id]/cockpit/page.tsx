@@ -36,6 +36,10 @@ export default function CockpitPage() {
 
   useEffect(() => {
     load();
+    // Tasks dispatch asynchronously, so poll while the cockpit is open to surface work as each
+    // AI/hybrid pipeline finishes in the background (and as associates submit human tasks).
+    const t = setInterval(load, 3000);
+    return () => clearInterval(t);
   }, [load]);
 
   return (

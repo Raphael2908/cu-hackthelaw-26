@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.config import settings
+from app.core import background
 from app.core.audit import record_accountability
 from app.db.repo import Repo
 from app.db.tables import DECISIONS, PLANS, SUBMISSIONS, TASKS
@@ -63,9 +65,40 @@ def _run_ai_pipeline(repo: Repo, task: dict, provider: LLMProvider) -> dict:
     return {"submission": submission, "risk": risk, "signals": signals}
 
 
+def _run_and_route(repo: Repo, task_id: str, provider: LLMProvider) -> dict:
+    """Run the AI/hybrid supervision pipeline and route the result. AI output is triaged into the
+    cockpit queue / auto-clear lane; hybrid output returns to the inbox under human ownership."""
+    out = _run_ai_pipeline(repo, repo.get(TASKS, task_id), provider)
+    task = repo.get(TASKS, task_id)
+    if task["assignee_type"] == "ai":
+        _route_by_risk(repo, task, out["risk"])
+    else:  # hybrid: the human associate owns the result; it waits in the inbox until they submit.
+        repo.update(TASKS, task_id, {"status": "in_progress"})
+    return out
+
+
+def _background_dispatch(repo: Repo, task_id: str, provider: LLMProvider) -> None:
+    """Off-request execution of the pipeline. On failure, fail safe: escalate to a human and record
+    it — never silently drop AI work or reassign it into the machine (architecture.md §14.6)."""
+    try:
+        _run_and_route(repo, task_id, provider)
+    except Exception as e:  # noqa: BLE001 - any provider/parse failure escalates to human review
+        task = repo.get(TASKS, task_id) or {}
+        repo.update(TASKS, task_id, {"status": "in_review"})
+        record_accountability(
+            repo,
+            type="dispatch_failed",
+            actor="coordinator",
+            case_id=task.get("case_id"),
+            task_id=task_id,
+            payload={"error": str(e)[:300]},
+        )
+
+
 def dispatch_task(repo: Repo, task: dict, provider: LLMProvider) -> dict:
-    """Dispatch one approved task to the right worker. AI tasks run the supervision pipeline now;
-    human tasks land in the associate inbox; hybrid tasks do both (AI pass + human ownership)."""
+    """Dispatch one approved task to the right worker. AI/hybrid tasks run the supervision pipeline
+    (in the background when ASYNC_DISPATCH is on, so the approve request returns immediately); human
+    tasks land in the associate inbox."""
     record_accountability(
         repo,
         type="task_dispatched",
@@ -74,15 +107,13 @@ def dispatch_task(repo: Repo, task: dict, provider: LLMProvider) -> dict:
         task_id=task["id"],
         payload={"assignee_type": task["assignee_type"]},
     )
-    if task["assignee_type"] == "ai":
-        out = _run_ai_pipeline(repo, task, provider)
-        _route_by_risk(repo, task, out["risk"])
-        return out
-    if task["assignee_type"] == "hybrid":
-        out = _run_ai_pipeline(repo, task, provider)
-        # The human associate owns the result: it returns to the inbox until they submit.
-        repo.update(TASKS, task["id"], {"status": "in_progress"})
-        return out
+    if task["assignee_type"] in ("ai", "hybrid"):
+        if settings.ASYNC_DISPATCH:
+            # Mark it as working so the cockpit shows progress, then run off the request path.
+            repo.update(TASKS, task["id"], {"status": "in_progress"})
+            background.submit(_background_dispatch, repo, task["id"], provider)
+            return {"status": "dispatching"}
+        return _run_and_route(repo, task["id"], provider)
     # human: sits in the inbox awaiting submission.
     repo.update(TASKS, task["id"], {"status": "dispatched"})
     return {"status": "dispatched"}

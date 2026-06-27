@@ -96,10 +96,12 @@ the operational weight.
 
 ## 4. Infra phasing
 
-- **Phase 0 (this demo).** One SQLite file, FastAPI + Next.js dev servers, mock provider. Everything
-  runs on a laptop, offline.
-- **Phase 1 (if it became real).** Swap `SqliteRepo` → a Postgres-backed repo; flip `PROVIDER_MODE`
-  to `real`; put auth in front (JWKS). The repo + provider seams make this mechanical. **Not built now.**
+- **Phase 0 (the offline demo).** One SQLite file, FastAPI + Next.js dev servers, mock provider.
+  Runs on a laptop, offline. Still the fallback for a keyless, network-free demo.
+- **Phase 1 (now — the real run).** Same one SQLite file; `PROVIDER_MODE=real` + `ENV=production`
+  against Anthropic Claude. **SQLite is the production store — we are not moving to Supabase/Postgres.**
+  The repo seam stays (so a different store *could* drop in later) but is not exercised. Real auth
+  (SSO/JWKS) in front of the `core/auth.py` seam is the remaining step before non-demo use.
 
 The deployment answer for a *real* legal deployment — where it runs, what is retained, data
 residency, privilege — is a slide, not build scope (see §13). A Clifford Chance judge will ask early.
@@ -183,10 +185,16 @@ formula; it is that each signal stands on its own in the UI.
 
 ## 8. Async orchestration
 
-No Celery/Redis. For the demo, dispatching an approved AI/hybrid task runs the worker → checker →
-ranker pipeline **synchronously** inside the request (instant in mock mode). The `coordinator`
-service is the state machine; each transition writes an audit event. If this became real, the same
-service boundary is where a queue would slot in — the orchestration code wouldn't change shape.
+No Celery/Redis. Dispatching an approved AI/hybrid task runs the worker → checker → ranker pipeline,
+each transition writing an audit event; the `coordinator` service is the state machine. Under real
+models this pipeline is many slow calls, so dispatch runs on a **background thread pool**
+(`core/background.py`, `ASYNC_DISPATCH=true`): the approve request returns immediately and the
+cockpit polls, surfacing each task as its pipeline finishes. The store serialises writes and the
+audit chain is written under a lock, so concurrent workers stay safe and the chain stays valid. In
+mock mode the pipeline is instant; tests set `ASYNC_DISPATCH=false` to run it inline and keep
+post-approve assertions deterministic. A pipeline failure **fails safe** — the task escalates to a
+human, never silently dropped or auto-reassigned (§14.6). If this became real at scale, the same
+service boundary is where a durable queue (Celery/SQS) would slot in — the code wouldn't change shape.
 
 ---
 
@@ -194,8 +202,11 @@ service boundary is where a queue would slot in — the orchestration code would
 
 The "documents" are the corpus (EU Cellar-modelled legislation/case law + a synthetic firm standard
 + a process doc). They live in `corpus_documents` and are seeded from `backend/app/fixtures/` on
-boot. Uploads in the demo attach text to a case; no object store. `source_ref` on a flag is
-`{corpus_document_id, locator}` so the cockpit links straight to the cited passage.
+boot. Bulk document upload at case creation (`POST /api/cases/{id}/documents`, PDF/DOCX/text) is
+implemented: each file's extracted text becomes a `draft` `corpus_document` tagged with its
+`case_id`, and the planner scopes tasks over a case's uploads (falling back to the seeded drafts when
+none were uploaded). Extraction is best-effort plain text — no OCR, no object store. `source_ref` on
+a flag is `{corpus_document_id, locator}` so the cockpit links straight to the cited passage.
 
 ---
 

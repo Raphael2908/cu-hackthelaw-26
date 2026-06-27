@@ -7,7 +7,7 @@ from app.db.repo import Repo
 from app.db.tables import RISK_SCORES
 
 # Severity is set up front (architecture.md §7.1); these are its numeric weights for ordering.
-SEVERITY_WEIGHT = {"low": 0.2, "medium": 0.55, "high": 0.9}
+SEVERITY_WEIGHT = {"low": 0.2, "medium": 0.55, "high": 0.9, "extreme": 1.0}
 # An item only auto-clears if it is low severity AND its measured uncertainty is below this.
 LOW_UNCERTAINTY_THRESHOLD = 0.15
 

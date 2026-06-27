@@ -12,6 +12,7 @@ import type {
   Decision,
   InboxItem,
   PlanResponse,
+  Severity,
   Task,
   TaskDetail,
 } from "./types";
@@ -24,8 +25,20 @@ export const getAssociates = () => apiFetch<Associate[]>("/associates");
 // --- Cases ---
 export const listCases = () => apiFetch<Case[]>("/cases");
 export const getCase = (id: string) => apiFetch<Case>(`/cases/${id}`);
-export const createCase = (body: { title: string; brief_text: string; goal: string }) =>
-  apiFetch<Case>("/cases", { method: "POST", body: JSON.stringify(body) });
+export const createCase = (body: {
+  title: string;
+  brief_text: string;
+  goal: string;
+  severity: Severity;
+}) => apiFetch<Case>("/cases", { method: "POST", body: JSON.stringify(body) });
+
+// Bulk-attach documents (PDF / text / DOCX) for the planner to consider. Multipart, not JSON.
+export type UploadedDoc = { id: string; title: string };
+export const uploadCaseDocuments = (caseId: string, files: File[]) => {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  return apiFetch<UploadedDoc[]>(`/cases/${caseId}/documents`, { method: "POST", body: form });
+};
 
 // --- Plan ---
 export const createPlan = (caseId: string) =>

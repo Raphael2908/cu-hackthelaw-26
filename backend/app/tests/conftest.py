@@ -15,6 +15,7 @@ def in_memory_repo():
     network, no disk, no API key (mock provider is the default)."""
     settings.PROVIDER_MODE = "mock"
     settings.SAMPLE_RATE = 0.0  # deterministic auto-clear; sampling tests opt in explicitly
+    settings.ASYNC_DISPATCH = False  # run the pipeline inline so post-approve assertions are stable
     repo = InMemoryRepo()
     seed(repo)
     repo_module.set_repo(repo)

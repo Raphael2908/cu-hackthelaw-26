@@ -1,7 +1,7 @@
 // Types mirror the FROZEN FastAPI contract exactly. See architecture.md / API contract.
 
 export type CaseStatus = "open" | "closed";
-export type Severity = "low" | "medium" | "high";
+export type Severity = "low" | "medium" | "high" | "extreme";
 export type AssigneeType = "human" | "ai" | "hybrid";
 export type TaskStatus =
   | "proposed"
@@ -32,6 +32,7 @@ export interface Case {
   title: string;
   brief_text: string;
   goal: string;
+  severity: Severity;
   process_doc_id: string;
   firm_standard_id: string;
   status: CaseStatus;

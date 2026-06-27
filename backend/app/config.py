@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     # --- Store ---
     SQLITE_PATH: str = "data/cockpit.sqlite"
 
+    # --- Dispatch --- Approving a plan runs each AI/hybrid task's worker→checker→ranker pipeline.
+    # In real mode that is many slow model calls, so dispatch runs in a background thread pool and
+    # the approve request returns immediately; the cockpit reflects progress as tasks finish. Tests
+    # disable this (conftest) to keep assertions synchronous and deterministic.
+    ASYNC_DISPATCH: bool = True
+    DISPATCH_WORKERS: int = 4
+
     # --- LLM (Anthropic) --- blank = mock mode
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-opus-4-8"

@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 
 from app.db.repo import Repo
 from app.db.tables import AUDIT_EVENTS
+
+# The chain links each event to the previous one's hash. last()+compute+insert must be atomic, or
+# concurrent background workers (async dispatch) could read the same prev_hash and fork the chain.
+_chain_lock = threading.Lock()
 
 # Two kinds of audit, kept deliberately separate (architecture.md §11):
 #   accountability — the defensible, signed record of who decided what, when, on what evidence.
@@ -31,8 +36,6 @@ def record_event(
     """Append one hash-chained audit event. The chain is global and append-only: each event's
     `hash` covers its content plus the previous event's `hash`, so any tampering is detectable."""
     payload = payload or {}
-    prev = repo.last(AUDIT_EVENTS)
-    prev_hash = prev["hash"] if prev else "GENESIS"
     content = {
         "kind": kind,
         "type": type,
@@ -41,10 +44,13 @@ def record_event(
         "task_id": task_id,
         "payload": payload,
     }
-    event = dict(content)
-    event["prev_hash"] = prev_hash
-    event["hash"] = _hash(prev_hash, content)
-    return repo.insert(AUDIT_EVENTS, event)
+    with _chain_lock:
+        prev = repo.last(AUDIT_EVENTS)
+        prev_hash = prev["hash"] if prev else "GENESIS"
+        event = dict(content)
+        event["prev_hash"] = prev_hash
+        event["hash"] = _hash(prev_hash, content)
+        return repo.insert(AUDIT_EVENTS, event)
 
 
 def record_accountability(repo: Repo, *, type: str, actor: str, **kw) -> dict:

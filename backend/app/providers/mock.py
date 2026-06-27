@@ -72,26 +72,10 @@ class MockLLMProvider(LLMProvider):
         drafts: list[dict],
         associates: list[dict],
     ) -> list[dict]:
-        task_types = process_doc.get("task_types", {})
-        # Round-robin a default associate for human/hybrid proposals (partner can reassign).
-        humans = [a["id"] for a in associates] or [None]
-        out: list[dict] = []
-        for i, t in enumerate(fixtures.mock_plan()["tasks"]):
-            severity = task_types.get(t["task_type"], {}).get("severity", "medium")
-            process_section = task_types.get(t["task_type"], {}).get("label", t["task_type"])
-            assignee_id = None
-            if t["assignee_type"] in ("human", "hybrid"):
-                assignee_id = humans[i % len(humans)]
-            out.append(
-                {
-                    **t,
-                    "severity": severity,
-                    "input_process_section": process_section,
-                    "assignee_id": assignee_id,
-                    "order_index": i,
-                }
-            )
-        return out
+        # Raw task scoping only. The planner SERVICE applies severity (the partner's choice),
+        # the process-section label, a default assignee and ordering — so mock and real are
+        # symmetric and severity is never a model inference (architecture.md §7.1).
+        return [dict(t) for t in fixtures.mock_plan()["tasks"]]
 
     def generate_debrief(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]

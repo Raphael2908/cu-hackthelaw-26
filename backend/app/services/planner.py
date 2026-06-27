@@ -9,10 +9,21 @@ from app.providers.base import LLMProvider
 
 def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -> dict:
     """Scope the case goal into a proposed task list with assignee type, severity and inputs. The
-    plan is a PROPOSAL — nothing dispatches until the partner approves it (architecture.md §6)."""
-    drafts = [d for d in repo.list(CORPUS) if d["kind"] == "draft"]
+    plan is a PROPOSAL — nothing dispatches until the partner approves it (architecture.md §6).
+
+    Severity is the partner's up-front choice on the case (architecture.md §7.1) and is applied here
+    as the default for every task — never inferred by the model. Task enrichment (severity, process
+    section, default assignee, ordering, target validation) lives in this service so the mock and
+    real providers stay symmetric and only need to return raw task scoping."""
+    # Prefer documents the partner uploaded to THIS case; fall back to the seeded demo drafts so the
+    # offline demo still produces a plan when nothing was uploaded.
+    all_drafts = [d for d in repo.list(CORPUS) if d["kind"] == "draft"]
+    uploaded = [d for d in all_drafts if d.get("case_id") == case["id"]]
+    drafts = uploaded or [d for d in all_drafts if not d.get("case_id")]
+
     associates = repo.list(ASSOCIATES)
     proc = repo.get(CORPUS, case.get("process_doc_id") or process_doc()["id"]) or process_doc()
+    task_types = proc.get("task_types", {})
 
     proposed = provider.plan_case(
         goal=case["goal"],
@@ -27,8 +38,22 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
         {"case_id": case["id"], "status": "proposed", "approved_by": None, "approved_at": None},
     )
     std_id = case.get("firm_standard_id") or firm_standard()["id"]
+    case_severity = case.get("severity", "medium")
+    draft_ids = {d["id"] for d in drafts}
+    fallback_doc_id = drafts[0]["id"] if drafts else None
+    humans = [a["id"] for a in associates] or [None]
+
     tasks = []
-    for t in proposed:
+    for i, t in enumerate(proposed):
+        task_type = t["task_type"]
+        # Never trust the model's target blindly: snap an unknown id back to a real candidate doc.
+        target = t.get("target_document_id")
+        if target not in draft_ids:
+            target = fallback_doc_id
+        # Default assignee for human/hybrid work; the partner can reassign before approval.
+        assignee_id = t.get("assignee_id")
+        if assignee_id is None and t["assignee_type"] in ("human", "hybrid"):
+            assignee_id = humans[i % len(humans)]
         tasks.append(
             repo.insert(
                 TASKS,
@@ -37,17 +62,19 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
                     "plan_id": plan["id"],
                     "title": t["title"],
                     "description": t.get("description", ""),
-                    "task_type": t["task_type"],
+                    "task_type": task_type,
                     "assignee_type": t["assignee_type"],
-                    "assignee_id": t.get("assignee_id"),
-                    "severity": t["severity"],
-                    "target_document_id": t["target_document_id"],
+                    "assignee_id": assignee_id,
+                    # Severity is the partner's choice on the case, not a model inference.
+                    "severity": case_severity,
+                    "target_document_id": target,
                     "firm_standard_id": std_id,
                     "input_brief_slice": t.get("input_brief_slice", ""),
-                    "input_process_section": t.get("input_process_section", ""),
+                    "input_process_section": t.get("input_process_section")
+                    or task_types.get(task_type, {}).get("label", task_type),
                     "ai_instruction": t.get("ai_instruction"),
                     "status": "proposed",
-                    "order_index": t.get("order_index", 0),
+                    "order_index": t.get("order_index", i),
                 },
             )
         )

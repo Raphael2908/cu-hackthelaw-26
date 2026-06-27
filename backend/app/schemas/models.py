@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-Severity = Literal["low", "medium", "high"]
+Severity = Literal["low", "medium", "high", "extreme"]
 AssigneeType = Literal["human", "ai", "hybrid"]
 
 
@@ -19,6 +19,9 @@ class CaseCreate(BaseModel):
     title: str
     brief_text: str
     goal: str
+    # Severity is the partner's up-front choice (architecture.md §7.1), never model-inferred. It
+    # becomes the default for every task in the plan; the partner can still override per task.
+    severity: Severity = "medium"
     # Default to the seeded corpus' process doc + firm standard if not supplied.
     process_doc_id: str | None = None
     firm_standard_id: str | None = None

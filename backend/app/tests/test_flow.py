@@ -6,6 +6,10 @@ CASE = {
     "title": "Project Atlas — supplier agreement review",
     "brief_text": "Supplier processes customer personal data including via US affiliates.",
     "goal": "Review the Project Atlas agreement against the firm standard before signing.",
+    # The partner sets ONE severity for the matter up front (architecture.md §7.1); every task in
+    # the plan inherits it. Low here so a clean, low-uncertainty task can demonstrate the auto-clear
+    # lane, while a hard-flag citation still forces its task to the top of the review queue.
+    "severity": "low",
 }
 
 
@@ -24,7 +28,8 @@ def test_approval_gate_blocks_dispatch(client):
 def test_plan_proposes_assignee_type_and_severity(client):
     _, plan = _new_case_with_plan(client)
     assert {t["assignee_type"] for t in plan["tasks"]} >= {"ai", "human", "hybrid"}
-    assert {t["severity"] for t in plan["tasks"]} >= {"high", "low"}
+    # Severity is the partner's single up-front choice on the case, applied to every task.
+    assert {t["severity"] for t in plan["tasks"]} == {"low"}
 
 
 def test_happy_path_end_to_end(client):
@@ -36,7 +41,8 @@ def test_happy_path_end_to_end(client):
     assert approved.status_code == 200
 
     cockpit = client.get(f"/api/cases/{case['id']}/cockpit").json()
-    # Queue sorted highest-risk first; the top item is the high-severity hard-flag DPA review.
+    # Queue sorted highest-risk first; the top item is the hard-flag DPA review — a citation to a
+    # non-existent source forces it to the top regardless of the case's low severity.
     assert cockpit["queue"], "expected a triaged review queue"
     top = cockpit["queue"][0]
     assert top["risk"]["priority"] >= 0.9
@@ -101,6 +107,32 @@ def test_all_planted_defects_surface(client):
     deviation_flags = [f for f in flags if f["signal_type"] == "precedent_deviation"]
     assert len(citation_flags) >= 2  # one non-supporting + one fabricated
     assert len(deviation_flags) >= 2  # liability + governing law
+
+
+def test_async_dispatch_returns_immediately_then_completes(client, monkeypatch):
+    """With ASYNC_DISPATCH on, approve returns at once and the pipeline finishes in the background.
+    Mock mode makes the background work instant, so a short spin is enough to observe completion."""
+    import time
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "ASYNC_DISPATCH", True)
+    case, plan = _new_case_with_plan(client)
+    approved = client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    assert approved.status_code == 200
+    assert approved.json()["dispatched"] == len(plan["tasks"])
+
+    # Poll the cockpit until the AI/hybrid tasks have been triaged (or time out).
+    deadline = time.time() + 5
+    cockpit = {}
+    while time.time() < deadline:
+        cockpit = client.get(f"/api/cases/{case['id']}/cockpit").json()
+        if cockpit["queue"] or cockpit["auto_clear_lane"]:
+            break
+        time.sleep(0.05)
+    assert cockpit["queue"], "background pipeline should populate the review queue"
+    # The audit chain stays intact despite concurrent background writes.
+    assert client.get(f"/api/cases/{case['id']}/audit").json()["chain_valid"] is True
 
 
 def test_associate_cannot_approve_plan(client):

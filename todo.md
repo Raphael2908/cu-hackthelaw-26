@@ -15,9 +15,11 @@ cut from the bottom if time runs short.
 - [ ] Debrief: include carry-forward notes derived from flags the partner amended.
 
 ## Real integrations (post-demo)
-- [ ] Real Anthropic review prompts; verify structured output parsing; `PROVIDER_MODE=real`.
+- [x] Run on real Anthropic (`PROVIDER_MODE=real`, `ENV=production`); SQLite stays the store.
+- [ ] Tune the real review/plan prompts; verify structured output parsing; raise `max_tokens`.
 - [ ] Live EU Cellar API connector (keep fixtures as the offline demo fallback).
-- [ ] Postgres-backed repo; real auth (SSO/JWKS); per-firm process-doc + standard management.
+- [ ] Real auth (SSO/JWKS); per-firm process-doc + standard management. (No Postgres/Supabase —
+      SQLite is the production store.)
 
 ## Acceptance criteria (from brief §5) — keep green
 - [ ] Partner creates a case; planner proposes tasks w/ assignee type + severity; partner edits + approves before anything runs.
