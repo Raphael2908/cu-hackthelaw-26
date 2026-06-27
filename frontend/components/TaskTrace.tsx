@@ -44,21 +44,21 @@ function reachedIndex(status: TaskStatus): number {
   }
 }
 
-export function TaskTrace({ task, auditHref }: { task: Task; auditHref: string }) {
+// `bare` drops the outer card + "Chain of custody" heading so the trace can sit inside another
+// section (e.g. step 1 of the item review path) without a nested panel — the audit deep link stays.
+export function TaskTrace({
+  task,
+  auditHref,
+  bare,
+}: {
+  task: Task;
+  auditHref: string;
+  bare?: boolean;
+}) {
   const reached = reachedIndex(task.status);
 
-  return (
-    <div className="rounded-xl border border-line bg-paper p-5 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-ink">Chain of custody</h3>
-        <Link
-          href={auditHref}
-          className="text-xs font-semibold text-brand underline-offset-2 hover:underline"
-        >
-          View this task&apos;s full trail in Audit →
-        </Link>
-      </div>
-
+  const body = (
+    <>
       {/* Who holds the work */}
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted">
         <span>Owned by</span>
@@ -116,6 +116,34 @@ export function TaskTrace({ task, auditHref }: { task: Task; auditHref: string }
           Not yet dispatched — this task is still part of an unapproved plan.
         </p>
       ) : null}
+    </>
+  );
+
+  const auditLink = (
+    <Link
+      href={auditHref}
+      className="text-xs font-semibold text-brand underline-offset-2 hover:underline"
+    >
+      View this task&apos;s full trail in Audit →
+    </Link>
+  );
+
+  if (bare) {
+    return (
+      <div>
+        <div className="mb-3 flex justify-end">{auditLink}</div>
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-line bg-paper p-5 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-ink">Chain of custody</h3>
+        {auditLink}
+      </div>
+      {body}
     </div>
   );
 }

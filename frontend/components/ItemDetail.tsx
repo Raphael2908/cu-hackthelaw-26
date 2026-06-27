@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { decideTask, getTaskDetail, postMessage } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
 import type { Flag, FlagSourceRef, TaskDetail } from "@/lib/types";
@@ -140,274 +140,313 @@ export function ItemDetail({
   const hasThread = (messages?.length ?? 0) > 0;
 
   return (
-    <div className="space-y-4">
-      <Panel className="p-5">
-        <div className="flex items-start justify-between gap-3">
+    <div>
+      {/* Step 1 — who produced it and how far it has travelled (header + chain of custody, merged) */}
+      <Step n={1} title="Who did it & where it stands">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <SeverityBadge severity={task.severity} />
+          <AssigneeTag type={task.assignee_type} />
+          <StatusPill status={task.status} />
+        </div>
+        <h2 className="text-base font-semibold text-ink">{task.title}</h2>
+        <p className="mt-1 text-sm text-muted">{task.description}</p>
+        <div className="mt-3">
+          <TaskTrace bare task={task} auditHref={`/cases/${task.case_id}/audit?task=${task.id}`} />
+        </div>
+      </Step>
+
+      {/* Step 2 — the worker's output */}
+      <Step
+        n={2}
+        title="What was produced"
+        hint={
+          submission
+            ? `by ${submission.produced_by === "ai" ? "the AI worker" : `a ${submission.produced_by} worker`}`
+            : undefined
+        }
+      >
+        {submission ? (
           <div>
-            <div className="mb-1.5 flex items-center gap-2">
-              <SeverityBadge severity={task.severity} />
-              <AssigneeTag type={task.assignee_type} />
-              <StatusPill status={task.status} />
-            </div>
-            <h2 className="text-base font-semibold text-ink">{task.title}</h2>
-            <p className="mt-1 text-sm text-muted">{task.description}</p>
-          </div>
-        </div>
-      </Panel>
+            <p className="text-sm text-ink-soft">{submission.summary}</p>
 
-      {/* Chain of custody — who holds the work and how far it has travelled (walkthrough G2) */}
-      <TaskTrace task={task} auditHref={`/cases/${task.case_id}/audit?task=${task.id}`} />
-
-      {/* Three independent checks — each read in plain language, the number kept alongside.
-          Never collapsed into a single pass/fail. */}
-      {risk ? (
-        <Panel className="p-5">
-          <div className="mb-1 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">What the checks found</h3>
-            <span className="text-[11px] text-muted">Three separate checks — none is a verdict.</span>
-          </div>
-          <p className="mb-3 text-xs text-muted">
-            Overall:{" "}
-            <span className={`font-semibold ${TONE_TEXT[overallReading(risk.uncertainty).tone]}`}>
-              {overallReading(risk.uncertainty).text}
-            </span>
-            . This is a steer for where to look — you decide.
-          </p>
-
-          <div className="space-y-2">
-            <CheckRow
-              label="Citations"
-              reading={citationReading(risk.citation_support_rate)}
-              detail={`${pct(risk.citation_support_rate)} of cited sources support the claim`}
-            />
-            <CheckRow
-              label="Firm standard"
-              reading={deviationReading(risk.deviation_score)}
-              detail={`${pct(risk.deviation_score)} distance from your firm's standard wording`}
-            />
-            <CheckRow
-              label="Consistency"
-              reading={disagreementReading(risk.disagreement_score)}
-              detail={`${pct(risk.disagreement_score)} disagreement when the review was re-run`}
-            />
-          </div>
-
-          <div className="mt-3 flex items-center justify-between rounded-lg border border-line bg-canvas px-3 py-2 text-xs">
-            <span className="text-muted">Where this sits on your list</span>
-            <span className="font-semibold text-ink">{priorityBand(risk.priority).label}</span>
-          </div>
-
-          {risk.has_hard_flag ? (
-            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
-              A must-check issue was found — shown no matter how low-risk the task.
-            </div>
-          ) : null}
-        </Panel>
-      ) : null}
-
-      {/* Worker submission */}
-      {submission ? (
-        <Panel className="p-5">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">The work that was produced</h3>
-            <span className="text-[11px] text-muted">
-              by {submission.produced_by === "ai" ? "the AI worker" : `a ${submission.produced_by} worker`}
-            </span>
-          </div>
-          <p className="text-sm text-ink-soft">{submission.summary}</p>
-
-          {submission.findings.length > 0 ? (
-            <div className="mt-4 space-y-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                Findings
-              </div>
-              {submission.findings.map((f) => (
-                <div key={f.id} className="rounded-lg border border-line bg-canvas p-3">
-                  <div className="text-xs font-semibold text-ink">{f.clause_ref}</div>
-                  <p className="mt-0.5 text-sm text-ink-soft">{f.statement}</p>
-                  {f.citation ? (
-                    <div className="mt-1.5 font-mono text-[11px] text-muted">
-                      cites {f.citation.celex} — “{f.citation.claim}”
-                    </div>
-                  ) : null}
+            {submission.findings.length > 0 ? (
+              <div className="mt-4 space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                  Findings
                 </div>
-              ))}
+                {submission.findings.map((f) => (
+                  <div key={f.id} className="rounded-lg border border-line bg-canvas p-3">
+                    <div className="text-xs font-semibold text-ink">{f.clause_ref}</div>
+                    <p className="mt-0.5 text-sm text-ink-soft">{f.statement}</p>
+                    {f.citation ? (
+                      <div className="mt-1.5 font-mono text-[11px] text-muted">
+                        cites {f.citation.celex} — “{f.citation.claim}”
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <MetaList title="Clauses it relied on" items={submission.clauses_relied_on} />
+              <MetaList title="Sources it used" items={submission.audit_sources} mono />
             </div>
-          ) : null}
-
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <MetaList title="Clauses it relied on" items={submission.clauses_relied_on} />
-            <MetaList title="Sources it used" items={submission.audit_sources} mono />
-          </div>
-        </Panel>
-      ) : (
-        <Panel className="p-5 text-sm text-muted">
-          No work has been submitted for this task yet.
-        </Panel>
-      )}
-
-      {/* Flag panel */}
-      <Panel className="p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ink">
-            Points to check ({flags.length})
-          </h3>
-          <span className="text-[11px] text-muted">Things to verify — each links to its source.</span>
-        </div>
-        {flags.length === 0 ? (
-          <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">
-            Nothing flagged. (Work done by a person isn&apos;t graded by the automated checks.)
           </div>
         ) : (
+          <p className="text-sm text-muted">No work has been submitted for this task yet.</p>
+        )}
+      </Step>
+
+      {/* Step 3 — the three checks (the steer) and the flags (the concrete things to verify), merged.
+          Each signal stays individually visible with its number; never collapsed into a verdict. */}
+      <Step
+        n={3}
+        title="What to check"
+        hint="Three independent checks point you where to look — none is a verdict."
+      >
+        {risk ? (
           <div className="space-y-3">
-            {flags.map((flag) => (
-              <FlagCard key={flag.id} flag={flag} onView={() => setSource(flag.source_ref)} />
-            ))}
-          </div>
-        )}
-      </Panel>
-
-      {/* Conversation with the associate — the ping-pong record */}
-      {hasThread || awaitingClar || returned ? (
-        <Panel className="p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-ink">Conversation with the associate</h3>
-            {awaitingClar ? (
-              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
-                question awaiting your reply
+            <p className="text-xs text-muted">
+              Overall:{" "}
+              <span className={`font-semibold ${TONE_TEXT[overallReading(risk.uncertainty).tone]}`}>
+                {overallReading(risk.uncertainty).text}
               </span>
-            ) : returned ? (
-              <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">
-                with the associate
-              </span>
-            ) : null}
-          </div>
-          <MessageThread messages={messages} />
-
-          {awaitingClar && isPartner ? (
-            <div className="mt-4 space-y-2 border-t border-line pt-4">
-              <div className="text-xs font-medium text-ink-soft">
-                Answer the associate&apos;s question
-              </div>
-              <textarea
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                rows={2}
-                placeholder="Type your answer — this sends the task back to the associate…"
-                className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
-              />
-              <Button onClick={sendReply} disabled={replying || !reply.trim()}>
-                {replying ? "Sending…" : "Send answer & return to associate"}
-              </Button>
-            </div>
-          ) : awaitingClar && !isPartner ? (
-            <div className="mt-3 rounded-lg border border-line bg-canvas px-4 py-2.5 text-xs text-muted">
-              Waiting on the partner to answer. Switch to Partner in the header to reply.
-            </div>
-          ) : null}
-        </Panel>
-      ) : null}
-
-      {/* Action panel — what the partner can do depends on where the task is */}
-      <Panel className="p-5">
-        <div className="mb-1 flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-ink">Your decision</h3>
-        </div>
-
-        {decided ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Decision recorded — task is{" "}
-            <span className="font-semibold">{task.status.replace(/_/g, " ")}</span>. This is written
-            to the signed, hash-chained accountability log.
-          </div>
-        ) : returned ? (
-          <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
-            Sent back to the associate for rework. You&apos;ll see it here again — with your note in
-            the thread above — once they resubmit.
-          </div>
-        ) : awaitingClar ? (
-          <p className="text-xs text-muted">
-            The associate has a question (above). Answer it to hand the task back — you&apos;ll
-            sign off once they resubmit.
-          </p>
-        ) : !isPartner ? (
-          <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">
-            Sign-off is partner-only. Switch to Partner in the header to approve, amend, or reject.
-          </div>
-        ) : (
-          <>
-            <p className="mb-3 text-xs text-muted">
-              The points above are things to check, not verdicts. Approve or amend to sign off;{" "}
-              <span className="font-medium text-ink-soft">reject sends it back to the associate</span>{" "}
-              for rework. Nothing is approved automatically.
+              . A steer for where to look — you decide.
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={action === "approve" ? "approve" : "secondary"}
-                onClick={() => setAction("approve")}
-              >
-                Approve
-              </Button>
-              <Button
-                variant={action === "amend" ? "primary" : "secondary"}
-                onClick={() => setAction("amend")}
-              >
-                Amend
-              </Button>
-              <Button
-                variant={action === "reject" ? "danger" : "secondary"}
-                onClick={() => setAction("reject")}
-              >
-                Reject &amp; send back
-              </Button>
+
+            <div className="space-y-2">
+              <CheckRow
+                label="Citations"
+                reading={citationReading(risk.citation_support_rate)}
+                detail={`${pct(risk.citation_support_rate)} of cited sources support the claim`}
+              />
+              <CheckRow
+                label="Firm standard"
+                reading={deviationReading(risk.deviation_score)}
+                detail={`${pct(risk.deviation_score)} distance from your firm's standard wording`}
+              />
+              <CheckRow
+                label="Consistency"
+                reading={disagreementReading(risk.disagreement_score)}
+                detail={`${pct(risk.disagreement_score)} disagreement when the review was re-run`}
+              />
             </div>
 
-            {action ? (
-              <div className="mt-3 space-y-2">
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={2}
-                  placeholder={
-                    action === "reject"
-                      ? "What should the associate fix? (sent to them with the task)…"
-                      : "Note (recorded with your decision)…"
-                  }
-                  className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
-                />
-                {action === "amend" ? (
-                  <textarea
-                    value={amendment}
-                    onChange={(e) => setAmendment(e.target.value)}
-                    rows={3}
-                    placeholder="Amendment text…"
-                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
-                  />
-                ) : null}
-                <div className="flex items-center gap-2">
-                  <Button onClick={decide} disabled={submitting}>
-                    {submitting
-                      ? "Recording…"
-                      : action === "reject"
-                        ? "Confirm & send back"
-                        : `Confirm ${action}`}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setAction(null)}>
-                    Cancel
-                  </Button>
-                </div>
+            <div className="flex items-center justify-between rounded-lg border border-line bg-canvas px-3 py-2 text-xs">
+              <span className="text-muted">Where this sits on your list</span>
+              <span className="font-semibold text-ink">{priorityBand(risk.priority).label}</span>
+            </div>
+
+            {risk.has_hard_flag ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                A must-check issue was found — shown no matter how low-risk the task.
               </div>
             ) : null}
-          </>
-        )}
-        {error ? (
-          <div className="mt-3">
-            <ErrorNote message={error} />
           </div>
         ) : null}
-      </Panel>
+
+        {/* The concrete things to verify, each linking to its source */}
+        <div className={risk ? "mt-4 border-t border-line pt-4" : ""}>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
+            Things to verify ({flags.length}) — each links to its source
+          </div>
+          {flags.length === 0 ? (
+            <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">
+              Nothing flagged. (Work done by a person isn&apos;t graded by the automated checks.)
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {flags.map((flag) => (
+                <FlagCard key={flag.id} flag={flag} onView={() => setSource(flag.source_ref)} />
+              ))}
+            </div>
+          )}
+        </div>
+      </Step>
+
+      {/* Conversation with the associate — contextual, aligned under the step spine */}
+      {hasThread || awaitingClar || returned ? (
+        <div className="ml-10 pb-6">
+          <div className="rounded-xl border border-line bg-canvas p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-ink">Conversation with the associate</h3>
+              {awaitingClar ? (
+                <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+                  question awaiting your reply
+                </span>
+              ) : returned ? (
+                <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">
+                  with the associate
+                </span>
+              ) : null}
+            </div>
+            <MessageThread messages={messages} />
+
+            {awaitingClar && isPartner ? (
+              <div className="mt-4 space-y-2 border-t border-line pt-4">
+                <div className="text-xs font-medium text-ink-soft">
+                  Answer the associate&apos;s question
+                </div>
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  rows={2}
+                  placeholder="Type your answer — this sends the task back to the associate…"
+                  className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                />
+                <Button onClick={sendReply} disabled={replying || !reply.trim()}>
+                  {replying ? "Sending…" : "Send answer & return to associate"}
+                </Button>
+              </div>
+            ) : awaitingClar && !isPartner ? (
+              <div className="mt-3 rounded-lg border border-line bg-white px-4 py-2.5 text-xs text-muted">
+                Waiting on the partner to answer. Switch to Partner in the header to reply.
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Step 4 — the decision: the focal endpoint of the review path */}
+      <Step n={4} title="Your decision" focal last>
+        <div className="rounded-xl border-2 border-brand/30 bg-paper p-4 shadow-sm">
+          {decided ? (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              Decision recorded — task is{" "}
+              <span className="font-semibold">{task.status.replace(/_/g, " ")}</span>. This is written
+              to the signed, hash-chained accountability log.
+            </div>
+          ) : returned ? (
+            <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+              Sent back to the associate for rework. You&apos;ll see it here again — with your note in
+              the thread above — once they resubmit.
+            </div>
+          ) : awaitingClar ? (
+            <p className="text-xs text-muted">
+              The associate has a question (above). Answer it to hand the task back — you&apos;ll
+              sign off once they resubmit.
+            </p>
+          ) : !isPartner ? (
+            <div className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm text-muted">
+              Sign-off is partner-only. Switch to Partner in the header to approve, amend, or reject.
+            </div>
+          ) : (
+            <>
+              <p className="mb-3 text-xs text-muted">
+                The points above are things to check, not verdicts. Approve or amend to sign off;{" "}
+                <span className="font-medium text-ink-soft">
+                  reject sends it back to the associate
+                </span>{" "}
+                for rework. Nothing is approved automatically.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={action === "approve" ? "approve" : "secondary"}
+                  onClick={() => setAction("approve")}
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant={action === "amend" ? "primary" : "secondary"}
+                  onClick={() => setAction("amend")}
+                >
+                  Amend
+                </Button>
+                <Button
+                  variant={action === "reject" ? "danger" : "secondary"}
+                  onClick={() => setAction("reject")}
+                >
+                  Reject &amp; send back
+                </Button>
+              </div>
+
+              {action ? (
+                <div className="mt-3 space-y-2">
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={2}
+                    placeholder={
+                      action === "reject"
+                        ? "What should the associate fix? (sent to them with the task)…"
+                        : "Note (recorded with your decision)…"
+                    }
+                    className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                  />
+                  {action === "amend" ? (
+                    <textarea
+                      value={amendment}
+                      onChange={(e) => setAmendment(e.target.value)}
+                      rows={3}
+                      placeholder="Amendment text…"
+                      className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft"
+                    />
+                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <Button onClick={decide} disabled={submitting}>
+                      {submitting
+                        ? "Recording…"
+                        : action === "reject"
+                          ? "Confirm & send back"
+                          : `Confirm ${action}`}
+                    </Button>
+                    <Button variant="ghost" onClick={() => setAction(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </>
+          )}
+          {error ? (
+            <div className="mt-3">
+              <ErrorNote message={error} />
+            </div>
+          ) : null}
+        </div>
+      </Step>
 
       <SourceDrawer sourceRef={source} onClose={() => setSource(null)} />
+    </div>
+  );
+}
+
+// One step of the item review path. A numbered badge plus a connecting spine give the panels a clear
+// reading order (continuity) so the partner follows produce → check → decide instead of facing six
+// rival cards. Steps 1–3 are light; the focal step (the decision) is emphasised; `last` ends the spine.
+function Step({
+  n,
+  title,
+  hint,
+  focal,
+  last,
+  children,
+}: {
+  n: number;
+  title: string;
+  hint?: string;
+  focal?: boolean;
+  last?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex flex-col items-center">
+        <div
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+            focal ? "bg-brand text-white" : "bg-brand-soft text-brand"
+          }`}
+        >
+          {n}
+        </div>
+        {!last ? <div className="mt-1 w-px flex-1 bg-line" /> : null}
+      </div>
+      <div className={`min-w-0 flex-1 ${last ? "" : "pb-6"}`}>
+        <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        {hint ? <p className="mt-0.5 text-[11px] text-muted">{hint}</p> : null}
+        <div className="mt-2.5">{children}</div>
+      </div>
     </div>
   );
 }
