@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
+  addPlanTask,
   approvePlan,
   createPlan,
+  deleteTask,
   getCase,
   getCorpus,
   getPlan,
@@ -122,6 +124,52 @@ export default function PlanPage() {
       setError(e instanceof ApiError ? e.detail : "Could not revise the plan.");
     } finally {
       setRevising(false);
+    }
+  };
+
+  const onAddTask = async () => {
+    setError(null);
+    try {
+      const t = await addPlanTask(id);
+      setTasks((ts) => [...ts, t].sort((a, b) => a.order_index - b.order_index));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not add a task.");
+    }
+  };
+
+  const onRemoveTask = async (task: Task) => {
+    setSavingId(task.id);
+    setError(null);
+    try {
+      await deleteTask(task.id);
+      setTasks((ts) => ts.filter((t) => t.id !== task.id));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not remove the task.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  // Reorder by swapping order_index with the adjacent task (two PATCHes); the table sorts by it.
+  const onMove = async (task: Task, dir: -1 | 1) => {
+    const sorted = [...tasks].sort((a, b) => a.order_index - b.order_index);
+    const idx = sorted.findIndex((t) => t.id === task.id);
+    const neighbour = sorted[idx + dir];
+    if (!neighbour) return;
+    setSavingId(task.id);
+    setError(null);
+    try {
+      const a = await patchTask(task.id, { order_index: neighbour.order_index });
+      const b = await patchTask(neighbour.id, { order_index: task.order_index });
+      setTasks((ts) =>
+        ts
+          .map((t) => (t.id === a.id ? a : t.id === b.id ? b : t))
+          .sort((x, y) => x.order_index - y.order_index)
+      );
+    } catch (e) {
+      setError(e instanceof ApiError ? e.detail : "Could not reorder the tasks.");
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -264,10 +312,13 @@ export default function PlanPage() {
                     <th className="px-4 py-3 font-semibold">Assignee</th>
                     <th className="px-4 py-3 font-semibold">Severity</th>
                     <th className="px-4 py-3 font-semibold">Target document</th>
+                    {editable ? (
+                      <th className="px-4 py-3 text-right font-semibold">Edit</th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
-                  {tasks.map((t) => {
+                  {tasks.map((t, i) => {
                     const doc = corpusById.get(t.target_document_id);
                     return (
                       <tr key={t.id} className="border-b border-line last:border-0 align-top">
@@ -396,11 +447,46 @@ export default function PlanPage() {
                             </div>
                           ) : null}
                         </td>
+                        {editable ? (
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <RowButton
+                                label="Move up"
+                                disabled={i === 0 || savingId === t.id}
+                                onClick={() => onMove(t, -1)}
+                              >
+                                ↑
+                              </RowButton>
+                              <RowButton
+                                label="Move down"
+                                disabled={i === tasks.length - 1 || savingId === t.id}
+                                onClick={() => onMove(t, 1)}
+                              >
+                                ↓
+                              </RowButton>
+                              <RowButton
+                                label="Remove task"
+                                danger
+                                disabled={savingId === t.id || tasks.length <= 1}
+                                onClick={() => onRemoveTask(t)}
+                              >
+                                ✕
+                              </RowButton>
+                            </div>
+                          </td>
+                        ) : null}
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+              {editable ? (
+                <div className="border-t border-line px-4 py-3">
+                  <Button variant="secondary" onClick={onAddTask} className="!py-1.5 !text-xs">
+                    + Add task
+                  </Button>
+                </div>
+              ) : null}
             </Panel>
 
             <p className="mt-3 text-xs text-muted">
@@ -422,6 +508,36 @@ export default function PlanPage() {
         .select:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-soft); }
       `}</style>
     </div>
+  );
+}
+
+// A compact icon button for the per-row reorder/remove controls.
+function RowButton({
+  label,
+  onClick,
+  disabled,
+  danger,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      className={`flex h-7 w-7 items-center justify-center rounded-md text-sm ring-1 ring-inset ring-line transition-colors disabled:opacity-30 ${
+        danger ? "text-red-600 hover:bg-red-50" : "text-muted hover:bg-canvas hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

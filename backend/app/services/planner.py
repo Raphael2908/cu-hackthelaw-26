@@ -93,6 +93,64 @@ def propose_plan(repo: Repo, *, case: dict, provider: LLMProvider, actor: str) -
     return {"plan": plan, "tasks": tasks}
 
 
+def add_task(repo: Repo, *, case: dict, actor: str) -> dict:
+    """Add a blank PROPOSED task to the latest proposed plan, for the partner to fill in. Defaults
+    to an AI review of the first available draft; the partner edits it inline before approving."""
+    plans = repo.list(PLANS, case_id=case["id"])
+    current = plans[-1] if plans else None
+    if not current:
+        raise ValueError("No plan to add to — generate one first.")
+    if current["status"] != "proposed":
+        raise ValueError("Only a proposed plan can be edited; this plan is already approved.")
+
+    existing = repo.list(TASKS, plan_id=current["id"])
+    order = max((t.get("order_index", 0) for t in existing), default=-1) + 1
+
+    all_drafts = [d for d in repo.list(CORPUS) if d["kind"] == "draft"]
+    uploaded = [d for d in all_drafts if d.get("case_id") == case["id"]]
+    drafts = uploaded or [d for d in all_drafts if not d.get("case_id")]
+    target = (
+        drafts[0]["id"]
+        if drafts
+        else (existing[0]["target_document_id"] if existing else None)
+    )
+    proc = repo.get(CORPUS, case.get("process_doc_id") or process_doc()["id"]) or process_doc()
+    task_types = proc.get("task_types", {})
+    default_type = next(iter(task_types), "review_binding_obligation")
+
+    task = repo.insert(
+        TASKS,
+        {
+            "case_id": case["id"],
+            "plan_id": current["id"],
+            "title": "New task",
+            "description": "",
+            "task_type": default_type,
+            "assignee_type": "ai",
+            "assignee_id": None,
+            "severity": case.get("severity", "medium"),
+            "target_document_id": target,
+            "firm_standard_id": case.get("firm_standard_id") or firm_standard()["id"],
+            "input_brief_slice": "",
+            "input_process_section": task_types.get(default_type, {}).get("label", default_type),
+            "ai_instruction": None,
+            "human_instruction": None,
+            "rationale": "Added by the partner.",
+            "status": "proposed",
+            "order_index": order,
+        },
+    )
+    record_accountability(
+        repo,
+        type="task_added",
+        actor=actor,
+        case_id=case["id"],
+        task_id=task["id"],
+        payload={"plan_id": current["id"]},
+    )
+    return task
+
+
 def revise_plan(
     repo: Repo, *, case: dict, provider: LLMProvider, feedback: str, actor: str
 ) -> dict:

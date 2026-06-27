@@ -58,9 +58,14 @@ export type TaskPatchBody = Partial<{
   severity: Task["severity"];
   ai_instruction: string;
   human_instruction: string;
+  order_index: number;
 }>;
 export const patchTask = (taskId: string, body: TaskPatchBody) =>
   apiFetch<Task>(`/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(body) });
+export const addPlanTask = (caseId: string) =>
+  apiFetch<Task>(`/cases/${caseId}/plan/tasks`, { method: "POST" });
+export const deleteTask = (taskId: string) =>
+  apiFetch<void>(`/tasks/${taskId}`, { method: "DELETE" });
 
 export const approvePlan = (planId: string) =>
   apiFetch<ApproveResult>(`/plans/${planId}/approve`, { method: "POST" });

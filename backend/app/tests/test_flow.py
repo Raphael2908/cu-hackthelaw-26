@@ -96,6 +96,32 @@ def test_revise_plan_respects_feedback_and_stays_proposed(client):
     assert blocked.status_code == 409
 
 
+def test_whole_plan_edit_add_remove_reorder(client):
+    case, plan = _new_case_with_plan(client)
+    n = len(plan["tasks"])
+
+    # Add a blank proposed task.
+    added = client.post(f"/api/cases/{case['id']}/plan/tasks")
+    assert added.status_code == 201
+    new_id = added.json()["id"]
+    assert len(client.get(f"/api/cases/{case['id']}/plan").json()["tasks"]) == n + 1
+
+    # Reorder via order_index patch.
+    patched = client.patch(f"/api/tasks/{new_id}", json={"order_index": 0})
+    assert patched.status_code == 200 and patched.json()["order_index"] == 0
+
+    # Remove it.
+    removed = client.delete(f"/api/tasks/{new_id}")
+    assert removed.status_code == 204
+    assert len(client.get(f"/api/cases/{case['id']}/plan").json()["tasks"]) == n
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    assert {"task_added", "task_removed"} <= {e["type"] for e in audit["accountability"]}
+
+    # Once approved, structural edits are refused.
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    assert client.post(f"/api/cases/{case['id']}/plan/tasks").status_code == 409
+
+
 def test_happy_path_end_to_end(client):
     case, plan = _new_case_with_plan(client)
     plan_id = plan["plan"]["id"]

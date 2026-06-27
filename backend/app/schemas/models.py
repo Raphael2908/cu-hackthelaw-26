@@ -39,6 +39,8 @@ class TaskPatch(BaseModel):
     # The associate's half of a hybrid task — editable by the partner before approval, same as
     # ai_instruction (the planner proposes both).
     human_instruction: str | None = None
+    # Position in the plan; the partner reorders tasks before approval.
+    order_index: int | None = None
 
 
 class PlanReviseRequest(BaseModel):

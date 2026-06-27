@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.core.audit import record_accountability
 from app.core.auth import CurrentUser, get_current_user
 from app.db.repo import get_repo
 from app.db.tables import CORPUS, TASKS
@@ -65,6 +66,24 @@ def patch_task(task_id: str, body: TaskPatch) -> dict:
         raise HTTPException(409, "Only proposed tasks can be edited; the plan is already approved.")
     fields = {k: v for k, v in body.model_dump().items() if v is not None}
     return repo.update(TASKS, task_id, fields)
+
+
+@router.delete("/tasks/{task_id}", status_code=204)
+def delete_task(task_id: str, user: CurrentUser = Depends(get_current_user)) -> None:
+    """Remove a PROPOSED task from the plan before approval. Recorded for traceability."""
+    repo = get_repo()
+    task = _task_or_404(task_id)
+    if task["status"] != "proposed":
+        raise HTTPException(409, "Only proposed tasks can be removed; the plan is approved.")
+    repo.delete(TASKS, task_id)
+    record_accountability(
+        repo,
+        type="task_removed",
+        actor=user.email,
+        case_id=task["case_id"],
+        task_id=task_id,
+        payload={"title": task["title"]},
+    )
 
 
 @router.post("/tasks/{task_id}/submit")

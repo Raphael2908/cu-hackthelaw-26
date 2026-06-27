@@ -111,6 +111,19 @@ def create_plan(case_id: str, user: CurrentUser = Depends(get_current_user)) -> 
     return planner.propose_plan(repo, case=case, provider=get_llm_provider(), actor=user.email)
 
 
+@router.post("/cases/{case_id}/plan/tasks", status_code=201)
+def add_plan_task(case_id: str, user: CurrentUser = Depends(get_current_user)) -> dict:
+    """Add a blank proposed task to the plan for the partner to fill in (architecture.md §6)."""
+    repo = get_repo()
+    case = repo.get(CASES, case_id)
+    if not case:
+        raise HTTPException(404, "Case not found.")
+    try:
+        return planner.add_task(repo, case=case, actor=user.email)
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
+
+
 @router.post("/cases/{case_id}/plan/revise", status_code=201)
 def revise_case_plan(
     case_id: str, body: PlanReviseRequest, user: CurrentUser = Depends(get_current_user)
