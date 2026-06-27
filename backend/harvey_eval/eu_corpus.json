@@ -1,0 +1,167 @@
+[
+  {
+    "id": "32016R0679",
+    "celex": "32016R0679",
+    "kind": "legislation",
+    "title": "Regulation (EU) 2016/679 — General Data Protection Regulation (GDPR)",
+    "source_url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "text": "Regulation (EU) 2016/679 (GDPR). Article 5 sets the principles of processing (lawfulness, fairness, transparency, purpose limitation, data minimisation, accuracy, storage limitation, integrity and confidentiality, accountability). Article 6 lists the lawful bases for processing. Articles 12-22 set data subject rights, including the right of access (15), rectification (16), erasure (17), restriction (18), portability (20), and the right to object (21). Articles 24-32 set controller and processor obligations, including data protection by design and by default (25), records of processing (30), and security of processing (32). Article 28 governs processors and the mandatory content of a data processing agreement. Articles 33-34 require notification of a personal data breach to the supervisory authority within 72 hours (33) and communication to the data subject where the breach is likely to result in a high risk (34). Article 35 requires a data protection impact assessment for high-risk processing. Articles 44-49 govern transfers of personal data to third countries: such transfers require an adequacy decision (45), appropriate safeguards such as standard contractual clauses or binding corporate rules (46-47), or a derogation for a specific situation (49). Article 83 sets administrative fines up to EUR 20 million or 4% of total worldwide annual turnover.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "transfers of personal data to third countries require appropriate safeguards",
+        "data subjects have a right to erasure",
+        "a personal data breach must be notified to the supervisory authority within 72 hours",
+        "processing requires a lawful basis",
+        "a data protection impact assessment is required for high-risk processing",
+        "a data processing agreement with a processor must meet the requirements of Article 28",
+        "administrative fines can reach 4% of total worldwide annual turnover"
+      ]
+    }
+  },
+  {
+    "id": "62018CJ0311",
+    "celex": "62018CJ0311",
+    "kind": "case_law",
+    "title": "Case C-311/18 — Data Protection Commissioner v Facebook Ireland and Schrems (Schrems II)",
+    "source_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:62018CJ0311",
+    "text": "Judgment in Case C-311/18 (Schrems II). The Court invalidated Commission Decision 2016/1250 (the EU-US Privacy Shield). It held that standard contractual clauses adopted under Article 46 GDPR remain valid in principle, but that a controller or processor relying on them must verify, on a case-by-case basis, whether the law of the third country of destination ensures a level of protection essentially equivalent to that guaranteed within the EU, and must adopt supplementary measures where the SCCs alone do not ensure that level of protection. Where adequate protection cannot be ensured, the transfer must be suspended or prohibited.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "the EU-US Privacy Shield is invalid",
+        "transfers relying on standard contractual clauses require a case-by-case assessment of third-country law",
+        "supplementary measures are required where SCCs alone do not ensure essentially equivalent protection",
+        "a transfer must be suspended where adequate protection cannot be ensured"
+      ]
+    }
+  },
+  {
+    "id": "32021D0914",
+    "celex": "32021D0914",
+    "kind": "legislation",
+    "title": "Commission Implementing Decision (EU) 2021/914 — Standard Contractual Clauses for the transfer of personal data to third countries",
+    "source_url": "https://eur-lex.europa.eu/eli/dec_impl/2021/914/oj",
+    "text": "Commission Implementing Decision (EU) 2021/914 sets out the modernised standard contractual clauses (SCCs) for the transfer of personal data to third countries under Article 46(2)(c) GDPR. The SCCs adopt a modular approach covering four transfer scenarios (controller-to-controller, controller-to-processor, processor-to-processor, processor-to-controller). They include a docking clause allowing additional parties to accede, and a transfer impact assessment obligation (Clause 14) under which the parties warrant they have no reason to believe the laws of the destination country prevent the data importer from complying with the clauses, reflecting Schrems II. They contain obligations on onward transfers, the rights of data subjects as third-party beneficiaries, and the handling of access requests by public authorities (Clause 15).",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "the 2021 standard contractual clauses use a modular approach covering four transfer scenarios",
+        "the SCCs require a transfer impact assessment under Clause 14",
+        "data subjects are third-party beneficiaries under the SCCs",
+        "the SCCs impose obligations on onward transfers and on handling public-authority access requests"
+      ]
+    }
+  },
+  {
+    "id": "32023D1795",
+    "celex": "32023D1795",
+    "kind": "legislation",
+    "title": "Commission Implementing Decision (EU) 2023/1795 — adequacy of the EU-US Data Privacy Framework",
+    "source_url": "https://eur-lex.europa.eu/eli/dec_impl/2023/1795/oj",
+    "text": "Commission Implementing Decision (EU) 2023/1795 finds that the United States ensures an adequate level of protection for personal data transferred from the EU to organisations certified under the EU-US Data Privacy Framework (DPF). Transfers to DPF-certified entities may therefore take place under Article 45 GDPR without the need for additional safeguards such as standard contractual clauses. The adequacy finding rests on the safeguards introduced by US Executive Order 14086, including the principles of necessity and proportionality for US signals-intelligence activities and a two-layer redress mechanism (including the Data Protection Review Court). The decision is subject to periodic review and may be suspended, amended or repealed.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "transfers to entities certified under the EU-US Data Privacy Framework may rely on an adequacy decision",
+        "DPF-covered transfers do not require additional safeguards such as SCCs",
+        "the adequacy decision relies on the safeguards in US Executive Order 14086",
+        "the adequacy decision is subject to periodic review and possible suspension"
+      ]
+    }
+  },
+  {
+    "id": "32024R1689",
+    "celex": "32024R1689",
+    "kind": "legislation",
+    "title": "Regulation (EU) 2024/1689 — Artificial Intelligence Act (AI Act)",
+    "source_url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+    "text": "Regulation (EU) 2024/1689 (AI Act) establishes a risk-based framework for artificial intelligence. Article 5 prohibits certain AI practices (e.g. social scoring, untargeted scraping of facial images, manipulative or exploitative systems). Title III governs high-risk AI systems (Annex III use cases) and imposes requirements on risk management (9), data governance (10), technical documentation (11), record-keeping (12), transparency and provision of information to deployers (13), human oversight (14), and accuracy, robustness and cybersecurity (15). Article 50 sets transparency obligations: providers must ensure AI systems intended to interact with people disclose that fact; deployers of emotion-recognition or biometric-categorisation systems must inform affected persons; and AI-generated or manipulated content (including deep fakes) must be marked as artificially generated. Chapter V governs general-purpose AI models, including additional obligations for models with systemic risk. Article 99 sets penalties up to EUR 35 million or 7% of total worldwide annual turnover for prohibited practices.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "the AI Act takes a risk-based approach to regulating AI systems",
+        "certain AI practices are prohibited under Article 5",
+        "high-risk AI systems must meet requirements on risk management, data governance, transparency and human oversight",
+        "providers must disclose when content is AI-generated or when users interact with an AI system",
+        "penalties can reach 7% of total worldwide annual turnover"
+      ]
+    }
+  },
+  {
+    "id": "52022PC0496",
+    "celex": "52022PC0496",
+    "kind": "legislation",
+    "title": "Proposal COM(2022) 496 — Directive on adapting non-contractual civil liability rules to artificial intelligence (AI Liability Directive)",
+    "source_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:52022PC0496",
+    "text": "Proposal for a Directive (COM(2022) 496) on adapting non-contractual civil liability rules to artificial intelligence (the AI Liability Directive). It is a legislative proposal, not enacted law. It introduces two main measures to ease the burden of proof for claimants harmed by AI systems: (1) a rebuttable presumption of a causal link between the defendant's fault and the output (or failure to produce an output) of an AI system, where the claimant shows the defendant breached a relevant duty of care and it is reasonably likely that the fault influenced the output; and (2) a right for claimants to request disclosure of evidence about high-risk AI systems suspected of having caused damage, subject to safeguards for trade secrets. The proposal complements the revised Product Liability Directive and the AI Act.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "the AI Liability Directive is a legislative proposal rather than enacted law",
+        "it introduces a rebuttable presumption of causality for AI-related harm",
+        "it gives claimants a right to request disclosure of evidence about high-risk AI systems",
+        "it complements the AI Act and the Product Liability Directive"
+      ]
+    }
+  },
+  {
+    "id": "32022L2555",
+    "celex": "32022L2555",
+    "kind": "legislation",
+    "title": "Directive (EU) 2022/2555 — measures for a high common level of cybersecurity across the Union (NIS2)",
+    "source_url": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+    "text": "Directive (EU) 2022/2555 (NIS2) raises the common level of cybersecurity across the Union. It expands the scope to medium and large entities in sectors of high criticality and other critical sectors, distinguishing 'essential' and 'important' entities. Article 21 requires entities to take appropriate and proportionate technical, operational and organisational cybersecurity risk-management measures. Article 23 imposes incident-reporting obligations: an early warning to the CSIRT or competent authority without undue delay and in any event within 24 hours of becoming aware of a significant incident, an incident notification within 72 hours, and a final report within one month. It also introduces management-body accountability and supervisory and enforcement measures, including fines.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "NIS2 distinguishes essential and important entities",
+        "entities must take appropriate cybersecurity risk-management measures under Article 21",
+        "a significant incident requires an early warning within 24 hours and a notification within 72 hours",
+        "management bodies are accountable for cybersecurity risk-management measures"
+      ]
+    }
+  },
+  {
+    "id": "32002L0058",
+    "celex": "32002L0058",
+    "kind": "legislation",
+    "title": "Directive 2002/58/EC — privacy and electronic communications (ePrivacy Directive)",
+    "source_url": "https://eur-lex.europa.eu/eli/dir/2002/58/oj",
+    "text": "Directive 2002/58/EC (ePrivacy Directive, as amended) concerns the processing of personal data and the protection of privacy in the electronic communications sector. Article 5(3) requires the user's prior consent for the storing of, or access to, information on a user's terminal equipment (e.g. cookies), except where strictly necessary to provide a service explicitly requested by the user. Article 6 governs traffic data and Article 9 location data. Article 13 governs unsolicited communications (direct marketing), generally requiring prior opt-in consent. The Directive is lex specialis to the GDPR for electronic communications.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "storing or accessing information on a user's device requires prior consent unless strictly necessary",
+        "direct marketing by electronic communication generally requires prior opt-in consent",
+        "the ePrivacy Directive is lex specialis to the GDPR for electronic communications"
+      ]
+    }
+  },
+  {
+    "id": "32008R0593",
+    "celex": "32008R0593",
+    "kind": "legislation",
+    "title": "Regulation (EC) 593/2008 — Law applicable to contractual obligations (Rome I)",
+    "source_url": "https://eur-lex.europa.eu/eli/reg/2008/593/oj",
+    "text": "Regulation (EC) 593/2008 (Rome I). Article 3 provides that a contract is governed by the law chosen by the parties, and the choice may be express or clearly demonstrated. Article 4 provides default rules for the applicable law in the absence of choice, based on connecting factors (e.g. the habitual residence of the characteristic performer). Articles 6 and 8 provide protective regimes for consumer and individual employment contracts, limiting the effect of a choice of law that would deprive the weaker party of mandatory protections. Article 9 preserves the application of overriding mandatory provisions of the forum.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {
+      "supported_claims": [
+        "parties may choose the law governing their contract",
+        "absent a choice of law, default connecting factors determine the governing law",
+        "consumer and employment contracts have protective regimes limiting choice of law",
+        "overriding mandatory provisions of the forum continue to apply"
+      ]
+    }
+  }
+]

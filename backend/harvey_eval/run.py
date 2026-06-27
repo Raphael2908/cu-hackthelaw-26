@@ -27,6 +27,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 HARVEY_ROOT = REPO_ROOT / "harvey-labs"
 TASKS_ROOT = HARVEY_ROOT / "tasks"
 RESULTS_ROOT = HARVEY_ROOT / "results"
+# EU legal instruments (GDPR, SCCs, Schrems II, AI Act, ...) keyed by CELEX. The checker's
+# citation_support signal resolves each cited CELEX against the corpus; without this seed the
+# corpus is empty, so every real EU citation is mis-flagged "fabricated" (and the signal is
+# vacuous when the worker cites nothing). See system-design/harvey-eval.md (citation coupling).
+EU_CORPUS = Path(__file__).resolve().parent / "eu_corpus.json"
 
 
 def _load_root_env() -> None:
@@ -46,7 +51,9 @@ def _load_root_env() -> None:
         value = value.split("#", 1)[0].strip().strip('"').strip("'")
         key = key.strip()
         if key:
-            os.environ[key] = value
+            # setdefault, not assign: an explicitly-set env var (e.g. PROVIDER_MODE=mock for an
+            # offline smoketest) must win over the repo .env, which pins PROVIDER_MODE=real.
+            os.environ.setdefault(key, value)
 
 
 _load_root_env()
@@ -58,6 +65,8 @@ from app.providers.factory import get_llm_provider  # noqa: E402
 from app.services.checker import run_checks  # noqa: E402
 from app.services.ranker import score_task  # noqa: E402
 from app.services.worker import run_review  # noqa: E402
+
+from harvey_eval.metering import UsageTracker, install_metering  # noqa: E402
 
 
 # ── Task loading + document extraction ────────────────────────────────────────
@@ -96,6 +105,18 @@ def build_bundle(task: dict) -> tuple[str, list[str]]:
         parts.append(f"===== DOCUMENT: {path.name} =====\n{text}")
         names.append(path.name)
     return "\n\n".join(parts), names
+
+
+def seed_eu_corpus(repo) -> int:
+    """Load the CELEX-keyed EU instruments into the run's corpus so citation_support can resolve
+    real citations instead of branding them fabricated. Idempotent per run (fresh InMemoryRepo).
+    Returns the number of instruments seeded."""
+    if not EU_CORPUS.exists():
+        return 0
+    docs = json.loads(EU_CORPUS.read_text(encoding="utf-8"))
+    for doc in docs:
+        repo.insert(CORPUS, dict(doc))
+    return len(docs)
 
 
 def deliverable_name(config: dict) -> str:
@@ -163,6 +184,10 @@ def run(task_id: str, severity: str, run_id: str | None) -> dict:
 
     bundle_text, doc_names = build_bundle(task)
     provider = get_llm_provider()
+    # Meter every LLM call this task makes (worker review + 3 checker signals). No-op on the
+    # mock provider (it has no Anthropic client and makes no metered calls).
+    usage = UsageTracker()
+    install_metering(provider, usage)
     repo = InMemoryRepo()
 
     case_id = "harvey-case"
@@ -191,7 +216,9 @@ def run(task_id: str, severity: str, run_id: str | None) -> dict:
     deliv = deliverable_name(task["config"])
     render_docx(submission, task, out_dir / deliv)
 
-    # Track B: checker + ranker over the same output → supervision signals.
+    # Track B: checker + ranker over the same output → supervision signals. Seed the EU legal
+    # instruments first so citation_support resolves real CELEX citations against the corpus.
+    n_seeded = seed_eu_corpus(repo)
     signals = run_checks(repo, wtask, submission, provider)
     risk = score_task(repo, wtask, signals)
 
@@ -205,6 +232,7 @@ def run(task_id: str, severity: str, run_id: str | None) -> dict:
         "task": task_id, "run_id": run_id, "severity": severity,
         "deliverable": deliv, "documents_included": doc_names,
         "n_findings": len(submission.get("findings", [])),
+        "corpus_celex_seeded": n_seeded,
         "citation_support_rate": signals["citation_support_rate"],
         "deviation_score": signals["deviation_score"],
         "disagreement_score": signals["disagreement_score"],
@@ -213,6 +241,7 @@ def run(task_id: str, severity: str, run_id: str | None) -> dict:
         "lane": risk["lane"],
         "sampled": risk["sampled"],
         "has_hard_flag": signals["has_hard_flag"],
+        "usage": usage.summary(),
         "n_flags": len(repo.list(FLAGS)),
         "flags": [
             {"signal_type": f["signal_type"], "hard": f.get("hard", False), "title": f["title"]}
@@ -222,6 +251,10 @@ def run(task_id: str, severity: str, run_id: str | None) -> dict:
     }
     (run_dir / "our_eval.json").write_text(json.dumps(our, indent=2))
     print(json.dumps({k: v for k, v in our.items() if k != "flags"}, indent=2))
+    u = our["usage"]
+    print(f"\nTokens: {u['total_tokens']:,} ({u['llm_calls']} LLM calls) | "
+          f"in={u['input_tokens']:,} out={u['output_tokens']:,} "
+          f"cache_read={u['cache_read_tokens']:,} | cost=${u['cost_usd']:.4f} ({u['model']})")
     print(f"\nDeliverable: {out_dir / deliv}")
     print(f"Run dir:     {run_dir}")
     print(f"Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval "

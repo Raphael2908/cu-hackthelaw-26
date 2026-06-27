@@ -1,0 +1,64 @@
+model=claude-haiku-4-5
+=================== RUN data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance ===================
+{
+  "task": "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
+  "run_id": "eu_haiku5/summarize-new-gdpr-enforcement-guidance",
+  "severity": "high",
+  "deliverable": "executive-regulatory-brief.docx",
+  "documents_included": [
+    "ap-decision-2025-0042-summary.docx",
+    "edpb-guidelines-03-2024-summary.docx",
+    "novabridge-gdpr-compliance-tracker.xlsx",
+    "novabridge-processing-overview.docx",
+    "outside-counsel-cover-email.eml"
+  ],
+  "n_findings": 15,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.13333333333333333,
+  "deviation_score": 0.96,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.9213,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-haiku-4-5",
+    "llm_calls": 20,
+    "input_tokens": 202875,
+    "output_tokens": 42352,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 202875,
+    "total_tokens": 245227,
+    "cost_usd": 0.414635
+  },
+  "n_flags": 27,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 245,227 (20 LLM calls) | in=202,875 out=42,352 cache_read=0 | cost=$0.4146 (claude-haiku-4-5)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\summarize-new-gdpr-enforcement-guidance\output\executive-regulatory-brief.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\summarize-new-gdpr-enforcement-guidance
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_haiku5/summarize-new-gdpr-enforcement-guidance' --task 'data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance'
+=================== CORRELATE data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance ===================
+{
+  "task": "data-privacy-cybersecurity/summarize-new-gdpr-enforcement-guidance",
+  "run_id": "eu_haiku5/summarize-new-gdpr-enforcement-guidance",
+  "uncertainty": 0.9213,
+  "quality": 0.42,
+  "quality_reasoning": "The deliverable contains substantively accurate and detailed legal analysis across all 14 findings with correct figures, citations, and regulatory parallels, but it fundamentally fails the task brief: it is not an executive regulatory brief in plain language for cross-functional leadership \u2014 it reads as a dense legal memorandum reproducing counsel's analysis verbatim, lacks an executive summary with prioritized action items, omits a clear remediation roadmap with owners and timelines, and never translates the findings into business-decision-ready recommendations accessible to non-lawyer executives.",
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 8700,
+    "output_tokens": 131,
+    "cost_usd": 0.02806
+  }
+}
+
+Data points: 1  ->  C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\results.jsonl
+Need >=2 tasks for a correlation (Spearman rho). This is the only point so far.
+Hypothesis (to test as N grows): higher uncertainty -> lower Harvey quality.
+
+=================== RUN data-privacy-cybersecurity/compare-privacy-notice-against-statutory-disclosure-requirements ===================
