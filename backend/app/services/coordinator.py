@@ -16,6 +16,13 @@ _NEUTRAL_SIGNALS = {
     "citation_support_rate": 1.0,
     "deviation_score": 0.0,
     "disagreement_score": 0.0,
+    # No checks run on human work, so none applied — uncertainty resolves to 0.0 (placement is by
+    # severity alone), and the shape matches AI submissions for the views.
+    "applied_checks": {
+        "citation_support": False,
+        "precedent_deviation": False,
+        "multi_run_disagreement": False,
+    },
     "flags": [],
     "has_hard_flag": False,
 }

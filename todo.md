@@ -41,14 +41,53 @@ cut from the bottom if time runs short.
       createPlan → route).
 
 ## Now (depth — the centrepiece, protect these)
+- [x] **Flexible worker — the planner tasks it via the process map.** The worker is no longer fixed to
+      "review a draft against the firm standard." A process-map section carries a worker spec (`kind`
+      ∈ review|summarize|extract|draft, `instruction`, `checklist`, `checks`, `requires_standard`); the
+      planner copies it onto each task; `services/task_spec.py::build_task_spec` resolves it once and
+      calls the single provider entry `run_task`. Every kind still emits the universal `findings` the
+      checker reads, with the type-specific product in `payload`. Checks are selected per task and the
+      uncertainty composite is **renormalised** over applied signals; a non-applicable signal shows as
+      "n/a", never a fabricated 0.0 (architecture.md §6/§7.2). See `current_progress.md`.
 - [ ] Tune the uncertainty composite weights + `SAMPLE_RATE` against a small labelled set.
 - [ ] Cockpit polish: keyboard-navigable queue, side-by-side source diff for deviation flags.
 - [ ] Show each of the three signals as its own row in the flag panel (no fused number).
+- [ ] Flexible-worker follow-ups: let the partner edit `worker_instruction`/`checklist` per task
+      pre-approval (`TaskPatch`); show the instruction/checklist on the plan page; surface a `draft`
+      task's `payload` in the associate inbox; tune the real per-kind prompts.
 
 ## Next (breadth)
-- [ ] Planner: smarter task decomposition from the goal + process doc (currently template-led).
-- [ ] Coordinator: surface escalations as their own cockpit lane.
+- [x] **Planner delegation guided by the Trust Matrix.** The `plan_case` system prompt reads each
+      task on two task-intrinsic axes — stakes × verifiability — and maps the four quadrants to
+      `assignee_type` (Reserve→human, Augment→hybrid, Monitor→ai, Delegate→ai). Stakes is the task's
+      own consequence-of-error, never the matter's severity (architecture.md §6). Follow-up: eval the
+      prompt on real cases to confirm quadrant placement.
+- [x] **Process maps + per-map agentic track record drive delegation.** Delegation (human/ai/hybrid)
+      is the planner agent's judgment of task *nature*, never severity. A selectable/optional *process
+      map* (a `process_doc` with sections) is the unit of "clean slate": a fresh map → the
+      nature-based suggestion stands and the partner decides where to insert AI; a reused map
+      accumulates a per-section track record (`services/track_record.py`) that **graduates** a section
+      to AI on a clean record or **pulls it back** to a human on an adverse one. New endpoints
+      `GET/POST /api/process-maps`, `GET /api/track-record`; each task carries an `assignee_rationale`;
+      a `/track-record` page surfaces per-map stats + the completed-task log. See `current_progress.md`.
+- [ ] **Use *actual* process maps (document upload).** The current "add process map" is a lightweight
+      structured create (title + section labels). Support uploading a real process-map document
+      (PDF/DOCX) — reuse `services/documents.py` to extract text, then derive sections/`task_types`
+      via an LLM step behind the provider seam, with partner review before the map is used.
+- [ ] **Process map is optional.** A case may run with no map (generic decomposition, all clean
+      slate); selecting/adding a map is what enables the per-map track record and graduate/pull-back
+      delegation. (Implemented as a fallback to the seeded map today; expose a true "no map" path.)
+- [x] **Planner: smarter task decomposition from the goal + process doc.** The mock planner now
+      walks the process doc's `task_types` in document order and emits one task per section
+      (was a static fixture), staying deterministic; the real Anthropic prompt decomposes per
+      section. Raw scoping only — severity/label/assignee/ordering stay in the planner service.
+      See `current_progress.md`.
+- [x] **Coordinator: surface escalations as their own cockpit lane.** `views.cockpit` returns a
+      dedicated `escalated` lane (narrowing `decided` to signed-off only); the cockpit renders a
+      distinct rose-styled Escalations section. See `current_progress.md`.
 - [ ] Associate inbox: richer task context; show hybrid AI instruction inline with submit.
+      _(The hybrid AI-instruction-inline part already ships; remaining: process-guideline +
+      target-document excerpt in the inbox card.)_
 - [ ] Debrief: include carry-forward notes derived from flags the partner amended.
 
 ## Production scale-up (next)
@@ -67,8 +106,16 @@ cut from the bottom if time runs short.
 
 ## Real integrations
 - [x] Run on real Anthropic (`PROVIDER_MODE=real`, `ENV=production`); SQLite stays the store.
-- [ ] Tune the real review/plan prompts; verify structured output parsing; raise `max_tokens`.
-- [ ] Live EU Cellar API connector (keep fixtures as the offline fallback).
+- [ ] Tune the real review/plan prompts; verify structured output parsing. (`max_tokens` raised
+      2048 → 32768 in `providers/real/anthropic_llm.py` — done; prompts + parsing still to do.)
+- [x] Live EU Cellar API connector (keep fixtures as the offline fallback). Opt-in `CELLAR_ENABLED`;
+      `providers/cellar.py` (Null default + Http impl behind `get_cellar()`); citation-support fetches
+      a source by CELEX on a corpus miss and caches it; outage → soft "unverifiable" flag, never a
+      false fabrication (architecture §7.1/§9/§14.1). Uses the **official CELLAR API** (REST content
+      negotiation for XHTML/Formex + SPARQL metadata), not HTML scraping. The **worker** also grounds
+      citations against real Cellar sources while drafting via Anthropic tool-use (`fetch_eu_source`).
+      **Verified against the live API** (303→XHTML for modern + pre-2014 docs; case-law detected;
+      bogus CELEX → absent; English-language SPARQL title; no auth).
 - [ ] Real auth (SSO/JWKS); per-firm process-doc + standard management. (No Postgres/Supabase —
       SQLite is the production store.)
 

@@ -45,12 +45,29 @@ class Settings(BaseSettings):
     # mid-string on large real-world documents (e.g. Harvey Labs review tasks) — see todo.md.
     ANTHROPIC_MAX_TOKENS: int = 32768
 
+    # --- EU Cellar (live citation source, architecture.md §7.1/§9) --- opt-in. Default OFF so the
+    # stack stays fully offline (fixtures only) and tests never touch the network. When enabled, the
+    # citation-support signal fetches a source by CELEX from the EU Publications Office on a local
+    # miss; the seeded fixtures remain the offline fallback.
+    CELLAR_ENABLED: bool = False
+    CELLAR_BASE_URL: str = "http://publications.europa.eu"
+    CELLAR_LANGUAGE: str = "en"
+    CELLAR_TIMEOUT: float = 10.0
+    CELLAR_SPARQL_PATH: str = "/webapi/rdf/sparql"  # CDM knowledge graph, for title/type metadata
+    CELLAR_USER_AGENT: str = "supervision-cockpit/1.0 (legal-AI-supervision; +contact)"
+
     # --- Risk signal tuning (architecture.md §7) ---
     SAMPLE_RATE: float = 0.2
     DISAGREEMENT_RUNS: int = 3
     W_CITATION: float = 0.5
     W_DEVIATION: float = 0.3
     W_DISAGREEMENT: float = 0.2
+
+    # --- Delegation track record (architecture.md §6) --- Minimum completed AI/hybrid tasks on a
+    # process-map section, all clean (no amend/reject), before the planner graduates that section to
+    # AI by default. Delegation is decided by task nature, never severity; the track record only
+    # graduates (clean) or pulls back (adverse) on top of the planner's nature-based suggestion.
+    AI_TRACK_RECORD_MIN: int = 3
 
     @property
     def cors_origins_list(self) -> list[str]:

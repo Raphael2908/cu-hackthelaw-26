@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
+
+# A source lookup the worker can hand to review_document so the model can fetch a real EU source by
+# CELEX on demand (Anthropic tool-use). A plain callable — not the CellarConnector type — so this
+# module gains no import and there is no provider -> cellar cycle. Returns a corpus-doc-shaped dict
+# on a hit, None on absence. The worker owns the implementation (and the corpus caching).
+SourceLookup = Callable[[str], "dict | None"]
 
 
 class ProviderError(Exception):
@@ -28,11 +35,23 @@ class Finding:
 
 
 @dataclass
-class ReviewResult:
+class TaskResult:
+    """The output of one delegated task. `findings` is the universal *checkable-claims* container
+    the checker reads for every task type (architecture.md §7); `output_kind` + `payload` carry the
+    type-specific product (e.g. a drafted clause, an obligations table, key points) that only the
+    cockpit renders. Never a verdict."""
+
     summary: str
+    output_kind: str = "review"
     findings: list[Finding] = field(default_factory=list)
+    payload: dict = field(default_factory=dict)
     clauses_relied_on: list[str] = field(default_factory=list)
     audit_sources: list[str] = field(default_factory=list)
+
+
+# Back-compat alias: older call sites referred to the review-only result. TaskResult is a superset
+# (adds output_kind + payload), so existing `.summary`/`.findings`/… access is unaffected.
+ReviewResult = TaskResult
 
 
 @dataclass
@@ -58,10 +77,46 @@ class LLMProvider(ABC):
     interface; swapping mock <-> real Anthropic is a drop-in (architecture.md §3)."""
 
     @abstractmethod
+    def run_task(
+        self,
+        *,
+        instruction: str,
+        documents: list[dict],
+        kind: str = "review",
+        reference: dict | None = None,
+        checklist: list[str] | None = None,
+        run_index: int = 0,
+        source_lookup: SourceLookup | None = None,
+    ) -> TaskResult:
+        """Execute one delegated task: follow `instruction` over `documents`, optionally comparing
+        to `reference` (a firm standard or scaffold) and satisfying `checklist`, returning the
+        `kind`'s structured output. Returns checkable claims (`findings`, each with an optional
+        citation) + a type-specific `payload` + an audit trail — never a verdict (architecture.md
+        §14.1). With `source_lookup`, a capable provider may ground citations via tool-use; a
+        provider without tool-use ignores it."""
+
     def review_document(
-        self, *, draft: dict, firm_standard: dict, process_section: str, run_index: int = 0
-    ) -> ReviewResult:
-        """Review a draft document against the firm standard → structured findings (depth)."""
+        self,
+        *,
+        draft: dict,
+        firm_standard: dict,
+        process_section: str,
+        run_index: int = 0,
+        source_lookup: SourceLookup | None = None,
+    ) -> TaskResult:
+        """Back-compat shim: the original review-against-firm-standard call, now expressed as a
+        `kind="review"` task. Kept so existing callers/tests keep working while `run_task` becomes
+        the single worker entry point."""
+        from app.services.task_spec import _DEFAULT_REVIEW_INSTRUCTION
+
+        return self.run_task(
+            kind="review",
+            instruction=_DEFAULT_REVIEW_INSTRUCTION.format(process_section=process_section),
+            documents=[draft],
+            reference=firm_standard,
+            run_index=run_index,
+            source_lookup=source_lookup,
+        )
 
     @abstractmethod
     def check_citation_support(self, *, claim: str, source: dict) -> CitationCheck:

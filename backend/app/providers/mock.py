@@ -6,7 +6,7 @@ from app.providers.base import (
     Deviation,
     Finding,
     LLMProvider,
-    ReviewResult,
+    TaskResult,
 )
 
 
@@ -15,12 +15,24 @@ class MockLLMProvider(LLMProvider):
     demo runs on with no API key. It honours the planted defects and produces controlled divergence
     across runs so the multi-run-disagreement signal has something real to measure."""
 
-    def review_document(
-        self, *, draft: dict, firm_standard: dict, process_section: str, run_index: int = 0
-    ) -> ReviewResult:
-        data = fixtures.mock_reviews().get(draft["id"])
+    def run_task(
+        self,
+        *,
+        instruction: str,
+        documents: list[dict],
+        kind: str = "review",
+        reference: dict | None = None,
+        checklist=None,
+        run_index: int = 0,
+        source_lookup=None,  # ignored: the mock is deterministic and offline
+    ) -> TaskResult:
+        # Deterministic replay keyed off the target document — instruction/kind/checklist don't
+        # change the offline fixture, but the output carries the requested `kind` + its payload.
+        draft = documents[0] if documents else None
+        data = fixtures.mock_reviews().get(draft["id"]) if draft else None
         if not data:
-            return ReviewResult(summary=f"No issues identified in {draft['title']}.")
+            title = draft["title"] if draft else "the task"
+            return TaskResult(summary=f"No issues identified in {title}.", output_kind=kind)
         findings = [
             Finding(
                 id=f["id"],
@@ -32,9 +44,11 @@ class MockLLMProvider(LLMProvider):
             # A finding may only surface on some runs — that divergence is the disagreement signal.
             if run_index in f.get("runs", [run_index])
         ]
-        return ReviewResult(
+        return TaskResult(
             summary=data["summary"],
+            output_kind=kind,
             findings=findings,
+            payload=data.get("payload", {}),
             clauses_relied_on=data.get("clauses_relied_on", []),
             audit_sources=data.get("audit_sources", []),
         )
@@ -72,10 +86,31 @@ class MockLLMProvider(LLMProvider):
         drafts: list[dict],
         associates: list[dict],
     ) -> list[dict]:
-        # Raw task scoping only. The planner SERVICE applies severity (the partner's choice),
-        # the process-section label, a default assignee and ordering — so mock and real are
-        # symmetric and severity is never a model inference (architecture.md §7.1).
-        return [dict(t) for t in fixtures.mock_plan()["tasks"]]
+        # Decompose the matter by walking the process doc's sections IN DOCUMENT ORDER and
+        # emitting one task per section, so the plan reflects the process doc, not a fixed list.
+        # Raw scoping only: the planner SERVICE applies severity (the partner's choice), the
+        # process-section label, a default assignee and ordering — so mock and real stay symmetric
+        # and severity is never a model inference (architecture.md §6, §7.1).
+        scoping = fixtures.mock_plan_by_type()
+        fallback_doc_id = drafts[0]["id"] if drafts else None
+        tasks: list[dict] = []
+        for task_type, section in process_doc.get("task_types", {}).items():
+            spec = scoping.get(task_type)
+            if spec is None:
+                # A process-doc section with no scripted scoping: still cover it deterministically.
+                label = section.get("label", task_type)
+                spec = {
+                    "title": label,
+                    "description": f"Review the draft against the process-doc section: {label}.",
+                    "assignee_type": "ai",
+                    "target_document_id": fallback_doc_id,
+                    "input_brief_slice": "",
+                    "ai_instruction": None,
+                }
+            task = dict(spec)
+            task["task_type"] = task_type
+            tasks.append(task)
+        return tasks
 
     def generate_debrief(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]

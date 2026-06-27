@@ -1,40 +1,42 @@
 {
-  "tasks": [
-    {
-      "title": "Review DPA liability, transfer & governing-law clauses",
-      "description": "Review the Project Atlas Data Processing Agreement against the firm standard. Binding obligations — liability cap, international data transfer, governing law.",
-      "task_type": "review_binding_obligation",
-      "assignee_type": "ai",
-      "target_document_id": "draft-dpa-atlas",
-      "input_brief_slice": "Project Atlas: supplier processes customer personal data, including US-based affiliates.",
-      "ai_instruction": null
-    },
-    {
-      "title": "Review governing-law & jurisdiction clause",
-      "description": "Review the governing-law/jurisdiction clause. Hybrid: associate owns the result and uses the AI review as a first pass.",
-      "task_type": "review_governing_law",
-      "assignee_type": "hybrid",
-      "target_document_id": "draft-govlaw-atlas",
-      "input_brief_slice": "Project Atlas: cross-border agreement; jurisdiction must be defensible.",
-      "ai_instruction": "Run a first-pass review of clause 11 against the firm standard and surface any authority that does not support the drafting. The associate signs off."
-    },
-    {
-      "title": "Summarise background recital",
-      "description": "Summarise the non-operative background recital. No binding obligation.",
-      "task_type": "review_recital_summary",
-      "assignee_type": "ai",
-      "target_document_id": "draft-recital-atlas",
-      "input_brief_slice": "Project Atlas: commercial background since 2021.",
-      "ai_instruction": null
-    },
-    {
-      "title": "Review confidentiality clause",
-      "description": "Confirm the confidentiality clause matches the firm standard. Assigned to a human associate.",
-      "task_type": "confidentiality_clause_review",
-      "assignee_type": "human",
-      "target_document_id": "draft-confidentiality-atlas",
-      "input_brief_slice": "Project Atlas: mutual confidentiality expected.",
-      "ai_instruction": null
-    }
-  ]
+  "review_binding_obligation": {
+    "title": "Review DPA liability, transfer & governing-law clauses",
+    "description": "Review the Project Atlas Data Processing Agreement against the firm standard. Binding obligations — liability cap, international data transfer, governing law.",
+    "assignee_type": "ai",
+    "target_document_id": "draft-dpa-atlas",
+    "input_brief_slice": "Project Atlas: supplier processes customer personal data, including US-based affiliates.",
+    "ai_instruction": null
+  },
+  "review_governing_law": {
+    "title": "Review governing-law & jurisdiction clause",
+    "description": "Review the governing-law/jurisdiction clause. Hybrid: associate owns the result and uses the AI review as a first pass.",
+    "assignee_type": "hybrid",
+    "target_document_id": "draft-govlaw-atlas",
+    "input_brief_slice": "Project Atlas: cross-border agreement; jurisdiction must be defensible.",
+    "ai_instruction": "Run a first-pass review of clause 11 against the firm standard and surface any authority that does not support the drafting. The associate signs off."
+  },
+  "review_recital_summary": {
+    "title": "Summarise background recital",
+    "description": "Summarise the non-operative background recital. No binding obligation.",
+    "assignee_type": "ai",
+    "target_document_id": "draft-recital-atlas",
+    "input_brief_slice": "Project Atlas: commercial background since 2021.",
+    "ai_instruction": null
+  },
+  "confidentiality_clause_review": {
+    "title": "Review confidentiality clause",
+    "description": "Confirm the confidentiality clause matches the firm standard. Assigned to a human associate.",
+    "assignee_type": "human",
+    "target_document_id": "draft-confidentiality-atlas",
+    "input_brief_slice": "Project Atlas: mutual confidentiality expected.",
+    "ai_instruction": null
+  },
+  "extract_obligations": {
+    "title": "Extract operative obligations (Project Atlas schedule)",
+    "description": "Extract the operative obligations from the Project Atlas services schedule. A from-scratch extraction — no firm standard applies, so precedent deviation does not run.",
+    "assignee_type": "ai",
+    "target_document_id": "draft-obligations-atlas",
+    "input_brief_slice": "Project Atlas: services schedule with supplier obligations.",
+    "ai_instruction": null
+  }
 }

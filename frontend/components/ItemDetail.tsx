@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { decideTask, getTaskDetail } from "@/lib/api";
 import { ApiError } from "@/lib/apiClient";
-import type { Flag, FlagSourceRef, TaskDetail } from "@/lib/types";
+import type { Flag, FlagSourceRef, SignalType, Submission, TaskDetail } from "@/lib/types";
 import { getRole, subscribeRole, type Role } from "@/lib/role";
 import {
   AssigneeTag,
@@ -105,6 +105,9 @@ export function ItemDetail({
   const { task, submission, flags, risk } = detail;
   const decided = task.status === "signed_off" || task.status === "escalated";
   const isPartner = role === "partner";
+  // A signal absent from applied_checks (older records) is treated as applied; an explicit false
+  // means the check didn't run for this task type — shown as "n/a", not a misleading 0.0 (§14.4).
+  const applies = (s: SignalType) => risk?.applied_checks?.[s] ?? true;
 
   return (
     <div className="space-y-4">
@@ -134,21 +137,51 @@ export function ItemDetail({
           <div className="grid grid-cols-3 gap-3">
             <SignalStat
               label="Citation support"
-              value={pct(risk.citation_support_rate)}
-              hint="claims whose cited source supports them"
-              tone={risk.citation_support_rate >= 0.999 ? "good" : "bad"}
+              value={applies("citation_support") ? pct(risk.citation_support_rate) : "n/a"}
+              hint={
+                applies("citation_support")
+                  ? "claims whose cited source supports them"
+                  : "not applicable for this task"
+              }
+              tone={
+                !applies("citation_support")
+                  ? "neutral"
+                  : risk.citation_support_rate >= 0.999
+                    ? "good"
+                    : "bad"
+              }
             />
             <SignalStat
               label="Precedent deviation"
-              value={pct(risk.deviation_score)}
-              hint="distance from the firm standard"
-              tone={risk.deviation_score >= 0.5 ? "warn" : "neutral"}
+              value={applies("precedent_deviation") ? pct(risk.deviation_score) : "n/a"}
+              hint={
+                applies("precedent_deviation")
+                  ? "distance from the firm standard"
+                  : "no firm standard for this task"
+              }
+              tone={
+                !applies("precedent_deviation")
+                  ? "neutral"
+                  : risk.deviation_score >= 0.5
+                    ? "warn"
+                    : "neutral"
+              }
             />
             <SignalStat
               label="Multi-run disagreement"
-              value={pct(risk.disagreement_score)}
-              hint="divergence across repeated runs"
-              tone={risk.disagreement_score >= 0.5 ? "warn" : "neutral"}
+              value={applies("multi_run_disagreement") ? pct(risk.disagreement_score) : "n/a"}
+              hint={
+                applies("multi_run_disagreement")
+                  ? "divergence across repeated runs"
+                  : "not applicable for this task"
+              }
+              tone={
+                !applies("multi_run_disagreement")
+                  ? "neutral"
+                  : risk.disagreement_score >= 0.5
+                    ? "warn"
+                    : "neutral"
+              }
             />
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
@@ -176,9 +209,16 @@ export function ItemDetail({
         <Panel className="p-5">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-ink">Worker submission</h3>
-            <span className="text-[11px] text-muted">produced by {submission.produced_by}</span>
+            <span className="text-[11px] text-muted">
+              {submission.output_kind && submission.output_kind !== "review"
+                ? `${submission.output_kind} · `
+                : ""}
+              produced by {submission.produced_by}
+            </span>
           </div>
           <p className="text-sm text-ink-soft">{submission.summary}</p>
+
+          <TaskOutput submission={submission} />
 
           {submission.findings.length > 0 ? (
             <div className="mt-4 space-y-2">
@@ -311,6 +351,59 @@ export function ItemDetail({
       </Panel>
 
       <SourceDrawer sourceRef={source} onClose={() => setSource(null)} />
+    </div>
+  );
+}
+
+/** The flexible worker's type-specific product (architecture.md §6). `review` has no payload — its
+ *  product is the findings — so this renders nothing for it. */
+function TaskOutput({ submission }: { submission: Submission }) {
+  const kind = submission.output_kind;
+  const payload = submission.payload;
+  if (!kind || kind === "review" || !payload) return null;
+
+  let body: ReactNode = null;
+  let heading = "Worker output";
+
+  if (kind === "draft") {
+    const text = typeof payload.draft_text === "string" ? payload.draft_text : "";
+    const ref = typeof payload.clause_ref === "string" ? payload.clause_ref : "";
+    heading = ref ? `Drafted output — ${ref}` : "Drafted output";
+    body = <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{text}</p>;
+  } else if (kind === "summarize") {
+    const points = Array.isArray(payload.key_points) ? (payload.key_points as string[]) : [];
+    heading = "Key points";
+    body = (
+      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+        {points.map((p, i) => (
+          <li key={i}>{p}</li>
+        ))}
+      </ul>
+    );
+  } else if (kind === "extract") {
+    const items = Array.isArray(payload.obligations)
+      ? (payload.obligations as Array<Record<string, unknown>>)
+      : [];
+    heading = "Extracted obligations";
+    body = (
+      <div className="mt-1.5 space-y-1.5">
+        {items.map((o, i) => (
+          <div key={i} className="text-sm text-ink-soft">
+            <span className="font-medium text-ink">{String(o.party ?? "")}</span>
+            {o.locator ? (
+              <span className="ml-1 font-mono text-[11px] text-muted">[{String(o.locator)}]</span>
+            ) : null}
+            <span> — {String(o.text ?? "")}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-line bg-canvas p-3">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{heading}</div>
+      {body}
     </div>
   );
 }

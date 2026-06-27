@@ -7,6 +7,7 @@ import { RoleToggle } from "./RoleToggle";
 const NAV = [
   { href: "/", label: "Cases" },
   { href: "/inbox", label: "Inbox" },
+  { href: "/track-record", label: "Track record" },
 ];
 
 export function Header() {

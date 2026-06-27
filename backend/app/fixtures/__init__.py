@@ -24,7 +24,10 @@ def mock_reviews() -> dict:
     return _load("mock_reviews.json")
 
 
-def mock_plan() -> dict:
+def mock_plan_by_type() -> dict:
+    """Per-section task scoping keyed by ``task_type``. The mock planner decomposes a case by
+    walking the process doc's sections and emitting one task per section from this map, so the plan
+    tracks the process doc rather than a fixed list (architecture.md §6)."""
     return _load("mock_plan.json")
 
 

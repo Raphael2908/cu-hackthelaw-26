@@ -5,7 +5,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import cases, corpus, health, plans, tasks
+from app.api.routers import (
+    cases,
+    corpus,
+    health,
+    plans,
+    process_maps,
+    tasks,
+    track_record,
+)
 from app.config import settings
 from app.db.repo import get_repo
 from app.services.seed import seed
@@ -34,6 +42,8 @@ def create_app() -> FastAPI:
     app.include_router(cases.router, prefix="/api")
     app.include_router(plans.router, prefix="/api")
     app.include_router(tasks.router, prefix="/api")
+    app.include_router(process_maps.router, prefix="/api")
+    app.include_router(track_record.router, prefix="/api")
     return app
 
 
