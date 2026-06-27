@@ -4,6 +4,66 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Presentation assets — README diagrams + screenshots
+
+**Where we are.** The README is now presentation-ready. Done bar the demo video (placeholder in
+place).
+
+**Done**
+- **Landscape, high-res diagrams.** Regenerated `system-design/architecture.png` (7752×3474) and
+  `happy_path.png` (5985×3954) as balanced landscape diagrams via Mermaid → Chrome render, replacing
+  the portrait/low-res originals. Corrected the happy-path copy to the locked design (severity is the
+  partner's up-front choice, not derived from the process doc). Both embedded in a new README
+  **Architecture** section.
+- **Screenshots.** Captured seven real screens (mock mode, offline, deterministic) into
+  `docs/screenshots/`: cases, plan-approval gate, cockpit (three independent signals + flag panel),
+  one-click source verification, the two-stream hash-chained audit, debrief, and associate inbox.
+  Driven through the live API + Playwright (system Chrome). Added a README **Screenshots** walkthrough
+  and a **Demo video — coming soon** placeholder.
+
+**What's next**
+- Record the demo video and embed it under the placeholder.
+
+---
+
+## Celery + Redis dispatch — thread pool retired
+
+**Where we are.** The committed scale-up path (architecture.md §8) is in: the in-process
+`ThreadPoolExecutor` is gone, replaced by **Celery workers backed by Redis** — durable, retryable,
+horizontally scalable, surviving restarts. The `coordinator` boundary is unchanged; only the
+dispatch mechanism moved.
+
+**Built**
+- `core/celery_app.py` (the Celery app, no app-internal imports) + `core/tasks.py`
+  (`dispatch.run`). Only the serializable `task_id` crosses the process boundary; the worker
+  rebuilds repo + provider from their factories (`get_repo()` / `get_llm_provider()`).
+- `coordinator.dispatch_task` now enqueues `run_dispatch_task.delay(task_id)` when
+  `ASYNC_DISPATCH` is on (lazy import to avoid the cycle). `ASYNC_DISPATCH=false` still runs the
+  pipeline inline in-process — the test/offline fallback. Deleted `core/background.py`.
+- **Cross-process audit-chain integrity (the load-bearing fix).** With the pipeline on a separate
+  worker process, the in-process `threading.Lock`s in `audit.py`/`repo.py` no longer coordinate
+  with the API process — concurrent appends could fork the hash chain. Fixed at the store: SQLite
+  now runs in **WAL** with `busy_timeout` + `synchronous=NORMAL`, and writes use **BEGIN
+  IMMEDIATE** so read-then-write is atomic across processes. Added a generic
+  `Repo.insert_chained(table, build)` primitive (atomic last→build→insert); `audit.record_event`
+  uses it and the module-level `_chain_lock` is gone.
+- Docker: `redis` (7-alpine, healthchecked) + a `worker` service (same image, runs
+  `celery -A app.core.celery_app.celery_app worker`) sharing the **same** SQLite volume as the
+  backend — the WAL/BEGIN IMMEDIATE writes are what make that shared file safe. Backend + worker
+  get `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND` pointed at `redis://redis:...`.
+- Config + env (`CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND`, mock-safe localhost defaults;
+  dropped `DISPATCH_WORKERS`), `make worker` target, and `.env.example` section.
+- Tests stay offline: conftest sets `task_always_eager` so the one async test exercises `.delay()`
+  with no broker; new `test_dispatch.py` covers `insert_chained` chain integrity and the task body
+  reconstructing repo/provider + routing. `make test` green (19), `make lint` clean. Verified a
+  real worker boots against live Redis and registers `dispatch.run`.
+
+**What's next**
+- PPTX ingestion and Perplexity web search (the remaining scale-up items in `todo.md`).
+- Replace stub auth with real SSO/JWKS before any non-demo use.
+
+---
+
 ## Production stance — building the real product now
 
 **Where we are.** This is no longer framed as a hackathon demo: it is the **production build**.
@@ -16,9 +76,14 @@ stance (offline mock mode is now the keyless *fallback*, not the default story).
   deliberately" to a production posture: real Anthropic on SQLite is the run, Docker is in, Celery/
   Redis is the named scale-up path, real auth is the next step (not a slide).
 
+**Done (production scale-up)**
+- **PPTX ingestion** — `.pptx` now accepted at document upload. `_extract_pptx` (`python-pptx`,
+  lazy-imported) walks each slide's text-frame shapes; joins slide blocks with `\n\n`. Same
+  extractor path and error handling as PDF/DOCX/text: image-only/empty decks raise `ValueError`
+  → HTTP 415, like scanned PDFs. Speaker notes excluded (on-slide visible text only). Frontend
+  `accept` list updated; new offline `test_documents.py` covers happy path + empty-deck 415.
+
 **Planned next (production scale-up — see `todo.md`)**
-- **PPTX ingestion** — add `.pptx` to document upload via `python-pptx`, same extractor path as
-  PDF/DOCX/text.
 - **Celery + Redis** — replace the in-process background thread pool (`core/background.py`) with
   durable, retryable, horizontally-scalable Celery workers for the agentic worker→checker→ranker
   flows. The `coordinator` boundary stays; only the dispatch mechanism changes.

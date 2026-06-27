@@ -162,27 +162,92 @@ deliberate human choice, never a model inference.
 
 ### 7.2 Uncertainty — measured after the fact from checkable signals
 A tunable weighted composite of three **independent, individually inspectable** signals. Each is
-visible in the UI on its own, so no single number is load-bearing:
+visible in the UI on its own, so no single number is load-bearing.
 
-1. **Citation support rate.** For each claim with a cited source, retrieve the source and test
-   whether it actually supports the claim. A fabricated or non-supporting citation is a **hard**
-   signal — surfaced regardless of severity.
-2. **Precedent deviation.** Structural + semantic distance between the output and the firm standard
-   / process scaffold. High deviation raises the need for attention.
-3. **Multi-run disagreement.** Run the review more than once (or with two models) and measure
-   divergence in the conclusions/flags. The cheapest and most honest uncertainty signal — it relies
-   on no one introspecting their own confidence.
+**Implementation map.** The three signals are generated in `services/checker.py` (one function
+each); the composite + queue priority + lane assignment are computed in `services/ranker.py`; the
+weights and run count live in `config.py`. Each signal calls the model only through the
+`LLMProvider` interface — `providers/mock.py` (fixture replay, deterministic) or
+`providers/real/anthropic_llm.py` (Claude). The reference scaffold each signal compares against is
+the seeded **firm standard** (`fixtures/corpus.json`, `kind=firm_standard`); see §9 and §13.4 — note
+there is no firm-facing UI to upload or version a standard yet (the API accepts a
+`cases.firm_standard_id` but always falls back to the single seeded fixture).
 
-The composite formula is simple and tunable (weights in `config.py`). The point is not the exact
-formula; it is that each signal stands on its own in the UI.
+A signal is either **model-judged** (a model produces the number/boolean, about external evidence)
+or **mechanical** (pure arithmetic, no model opinion). This matters for §14.4: only the mechanical
+parts are fully free of model self-assessment.
+
+| Signal | Function (`services/checker.py`) | Raw score | Flag threshold | Hard? | Nature |
+|---|---|---|---|---|---|
+| Citation support rate | `citation_support` | `supported / cited_claims` (default `1.0` if none); each claim judged by `provider.check_citation_support` | any non-supporting **or** fabricated citation | **hard** | model judges each claim (boolean); **rate is mechanical** |
+| Precedent deviation | `precedent_deviation` | **max** clause-distance from the firm standard (`provider.assess_deviations`) | clause score ≥ `0.5` (`DEVIATION_FLAG_THRESHOLD`) | soft | **model-judged** score (vs an external standard) |
+| Multi-run disagreement | `multi_run_disagreement` | `1 − (intersection ÷ union)` of finding-IDs across N runs | score ≥ `0.3` (`DISAGREEMENT_FLAG_THRESHOLD`) | soft | **mechanical** (set overlap; no model self-confidence) |
+
+1. **Citation support rate.** For each cited claim, retrieve the source from the corpus by CELEX and
+   test whether it actually supports the claim. A **fabricated** citation (no such source) or a
+   **non-supporting** one is a **hard** signal — surfaced regardless of severity. The per-claim
+   verdict is the model's; the rate is just `supported / cited`.
+2. **Precedent deviation.** Per-clause structural + semantic distance between the draft and the firm
+   standard. The model returns a `score` per deviating clause; the signal is the **single worst**
+   clause (max, not mean), so one egregious deviation can't be averaged away. Each flag's
+   `source_ref` points at the exact standard clause for one-click verification. This score is
+   model-produced — trustworthy only insofar as the firm standard is good (§13.4).
+3. **Multi-run disagreement.** Re-run the review `max(2, DISAGREEMENT_RUNS)` times and measure
+   divergence as the Jaccard distance over the set of finding-IDs per run (`0` = identical every
+   run, `1` = no finding common to all). The cheapest-in-concept and most honest signal: it is pure
+   set arithmetic and **never asks a model how confident it is**. Its load-bearing assumption is that
+   "the same" finding gets a stable ID across runs — guaranteed in mock mode (IDs fixed in the
+   fixture, divergence scripted by a per-finding `runs` list), but in real mode the **model emits the
+   IDs**, so semantic equivalence is reduced to string-ID equality (a known calibration risk;
+   clustering by clause + meaning would harden it).
+
+**Where run-to-run variation comes from (and the role of `temperature`).** The disagreement signal
+needs the N runs to differ, or it always reads `0`. There is **no API seed** — the Anthropic
+Messages API has no `seed` parameter. `review_document` does interpolate `run_index` into the prompt
+as the literal text `(variation seed: N)`, but that only makes the prompts non-identical; it does
+**not** seed or control anything. The actual divergence comes from **stochastic sampling**: the real
+provider calls `messages.create` **without setting `temperature`**, so it samples at the API default
+(`1.0`), and identical prompts yield different findings across runs. Consequences worth owning:
+- The signal's sensitivity is governed by an **uncontrolled default temperature**, so it is neither
+  reproducible nor tunable as written. Setting `temperature` explicitly per run (e.g. a fixed mid
+  value, or a deliberate spread across runs) is the obvious hardening step, and would make the
+  `(variation seed: N)` suffix redundant.
+- At `temperature = 0` the runs would be near-identical and disagreement would collapse toward `0` —
+  i.e. the signal would report false confidence. So this signal **depends on sampling being on**.
+- None of this affects the demo: mock mode scripts divergence deterministically and never calls the
+  API, so scores are exactly reproducible.
+
+The composite is computed in `ranker.py::compute_uncertainty` and is intentionally simple and
+tunable (weights `W_CITATION`/`W_DEVIATION`/`W_DISAGREEMENT` in `config.py`, defaults `0.5/0.3/0.2`):
+
+```
+uncertainty = ( W_CITATION·(1 − citation_support_rate)
+              + W_DEVIATION·deviation_score
+              + W_DISAGREEMENT·disagreement_score ) / (W_CITATION + W_DEVIATION + W_DISAGREEMENT)
+```
+
+Dividing by the weight sum normalises, so a weight can be retuned without rescaling the others. The
+point is not the exact formula; it is that each signal is also stored separately on `risk_scores`
+and shown on its own in the UI, so no single number is load-bearing.
 
 ### 7.3 Queue and routing (ranker)
-- `priority = f(severity, uncertainty)`. High severity + high uncertainty = mandatory review, top
-  of the queue.
-- Low severity + low uncertainty → **auto-clear lane**: logged, and **randomly sampled** at a
-  configurable rate (`SAMPLE_RATE`) into the partner's queue, like a financial audit. This is what
-  lets us claim *scalable* supervision honestly instead of quietly moving accountability to a model.
-- Hard-fail signals (e.g. a citation to a source that does not exist) are **always** surfaced.
+Computed in `services/ranker.py::score_task`. Severity (the up-front human call, §7.1) and the
+measured uncertainty enter through different doors and are combined — never fused into one model
+guess:
+
+```
+priority = 0.5·severity_weight + 0.5·uncertainty          # severity_weight: low .2 / medium .55 / high .9 / extreme 1.0
+if any hard flag:  priority = max(priority, 0.95)          # hard signals bypass the weighting entirely
+```
+
+- **High severity + high uncertainty → top of the queue**, mandatory review.
+- **Auto-clear lane** only when `severity == low` **and** `uncertainty < 0.15`
+  (`LOW_UNCERTAINTY_THRESHOLD`) **and** no hard flag. Auto-cleared items are logged and **randomly
+  sampled** into the partner's queue at `SAMPLE_RATE` (default `0.2`), like a financial audit — this
+  is what lets us claim *scalable* supervision honestly instead of quietly moving accountability to a
+  model. (`extreme` can therefore never auto-clear.)
+- **Hard-fail signals** (e.g. a citation to a source that does not exist) are **always** surfaced via
+  the `max(…, 0.95)` floor.
 - **Nothing is ever auto-approved.** The risk signal triages the queue; it does not sign work off.
 
 ---

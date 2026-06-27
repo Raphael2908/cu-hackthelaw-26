@@ -12,6 +12,58 @@ manually reviewing every output.
 Runs **fully offline** in mock mode (no API key) — the LLM sits behind a provider that replays
 fixtures, so the demo never depends on a live model.
 
+## Architecture
+Three layers — presentation, orchestration (the AI agents), and data/services — with depth
+concentrated in the supervision spine (worker → checker → ranker → cockpit → audit). See
+[`architecture.md`](architecture.md) for the full design.
+
+![System architecture](system-design/architecture.png)
+
+The control loop, end to end — every transition writes to the append-only, hash-chained audit log:
+
+![Happy path](system-design/happy_path.png)
+
+## Screenshots
+A walk through the demo path, partner first.
+
+**Cases — delegate under approval.** Create a case, set severity up front, attach documents. Nothing
+is dispatched until you approve a plan.
+
+![Cases](docs/screenshots/01-home.png)
+
+**Plan — the approval gate.** The planner *proposes* tasks with assignee type and severity; the
+partner edits and approves. Only on approval does the coordinator dispatch anything.
+
+![Plan approval](docs/screenshots/02-plan.png)
+
+**Cockpit — the supervision centrepiece.** The queue is triaged by risk. The flag panel shows the
+**three independent uncertainty signals** (never fused into one verdict), the worker's submission,
+and each checkable flag — with approve / amend / reject controls. Nothing is auto-approved.
+
+![Supervision cockpit](docs/screenshots/03-cockpit.png)
+
+**One-click source verification.** Every flag links straight to its cited source (or states plainly
+that a fabricated citation has no such source). The agent surfaces a checkable claim; the human
+verifies it in seconds.
+
+![Source verification](docs/screenshots/04-source.png)
+
+**Audit — accountability vs supervision, kept separate.** A signed, hash-chained record of who
+decided what (left) is rendered apart from the actionable flag stream (right). The chain is verified
+end to end.
+
+![Audit](docs/screenshots/05-audit.png)
+
+**Debrief & associate inbox.** At close, a debrief is generated from the case record. Human and
+hybrid tasks land in the associate inbox, with the hybrid AI instruction shown inline.
+
+| Debrief | Associate inbox |
+|---|---|
+| ![Debrief](docs/screenshots/06-debrief.png) | ![Associate inbox](docs/screenshots/07-inbox.png) |
+
+## Demo video
+_Coming soon._
+
 ## Quick start
 
 ```bash

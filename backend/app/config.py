@@ -27,11 +27,16 @@ class Settings(BaseSettings):
     SQLITE_PATH: str = "data/cockpit.sqlite"
 
     # --- Dispatch --- Approving a plan runs each AI/hybrid task's worker→checker→ranker pipeline.
-    # In real mode that is many slow model calls, so dispatch runs in a background thread pool and
-    # the approve request returns immediately; the cockpit reflects progress as tasks finish. Tests
-    # disable this (conftest) to keep assertions synchronous and deterministic.
+    # In real mode that is many slow model calls, so dispatch is enqueued to Celery and the approve
+    # request returns immediately; the cockpit reflects progress as tasks finish. With this off,
+    # the pipeline runs inline in-process (no broker needed) — the test/offline fallback.
     ASYNC_DISPATCH: bool = True
-    DISPATCH_WORKERS: int = 4
+
+    # --- Celery / Redis --- broker + result backend for off-request dispatch (architecture.md §8).
+    # Mock-safe defaults: the broker is only contacted on enqueue, so the stack still boots without
+    # Redis. Compose overrides these to redis://redis:... inside its network.
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
 
     # --- LLM (Anthropic) --- blank = mock mode
     ANTHROPIC_API_KEY: str = ""

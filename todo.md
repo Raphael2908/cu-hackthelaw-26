@@ -11,11 +11,18 @@ cut from the bottom if time runs short.
       URL differs between local dev and Compose.
 
 ## Presentation
-- [ ] Update the README with demo videos and screenshots.
-- [ ] Create the demo video.
-- [ ] Create a PNG architecture diagram and add it to the README.
+- [x] Update the README with screenshots (full partner-first walkthrough in `docs/screenshots/`).
+- [ ] Create the demo video. _(README has a "Demo video — coming soon" placeholder ready for the embed.)_
+- [x] Create a PNG architecture diagram and add it to the README (landscape, high-res
+      `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [ ] **Cockpit worker-task progress: elapsed timer + streamed thoughts.** In the cockpit,
+      while a `worker→checker→ranker` task runs, show (a) a live **elapsed timer** per task and
+      (b) **stream the worker model's thinking** into the task view as it's produced. Scope of
+      the broader streaming item below, applied to the cockpit's per-task worker runs.
+      **Guardrail (architecture §14):** streamed thoughts are transient UX only — never persist
+      them as the audit record (decisions + checkable evidence only).
 - [ ] **Live progress for slow AI processes.** Real-model runs take tens of seconds, so every AI
       process (plan generation, each worker→checker→ranker task, debrief) needs visible progress:
       (a) an **elapsed timer** while it runs, and (b) **stream the model's thinking live** into the
@@ -45,13 +52,14 @@ cut from the bottom if time runs short.
 - [ ] Debrief: include carry-forward notes derived from flags the partner amended.
 
 ## Production scale-up (next)
-- [ ] **PPTX ingestion.** Add `.pptx` to document upload — extract slide text via `python-pptx`,
+- [x] **PPTX ingestion.** Add `.pptx` to document upload — extract slide text via `python-pptx`,
       alongside the existing PDF/DOCX/text extractors in `services/documents.py`. Same path: each
       becomes a `case_id`-tagged `draft` corpus document the planner scopes over.
-- [ ] **Celery + Redis dispatch.** Replace the in-process background thread pool
-      (`core/background.py`) with Celery workers backed by Redis to run the agentic
-      worker→checker→ranker flows — durable, retryable, horizontally scalable, surviving restarts.
-      The `coordinator` service boundary stays; only the dispatch mechanism changes (architecture §8).
+- [x] **Celery + Redis dispatch.** Replaced the in-process background thread pool with Celery
+      workers backed by Redis for the agentic worker→checker→ranker flows — durable, retryable,
+      horizontally scalable, surviving restarts. The `coordinator` boundary stayed; only the
+      dispatch mechanism changed (architecture §8). Audit-chain integrity made cross-process safe
+      (SQLite WAL + BEGIN IMMEDIATE via a new `Repo.insert_chained`). See `current_progress.md`.
 - [ ] **Perplexity web search.** Give AI agents web-search via Perplexity, behind a tool/provider
       seam, so workers can retrieve live external sources when checking citations and gathering
       context — improving citation-support retrieval quality (§13.1). Keep it checkable: every fetched
