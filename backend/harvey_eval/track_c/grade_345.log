@@ -1,0 +1,27 @@
+=== waiting for map-eu-ai-act-transparency-obligations-to-existing-product-documentation ===
+=== grading map-eu-ai-act-transparency-obligations-to-existing-product-documentation ===
+{
+  "task": "corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "run_id": "eu_haiku5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "uncertainty": 0.9427,
+  "score": 0.3617,
+  "n_criteria": 47,
+  "n_pass": 17,
+  "n_low_confidence": 0,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 10372,
+    "output_tokens": 8822,
+    "cost_usd": 0.16345
+  }
+}
+
+Grader data points: 4  ->  C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\grader_results.jsonl
+  unc=0.9213  grader_score=0.783 (36/46, 0 low-conf)  eu_haiku5/summarize-new-gdpr-enforcement-guidance
+  unc=0.9940  grader_score=0.486 (18/37, 1 low-conf)  eu_haiku5/compare-privacy-notice-against-statutory-disclosure-requirements
+  unc=3.7000  grader_score=0.762 (32/42, 0 low-conf)  eu_haiku5/identify-issues-in-counterparty-data-processing-addendum
+  unc=0.9427  grader_score=0.362 (17/47, 0 low-conf)  eu_haiku5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation
+
+Spearman rho (uncertainty vs grader score), n=4: -0.200
+Negative rho supports the hypothesis: higher supervision uncertainty -> lower work quality.
+=== waiting for review-master-services-agreement-for-regulatory-compliance ===

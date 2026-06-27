@@ -127,3 +127,170 @@ Spearman rho (uncertainty vs quality), n=2: +1.000
 Negative rho supports: higher supervision uncertainty predicts lower Harvey quality.
 
 =================== RUN intellectual-property/identify-issues-in-counterparty-data-processing-addendum ===================
+{
+  "task": "intellectual-property/identify-issues-in-counterparty-data-processing-addendum",
+  "run_id": "eu_haiku5/identify-issues-in-counterparty-data-processing-addendum",
+  "severity": "high",
+  "deliverable": "dpa-issue-memorandum.docx",
+  "documents_included": [
+    "chu-to-lindgren-dpa-review-request.eml",
+    "cloudnest-dpa-v6-3.docx",
+    "msa-summary-terms.docx",
+    "verdana-dpa-playbook-v4-1.docx"
+  ],
+  "n_findings": 29,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.0,
+  "deviation_score": 10.0,
+  "disagreement_score": 1.0,
+  "uncertainty": 3.7,
+  "priority": 2.3,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-haiku-4-5",
+    "llm_calls": 5,
+    "input_tokens": 150377,
+    "output_tokens": 57714,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 150377,
+    "total_tokens": 208091,
+    "cost_usd": 0.438947
+  },
+  "n_flags": 63,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 208,091 (5 LLM calls) | in=150,377 out=57,714 cache_read=0 | cost=$0.4389 (claude-haiku-4-5)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\identify-issues-in-counterparty-data-processing-addendum\output\dpa-issue-memorandum.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\identify-issues-in-counterparty-data-processing-addendum
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_haiku5/identify-issues-in-counterparty-data-processing-addendum' --task 'intellectual-property/identify-issues-in-counterparty-data-processing-addendum'
+=================== CORRELATE intellectual-property/identify-issues-in-counterparty-data-processing-addendum ===================
+{
+  "task": "intellectual-property/identify-issues-in-counterparty-data-processing-addendum",
+  "run_id": "eu_haiku5/identify-issues-in-counterparty-data-processing-addendum",
+  "uncertainty": 3.7,
+  "quality": 0.82,
+  "quality_reasoning": "The deliverable is substantively strong\u2014it correctly identifies all major deal-breaker and high-risk issues (purpose limitation, sub-processor consent, SCCs/TIA, HIPAA BAA absence, breach notification timeline, DSAR timeline, audit rights, liability cap, data deletion, unilateral amendment, governing law conflict, Mumbai location) with accurate regulatory citations, playbook cross-references, and risk classifications, and appropriately distinguishes compliant provisions from deviations across 26 findings\u2014but it falls short of a 1.0 because it lacks the explicitly requested redline recommendation language (actual proposed contract language/tracked changes) for each issue, the output format is a plain text memo rather than a .docx with structured redlines, priority tiers are described narratively rather than in a clear prioritized table, and a few citations (e.g., Schrems II applied to purpose limitation) are imprecise or tangential.",
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 9696,
+    "output_tokens": 219,
+    "cost_usd": 0.03237
+  }
+}
+
+Data points: 3  ->  C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\results.jsonl
+Spearman rho (uncertainty vs quality), n=3: +0.500
+Negative rho supports: higher supervision uncertainty predicts lower Harvey quality.
+
+=================== RUN corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation ===================
+{
+  "task": "corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "run_id": "eu_haiku5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "severity": "high",
+  "deliverable": "eu-ai-act-gap-analysis-memo.docx",
+  "documents_included": [
+    "client-deployment-agreement-v61.docx",
+    "cto-email-transparency-concerns.eml",
+    "dpia-talentlens-workpulse.docx",
+    "risk-management-policy-2024.docx",
+    "soc2-audit-report-summary.docx",
+    "talentlens-model-card-v31.docx",
+    "talentlens-product-guide-v42.docx",
+    "workpulse-model-card-v24.docx",
+    "workpulse-technical-whitepaper.docx"
+  ],
+  "n_findings": 15,
+  "corpus_celex_seeded": 9,
+  "citation_support_rate": 0.06666666666666667,
+  "deviation_score": 0.92,
+  "disagreement_score": 1.0,
+  "uncertainty": 0.9427,
+  "priority": 0.95,
+  "lane": "review",
+  "sampled": false,
+  "has_hard_flag": true,
+  "usage": {
+    "model": "claude-haiku-4-5",
+    "llm_calls": 20,
+    "input_tokens": 381584,
+    "output_tokens": 40220,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 0,
+    "total_input_tokens": 381584,
+    "total_tokens": 421804,
+    "cost_usd": 0.582684
+  },
+  "n_flags": 23,
+  "_risk_scores_rows": 1
+}
+
+Tokens: 421,804 (20 LLM calls) | in=381,584 out=40,220 cache_read=0 | cost=$0.5827 (claude-haiku-4-5)
+
+Deliverable: C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\map-eu-ai-act-transparency-obligations-to-existing-product-documentation\output\eu-ai-act-gap-analysis-memo.docx
+Run dir:     C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\harvey-labs\results\eu_haiku5\map-eu-ai-act-transparency-obligations-to-existing-product-documentation
+Score next:  uv run --project ../harvey-labs python -m evaluation.run_eval --run-id 'eu_haiku5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation' --task 'corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation'
+=================== CORRELATE corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation ===================
+{
+  "task": "corporate-governance/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "run_id": "eu_haiku5/map-eu-ai-act-transparency-obligations-to-existing-product-documentation",
+  "uncertainty": 0.9427,
+  "quality": 0.72,
+  "quality_reasoning": "The memorandum demonstrates strong substantive analysis\u2014correctly identifying 15 discrete gaps across Articles 10\u201315 and 78(5), grounding each finding in specific document citations and regulatory provisions, and capturing nuanced issues like the trade secret tension, incomplete ethnicity fairness testing, and the SOC 2 scope exclusion\u2014but falls short of a fully professional deliverable because it omits a prioritized remediation roadmap with concrete recommendations and timelines, does not assess whether the systems actually qualify as high-risk under Annex III (a threshold question that should precede the gap analysis), conflates Article 10 (risk management) with Article 9 in places, misattributes the quality management system to Article 15 rather than Article 17, and lacks an executive summary table, risk-rated action items, or a compliance timeline mapped to the August 2, 2026 enforcement date.",
+  "judge_model": "claude-sonnet-4-6",
+  "judge_usage": {
+    "input_tokens": 4353,
+    "output_tokens": 211,
+    "cost_usd": 0.01622
+  }
+}
+
+Data points: 4  ->  C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\results.jsonl
+Spearman rho (uncertainty vs quality), n=4: +0.800
+Negative rho supports: higher supervision uncertainty predicts lower Harvey quality.
+
+=================== RUN intellectual-property/review-master-services-agreement-for-regulatory-compliance ===================
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\run.py", line 271, in <module>
+    run(args.task, args.severity, args.run_id)
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\run.py", line 215, in run
+    submission = run_review(repo, task=wtask, provider=provider, produced_by="ai")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\app\services\worker.py", line 18, in run_review
+    result = provider.review_document(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\app\providers\real\anthropic_llm.py", line 145, in review_document
+    data = self._complete_json(_REVIEW_SYS, user)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\app\providers\real\anthropic_llm.py", line 135, in _complete_json
+    raise ProviderError(f"Model did not return a valid JSON object: {str(text)[:200]}")
+app.providers.base.ProviderError: Model did not return a valid JSON object: ```json
+{
+  "summary": "The DRAFT MSA from Pinnacle Data Solutions LLC presents material deviations from Greenleaf's FIRM STANDARD (Contract Playbook v2.0 and Vendor Management Policy v2.0) across cri
+=================== CORRELATE intellectual-property/review-master-services-agreement-for-regulatory-compliance ===================
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\correlate.py", line 97, in <module>
+    main()
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\correlate.py", line 69, in main
+    unc = uncertainty_for(args.run_id)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\correlate.py", line 24, in uncertainty_for
+    our = json.loads((RESULTS_ROOT / run_id / "our_eval.json").read_text(encoding="utf-8"))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\huang\\Desktop\\hackthelaw\\cu-hackthelaw-26\\harvey-labs\\results\\eu_haiku5\\review-master-services-agreement-for-regulatory-compliance\\our_eval.json'
+
+ALL DONE
