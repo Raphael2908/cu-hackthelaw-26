@@ -3,19 +3,50 @@
 # Backend reads the real root .env (mounted read-only); python-dotenv parses it,
 # inline comments and all. SQLite store persists on a named volume.
 services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   backend:
     build: ./backend
     ports:
       - "8000:8000"
+    environment:
+      # Reach Redis by its compose service name on the shared network.
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
     volumes:
       - ./.env:/app/.env:ro
       - backend-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)\""]
       interval: 5s
       timeout: 3s
       retries: 10
       start_period: 10s
+
+  worker:
+    build: ./backend
+    command: celery -A app.core.celery_app.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    volumes:
+      # Same .env and the SAME SQLite volume as the backend — the WAL + BEGIN IMMEDIATE writes
+      # (db/repo.py) are what keep concurrent access across the two containers safe.
+      - ./.env:/app/.env:ro
+      - backend-data:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
 
   frontend:
     build: ./frontend

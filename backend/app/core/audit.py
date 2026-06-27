@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-import threading
 
 from app.db.repo import Repo
 from app.db.tables import AUDIT_EVENTS
 
 # The chain links each event to the previous one's hash. last()+compute+insert must be atomic, or
-# concurrent background workers (async dispatch) could read the same prev_hash and fork the chain.
-_chain_lock = threading.Lock()
+# concurrent workers could read the same prev_hash and fork the chain. With async dispatch now on a
+# separate Celery process, an in-process lock no longer suffices — atomicity lives in the store via
+# repo.insert_chained (SqliteRepo: BEGIN IMMEDIATE), which serialises appends across processes.
 
 # Two kinds of audit, kept deliberately separate (architecture.md §11):
 #   accountability — the defensible, signed record of who decided what, when, on what evidence.
@@ -44,13 +44,15 @@ def record_event(
         "task_id": task_id,
         "payload": payload,
     }
-    with _chain_lock:
-        prev = repo.last(AUDIT_EVENTS)
+
+    def build(prev: dict | None) -> dict:
         prev_hash = prev["hash"] if prev else "GENESIS"
         event = dict(content)
         event["prev_hash"] = prev_hash
         event["hash"] = _hash(prev_hash, content)
-        return repo.insert(AUDIT_EVENTS, event)
+        return event
+
+    return repo.insert_chained(AUDIT_EVENTS, build)
 
 
 def record_accountability(repo: Repo, *, type: str, actor: str, **kw) -> dict:
