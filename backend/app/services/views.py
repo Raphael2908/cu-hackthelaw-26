@@ -56,13 +56,18 @@ def cockpit(repo: Repo, case_id: str) -> dict:
         reverse=True,
     )
     auto_clear = [c for c in cards if c["task"]["status"] == "cleared"]
-    decided = [c for c in cards if c["task"]["status"] in ("signed_off", "escalated")]
+    decided = [c for c in cards if c["task"]["status"] == "signed_off"]
+    # Escalations get their own lane: work that fell back to a human (a partner reject or a
+    # fail-safe pipeline failure) is the partner's most urgent attention, not a footnote next to
+    # signed-off work (architecture.md §8, §14.6).
+    escalated = [c for c in cards if c["task"]["status"] == "escalated"]
     inbox = [c for c in cards if c["task"]["status"] in ("dispatched", "in_progress")]
     return {
         "queue": queue,
         "auto_clear_lane": auto_clear,
         "sampled_into_queue": [c for c in queue if c["risk"] and c["risk"].get("sampled")],
         "decided": decided,
+        "escalated": escalated,
         "awaiting_human": inbox,
     }
 

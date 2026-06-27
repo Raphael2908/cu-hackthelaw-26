@@ -179,9 +179,14 @@ class AnthropicLLMProvider(LLMProvider):
         associates: list[dict],
     ) -> list[dict]:
         sys = (
-            'Scope the GOAL into review tasks. Return STRICT JSON {"tasks": [...]} where each task '
-            "has title, description, task_type, assignee_type (human|ai|hybrid), "
-            "target_document_id, input_brief_slice, ai_instruction|null. The plan is a proposal."
+            "Scope the GOAL into review tasks by DECOMPOSING the process doc: produce at least "
+            "one task per applicable process-doc section (use the section key as task_type), so "
+            "the plan tracks the actual process rather than a fixed template. Choose assignee_type "
+            "(human|ai|hybrid) from the section's risk — higher-risk binding obligations lean "
+            "human or hybrid. Bind target_document_id to one of the supplied DOCUMENTS. Return "
+            'STRICT JSON {"tasks": [...]} where each task has title, description, task_type, '
+            "assignee_type, target_document_id, input_brief_slice, ai_instruction|null. The plan "
+            "is a proposal — severity is set by the partner, not here."
         )
         types = json.dumps(process_doc.get("task_types", {}))
         docs = json.dumps([{"id": d["id"], "title": d["title"]} for d in drafts])

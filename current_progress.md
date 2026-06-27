@@ -95,6 +95,45 @@ the stack and the test suite stay fully offline. Also raised the real-provider `
 
 ---
 
+## Breadth: planner decomposition + cockpit escalations lane
+
+**Where we are.** Two of the four `## Next (breadth)` backlog items are done (branch
+`feat/breadth-planner-escalations`, PR #7). Breadth components made solid and sensible — depth
+stays in the checker/ranker/cockpit. All §14 guardrails held: no agent verdicts, nothing
+auto-approved, severity stays the partner's up-front choice, mock stays deterministic, audit split
+untouched.
+
+**Built**
+- **Planner now decomposes from the process doc.** The mock planner returned a static 4-task
+  fixture regardless of the matter. It now walks the process doc's `task_types` **in document
+  order and emits one task per section** — add/remove a section and the plan changes — fully
+  deterministic for the offline demo and tests. `mock_plan.json` rekeyed from a flat list to a
+  `task_type`→scoping map; new `fixtures.mock_plan_by_type()` (replaces `mock_plan()`); a generic
+  deterministic fallback covers any section without scripted scoping. Still **raw scoping only** —
+  severity (partner's choice), the process-section label, the default assignee and ordering stay
+  in `services/planner.py`, so mock and real stay symmetric and severity is never a model
+  inference (§6, §7.1). The real Anthropic `plan_case` prompt was strengthened to decompose per
+  process-doc section and bind targets to supplied documents (not offline-verifiable).
+- **Escalations get their own cockpit lane.** Escalated tasks — work that fell back to a human via
+  a partner reject or a fail-safe pipeline failure — were lumped into the cockpit's "Decided" lane
+  next to signed-off work, burying the one thing a partner most needs to act on.
+  `services/views.py::cockpit` now returns a dedicated `escalated` lane and narrows `decided` to
+  signed-off only (raw dict response, no schema change). The frontend `Cockpit` type gains
+  `escalated: Card[]`; the cockpit page renders a distinct rose-styled **Escalations** section
+  above the awaiting/decided grid, each row clickable into the detail panel; the "Decided" caption
+  now reads "Signed off by the partner."
+- Tests: `test_plan_decomposes_one_task_per_process_section` pins the doc-driven contract;
+  `test_reject_moves_task_to_escalated_lane` covers the previously-untested reject path and asserts
+  the task lands in `escalated`, not `decided`. `make test` green (24), `make lint` clean, frontend
+  `tsc --noEmit` clean.
+
+**What's next**
+- The remaining two `## Next (breadth)` items: associate-inbox richer context (process-guideline +
+  target-document excerpt; the hybrid AI-instruction-inline part already ships) and debrief
+  carry-forward notes derived from amended flags.
+
+---
+
 ## Presentation assets — README diagrams + screenshots
 
 **Where we are.** The README is now presentation-ready. Done bar the demo video (placeholder in
