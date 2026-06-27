@@ -429,19 +429,24 @@ export default function PlanPage() {
                               AI-only tasks have no associate. */}
                           {t.assignee_type !== "ai" ? (
                             editable ? (
-                              <select
-                                value={t.assignee_id ?? ""}
-                                disabled={savingId === t.id}
-                                onChange={(e) => onPatch(t, { assignee_id: e.target.value })}
-                                className="select mt-1.5 max-w-[13rem]"
-                              >
-                                <option value="">Unassigned (any associate)</option>
-                                {associates.map((a) => (
-                                  <option key={a.id} value={a.id}>
-                                    {a.name} — {a.practice_area} ({a.current_load}/{a.capacity})
-                                  </option>
-                                ))}
-                              </select>
+                              <label className="mt-1.5 block">
+                                <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-wide text-muted">
+                                  Who&apos;s in charge
+                                </span>
+                                <select
+                                  value={t.assignee_id ?? ""}
+                                  disabled={savingId === t.id}
+                                  onChange={(e) => onPatch(t, { assignee_id: e.target.value })}
+                                  className="select max-w-[13rem]"
+                                >
+                                  <option value="">Unassigned (any associate)</option>
+                                  {associates.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                      {a.name} — {a.practice_area} ({a.current_load}/{a.capacity})
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
                             ) : t.assignee_id ? (
                               <div className="mt-1 text-[11px] text-muted">
                                 {associatesById.get(t.assignee_id)?.name ?? t.assignee_id}
