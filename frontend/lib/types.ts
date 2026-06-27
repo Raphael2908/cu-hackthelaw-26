@@ -71,6 +71,8 @@ export interface Task {
   task_type: string;
   assignee_type: AssigneeType;
   assignee_id: string | null;
+  // Why the planner proposed this assignee: task nature + the process map's track record (§6).
+  assignee_rationale?: string | null;
   severity: Severity;
   target_document_id: string;
   firm_standard_id: string;
@@ -216,4 +218,46 @@ export interface DebriefDoc {
   content: string;
   id?: string;
   created_at?: string;
+}
+
+// --- Process maps + agentic track record (architecture.md §6) ---
+
+export interface ProcessMapSection {
+  label: string;
+  severity: Severity;
+}
+
+export interface ProcessMap {
+  id: string;
+  title: string;
+  task_types: Record<string, ProcessMapSection>;
+}
+
+export interface TrackRecordSection {
+  label: string;
+  completed: number;
+  ai: number;
+  hybrid: number;
+  clean_successes: number;
+  amended: number;
+  escalated: number;
+  adverse: number;
+  clean: boolean;
+}
+
+export interface TrackRecordLogItem {
+  task_id: string;
+  case_id: string;
+  task_type: string;
+  title: string;
+  assignee_type: AssigneeType;
+  status: TaskStatus;
+  outcome: "clean" | "adverse";
+  seq: number;
+}
+
+export interface TrackRecord {
+  process_doc_id: string;
+  by_section: Record<string, TrackRecordSection>;
+  log: TrackRecordLogItem[];
 }

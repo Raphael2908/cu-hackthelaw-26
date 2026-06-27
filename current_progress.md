@@ -4,6 +4,48 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Process maps + per-map agentic track record driving delegation
+
+**Where we are.** Delegation (human/ai/hybrid) is now decided by the planner agent from the *nature*
+of the task — **never severity** (gating on severity would starve a high/extreme-heavy firm of any
+AI help). On top of that nature-based suggestion, the planner consults a per-process-map **agentic
+track record** and graduates a section to AI where AI has earned a clean record, or pulls it back to
+a human owner where it hasn't. All §14 guardrails held: outcomes never verdicts, plan stays an
+editable proposal, severity remains the partner's up-front triage dial, mock stays deterministic.
+
+**Built**
+- **`services/track_record.py`** — `aggregate(repo, *, process_doc_id)` walks completed **AI/hybrid**
+  tasks (terminal status) whose case used that process map, bucketed by section; outcome per task is
+  clean (auto-cleared / signed off w/o amendment) or adverse (amended / rejected / escalated). A
+  section is `clean` at ≥ `AI_TRACK_RECORD_MIN` (=3) completed with **zero** adverse. `apply_record`
+  overlays this on the agent's suggestion: clean → AI; adverse → pull back to a human owner; fresh →
+  keep the suggestion. Returns an `assignee_rationale` for each.
+- **Planner (`services/planner.py`)** now aggregates the case's process-map record, applies the
+  overlay per task, stores `assignee_rationale`, and records `process_doc_id` + graduated/pulled-back
+  sections in the `plan_proposed` audit payload. The real `plan_case` prompt was rewritten to choose
+  `assignee_type` by **task nature** (mechanical → ai; binding obligations → human/hybrid), not risk.
+- **Process maps are multiple + selectable.** `corpus_documents` can hold many `process_doc` rows
+  (each a map with its `task_types`). New `GET/POST /api/process-maps` (lightweight structured create,
+  no document parsing) and `GET /api/track-record?process_doc_id=`. `ProcessMapCreate` schema added.
+- **Seed** — kept the existing process doc as **Map A** and seeded a closed prior matter giving its
+  `review_binding_obligation` section a clean record (so it graduates to AI and the track-record view
+  has real history); added **Map B** (`process-map-nda-fresh`) with no history to demo the clean
+  slate. Idempotent.
+- **Frontend** — `assignee_rationale` shown on the plan page; process-map selector + inline "add map"
+  on case creation; new `/track-record` page (per-section stats + completed-task log) and nav link.
+- Tests: new `test_track_record.py` (per-map scoping isolation, clean vs adverse/escalated detection,
+  `apply_record` graduate/pull-back/fresh, planner graduation + fresh-map integration) and
+  `test_process_maps.py` (list/create). Existing tests unchanged and green — clean-slate delegation =
+  the provider's nature-based suggestion = prior behaviour. `make test` green (54, was 43), `make lint`
+  clean, frontend `tsc --noEmit` clean.
+
+**What's next**
+- Use *actual* process maps: upload a real process-map document and derive its sections via an LLM
+  step (the interim is a structured create). Expose a true "no map" (fully optional) path.
+- Still open: tune the `plan_case`/`review_document` prompts; Perplexity web search; real SSO/JWKS.
+
+---
+
 ## EU Cellar — official API (not scraping) + worker grounding via tool-use
 
 **Where we are.** Two follow-ups to the Cellar connector, on the same branch/PR. (1) The connector

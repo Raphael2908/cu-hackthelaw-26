@@ -46,6 +46,21 @@ cut from the bottom if time runs short.
 - [ ] Show each of the three signals as its own row in the flag panel (no fused number).
 
 ## Next (breadth)
+- [x] **Process maps + per-map agentic track record drive delegation.** Delegation (human/ai/hybrid)
+      is the planner agent's judgment of task *nature*, never severity. A selectable/optional *process
+      map* (a `process_doc` with sections) is the unit of "clean slate": a fresh map → the
+      nature-based suggestion stands and the partner decides where to insert AI; a reused map
+      accumulates a per-section track record (`services/track_record.py`) that **graduates** a section
+      to AI on a clean record or **pulls it back** to a human on an adverse one. New endpoints
+      `GET/POST /api/process-maps`, `GET /api/track-record`; each task carries an `assignee_rationale`;
+      a `/track-record` page surfaces per-map stats + the completed-task log. See `current_progress.md`.
+- [ ] **Use *actual* process maps (document upload).** The current "add process map" is a lightweight
+      structured create (title + section labels). Support uploading a real process-map document
+      (PDF/DOCX) — reuse `services/documents.py` to extract text, then derive sections/`task_types`
+      via an LLM step behind the provider seam, with partner review before the map is used.
+- [ ] **Process map is optional.** A case may run with no map (generic decomposition, all clean
+      slate); selecting/adding a map is what enables the per-map track record and graduate/pull-back
+      delegation. (Implemented as a fallback to the seeded map today; expose a true "no map" path.)
 - [x] **Planner: smarter task decomposition from the goal + process doc.** The mock planner now
       walks the process doc's `task_types` in document order and emits one task per section
       (was a static fixture), staying deterministic; the real Anthropic prompt decomposes per

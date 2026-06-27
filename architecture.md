@@ -118,10 +118,10 @@ SQLite tables, each a resource on the `Repo`. `id`s are uuid4 strings; timestamp
 | Table | Key fields | Notes |
 |---|---|---|
 | `associates` | `name, practice_area, current_load, capacity` | Human-maintained capability + capacity registry. **Not scraped** (GDPR Art. 22 — see §13). The planner reads it to *propose*; the partner approves. |
-| `corpus_documents` | `celex, title, kind, source_url, text, case_id, planted_defects(json), ground_truth(json)` | `kind ∈ legislation\|case_law\|firm_standard\|process_doc\|draft`. EU Cellar-modelled + synthetic firm standard/process doc; uploaded case documents are stored as `draft` rows tagged with `case_id`. |
+| `corpus_documents` | `celex, title, kind, source_url, text, case_id, planted_defects(json), ground_truth(json)`, plus `task_types(json)` on process maps | `kind ∈ legislation\|case_law\|firm_standard\|process_doc\|draft`. **Multiple `process_doc` rows are allowed** — each is a selectable *process map* carrying its `task_types` (the sections). EU Cellar-modelled + synthetic firm standard/process maps; uploaded case documents are stored as `draft` rows tagged with `case_id`. |
 | `cases` | `title, brief_text, goal, severity, process_doc_id, firm_standard_id, status, created_by` | `status ∈ open\|closed`. `severity` is the partner's up-front choice for the matter. |
 | `plans` | `case_id, status, approved_by, approved_at` | `status ∈ proposed\|approved`. The plan is a **proposal**; nothing dispatches until `approved`. |
-| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, severity, input_brief_slice, input_process_section, ai_instruction, status, order_index` | `assignee_type ∈ human\|ai\|hybrid`; `severity ∈ low\|medium\|high\|extreme` set **up front** by the partner at case creation. |
+| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, assignee_rationale, severity, input_brief_slice, input_process_section, ai_instruction, status, order_index` | `assignee_type ∈ human\|ai\|hybrid` (chosen by task nature + the map's track record, §6); `assignee_rationale` explains the proposal; `severity ∈ low\|medium\|high\|extreme` set **up front** by the partner at case creation. |
 | `submissions` | `task_id, produced_by, run_index, summary, findings(json), citations(json), clauses_relied_on(json), audit_sources(json)` | Worker output. `run_index` supports multi-run disagreement. `produced_by ∈ ai\|human\|hybrid`. |
 | `flags` | `task_id, submission_id, signal_type, hard(bool), title, description, evidence(json), source_ref(json)` | `signal_type ∈ citation_support\|precedent_deviation\|multi_run_disagreement`. **Never** a pass/fail. `source_ref` resolves to a corpus doc + locator for one-click verification. |
 | `risk_scores` | `task_id, severity_label, citation_support_rate, deviation_score, disagreement_score, uncertainty, priority, lane, sampled(bool)` | `lane ∈ review\|auto_clear`. Every signal stored separately so none is hidden behind the composite. |
@@ -148,6 +148,24 @@ The plan renders in the cockpit as an **editable proposal**. The partner can cha
 split/merge tasks, adjust severity, or reject, then approves. **Only on approval does the
 coordinator dispatch anything.** This is intentionally a thin state machine — the intelligence that
 matters for this track is in the checker and cockpit, not the routing.
+
+**Delegation is decided by task *nature*, never severity.** The planner agent chooses `assignee_type`
+from what the task *is* — mechanical / low-judgment work (grammar, a first-look data-room triage,
+summarising non-operative recitals) leans AI; work needing legal judgment on binding obligations
+leans human/hybrid. Gating delegation on severity would starve a high/extreme-heavy firm of any AI
+help, so severity stays purely the partner's triage dial (§7), not a routing rule.
+
+**Process maps + the agentic track record.** A *process map* is a (optional) `process_doc` the
+partner selects or adds, describing how the firm runs a standard kind of matter as named sections
+(the task types). The process map is the **unit of "clean slate"**: a freshly added map has no
+history, so the planner's nature-based suggestion stands and the partner decides where to insert AI.
+As a map is reused, it accumulates an agentic track record *scoped to that map* (per section). The
+planner overlays it on the suggestion: a section AI has a **clean** record on (≥ `AI_TRACK_RECORD_MIN`
+completed AI/hybrid tasks, none amended or rejected) **graduates to AI**; one with an **adverse**
+record is **pulled back** to a human owner. The record is computed in `services/track_record.py` from
+completed tasks + their decisions — outcomes (signed-off / amended / escalated), never a verdict — and
+each task carries an `assignee_rationale` explaining the proposal. The plan stays a proposal the
+partner edits (§14.7).
 
 ---
 
@@ -355,6 +373,8 @@ streams. The hash chain (`prev_hash → hash`) makes tampering detectable.
 |---|---|
 | `GET /healthz`, `GET /api/healthz` | Liveness. |
 | `GET /api/corpus`, `GET /api/corpus/{id}` | List / fetch corpus docs (for one-click source view). |
+| `GET /api/process-maps` · `POST /api/process-maps` | List process maps; lightweight structured create (title + sections). |
+| `GET /api/track-record?process_doc_id=` | Per-map agentic track record: per-section outcomes + completed-task log. No verdict. |
 | `GET /api/associates` · `POST /api/associates` | Capability + capacity registry. |
 | `POST /api/cases` · `GET /api/cases` · `GET /api/cases/{id}` | Case intake (with severity) + list/detail. |
 | `POST /api/cases/{id}/documents` · `GET /api/cases/{id}/documents` | Bulk-attach case documents (PDF/DOCX/text) for the planner; list them. |

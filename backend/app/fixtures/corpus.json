@@ -32,6 +32,22 @@
       "confidentiality_clause_review": {"severity": "low", "label": "Confidentiality clause review"}
     }
   },
+  {
+    "id": "process-map-nda-fresh",
+    "celex": null,
+    "kind": "process_doc",
+    "title": "Process Map — Standard NDA review (fresh)",
+    "source_url": "internal://process/nda-fresh",
+    "text": "A freshly installed process map with no agentic track record yet. The planner proposes delegation by task nature; the partner decides where to insert AI.",
+    "clauses": {},
+    "planted_defects": [],
+    "ground_truth": {},
+    "task_types": {
+      "review_binding_obligation": {"severity": "high", "label": "Review of confidentiality obligations and carve-outs"},
+      "review_governing_law": {"severity": "medium", "label": "Review of governing law / jurisdiction clause"},
+      "review_recital_summary": {"severity": "low", "label": "Summary of a non-key recital / background"}
+    }
+  },
 
   {
     "id": "32016R0679",

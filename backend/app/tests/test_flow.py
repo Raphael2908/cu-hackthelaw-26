@@ -30,6 +30,12 @@ def test_plan_proposes_assignee_type_and_severity(client):
     assert {t["assignee_type"] for t in plan["tasks"]} >= {"ai", "human", "hybrid"}
     # Severity is the partner's single up-front choice on the case, applied to every task.
     assert {t["severity"] for t in plan["tasks"]} == {"low"}
+    # Every task carries a delegation rationale; the seeded map's binding-obligation section is
+    # proposed AI on the strength of its clean track record (architecture.md §6).
+    assert all(t.get("assignee_rationale") for t in plan["tasks"])
+    binding = next(t for t in plan["tasks"] if t["task_type"] == "review_binding_obligation")
+    assert binding["assignee_type"] == "ai"
+    assert "clean record" in binding["assignee_rationale"]
 
 
 def test_plan_decomposes_one_task_per_process_section(client):

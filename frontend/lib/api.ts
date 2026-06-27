@@ -12,9 +12,12 @@ import type {
   Decision,
   InboxItem,
   PlanResponse,
+  ProcessMap,
+  ProcessMapSection,
   Severity,
   Task,
   TaskDetail,
+  TrackRecord,
 } from "./types";
 
 // --- Corpus & registry ---
@@ -30,7 +33,19 @@ export const createCase = (body: {
   brief_text: string;
   goal: string;
   severity: Severity;
+  process_doc_id?: string;
 }) => apiFetch<Case>("/cases", { method: "POST", body: JSON.stringify(body) });
+
+// --- Process maps & track record (architecture.md §6) ---
+export const listProcessMaps = () => apiFetch<ProcessMap[]>("/process-maps");
+export const createProcessMap = (body: {
+  title: string;
+  task_types: Record<string, ProcessMapSection>;
+}) => apiFetch<ProcessMap>("/process-maps", { method: "POST", body: JSON.stringify(body) });
+export const getTrackRecord = (processDocId?: string) =>
+  apiFetch<TrackRecord>(
+    `/track-record${processDocId ? `?process_doc_id=${encodeURIComponent(processDocId)}` : ""}`
+  );
 
 // Bulk-attach documents (PDF / text / DOCX) for the planner to consider. Multipart, not JSON.
 export type UploadedDoc = { id: string; title: string };

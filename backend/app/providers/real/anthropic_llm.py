@@ -182,11 +182,16 @@ class AnthropicLLMProvider(LLMProvider):
             "Scope the GOAL into review tasks by DECOMPOSING the process doc: produce at least "
             "one task per applicable process-doc section (use the section key as task_type), so "
             "the plan tracks the actual process rather than a fixed template. Choose assignee_type "
-            "(human|ai|hybrid) from the section's risk — higher-risk binding obligations lean "
-            "human or hybrid. Bind target_document_id to one of the supplied DOCUMENTS. Return "
-            'STRICT JSON {"tasks": [...]} where each task has title, description, task_type, '
-            "assignee_type, target_document_id, input_brief_slice, ai_instruction|null. The plan "
-            "is a proposal — severity is set by the partner, not here."
+            "(human|ai|hybrid) from the NATURE of the task, not its severity: mechanical or "
+            "low-judgment work (correcting grammar, a first-look review or triage of a data room, "
+            "summarising non-operative recitals/background) -> 'ai'; work needing legal judgment "
+            "on binding obligations (liability, indemnity, governing law, data transfer) -> "
+            "'human' or 'hybrid' (a human owns the result, AI assists). Do NOT route by risk — a "
+            "high-severity matter can still contain mechanical tasks suitable for AI. Bind "
+            "target_document_id to one of the supplied DOCUMENTS. Return STRICT JSON "
+            '{"tasks": [...]} where each task has title, description, task_type, assignee_type, '
+            "target_document_id, input_brief_slice, ai_instruction|null. The plan is a proposal — "
+            "severity is set by the partner, not here."
         )
         types = json.dumps(process_doc.get("task_types", {}))
         docs = json.dumps([{"id": d["id"], "title": d["title"]} for d in drafts])

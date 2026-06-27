@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     W_DEVIATION: float = 0.3
     W_DISAGREEMENT: float = 0.2
 
+    # --- Delegation track record (architecture.md §6) --- Minimum completed AI/hybrid tasks on a
+    # process-map section, all clean (no amend/reject), before the planner graduates that section to
+    # AI by default. Delegation is decided by task nature, never severity; the track record only
+    # graduates (clean) or pulls back (adverse) on top of the planner's nature-based suggestion.
+    AI_TRACK_RECORD_MIN: int = 3
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

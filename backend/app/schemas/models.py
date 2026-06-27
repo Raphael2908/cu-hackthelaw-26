@@ -27,6 +27,23 @@ class CaseCreate(BaseModel):
     firm_standard_id: str | None = None
 
 
+class ProcessMapSection(BaseModel):
+    """One section of a process map = a task type. `severity` is the firm's declared risk band for
+    the section (metadata only); delegation is decided by task nature, not this band."""
+
+    label: str
+    severity: Severity = "medium"
+
+
+class ProcessMapCreate(BaseModel):
+    """Lightweight structured create for a process map (architecture.md §6). No document parsing —
+    the partner names the map and its sections; uploading a real process-map document is a follow-up
+    (see todo.md). Stored as a `process_doc` corpus document."""
+
+    title: str
+    task_types: dict[str, ProcessMapSection]
+
+
 class TaskPatch(BaseModel):
     """Edit a *proposed* task before plan approval (architecture.md §6)."""
 
