@@ -106,7 +106,16 @@ def _uncertainty(run_id: str) -> float:
 def _load_rows() -> list[dict]:
     if not GRADER_RESULTS.exists():
         return []
-    return [json.loads(line) for line in GRADER_RESULTS.read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = []
+    for line in GRADER_RESULTS.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("//"):  # tolerate blank lines + // section markers
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return rows
 
 
 def _save_rows(rows: list[dict]) -> None:
@@ -131,6 +140,7 @@ def main() -> None:
     p.add_argument("--task")
     p.add_argument("--run-id")
     p.add_argument("--recorrelate", action="store_true", help="just print rho over recorded rows")
+    p.add_argument("--no-save", action="store_true", help="grade + print but do not write grader_results.jsonl")
     args = p.parse_args()
 
     if args.recorrelate:
@@ -150,10 +160,13 @@ def main() -> None:
         "judge_usage": res["judge_usage"],
         "verdicts": res["verdicts"],
     }
+    print(json.dumps({k: v for k, v in row.items() if k != "verdicts"}, indent=2))
+    if args.no_save:
+        print("\n(--no-save: grader_results.jsonl not modified)")
+        return
     rows = [r for r in _load_rows() if r.get("run_id") != args.run_id]  # dedupe by run_id
     rows.append(row)
     _save_rows(rows)
-    print(json.dumps({k: v for k, v in row.items() if k != "verdicts"}, indent=2))
     _report(rows)
 
 

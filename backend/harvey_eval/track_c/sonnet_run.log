@@ -1,0 +1,41 @@
+=== RUN (sonnet) ===
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\run.py", line 271, in <module>
+    run(args.task, args.severity, args.run_id)
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\run.py", line 222, in run
+    signals = run_checks(repo, wtask, submission, provider)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\app\services\checker.py", line 185, in run_checks
+    citation = citation_support(repo, task, submission, provider)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\app\services\checker.py", line 74, in citation_support
+    check = provider.check_citation_support(claim=cit["claim"], source=source)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\app\providers\real\anthropic_llm.py", line 158, in check_citation_support
+    data = self._complete_json(sys, f"CLAIM: {claim}\n\nSOURCE:\n{source.get('text', '')}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\app\providers\real\anthropic_llm.py", line 135, in _complete_json
+    raise ProviderError(f"Model did not return a valid JSON object: {str(text)[:200]}")
+app.providers.base.ProviderError: Model did not return a valid JSON object: {"supported": true, "rationale": "Article 83 of the GDPR does establish the framework for administrative fines, and while the source summarises Article 83 only briefly (mentioning the maximum amounts 
+=== GRADE (sonnet) ===
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\grade.py", line 174, in <module>
+    main()
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\grade.py", line 154, in main
+    "uncertainty": _uncertainty(args.run_id),
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\huang\Desktop\hackthelaw\cu-hackthelaw-26\backend\harvey_eval\track_c\grade.py", line 103, in _uncertainty
+    return float(json.loads((RESULTS_ROOT / run_id / "our_eval.json").read_text(encoding="utf-8"))["uncertainty"])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python312\Lib\pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\huang\\Desktop\\hackthelaw\\cu-hackthelaw-26\\harvey-labs\\results\\eu_sonnet1\\summarize-new-gdpr-enforcement-guidance\\our_eval.json'
+SONNET DONE
