@@ -25,8 +25,18 @@ def _load_json(path: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
-def run_batch(task_ids: list[str], severity: str, tag: str) -> list[dict]:
-    rows: list[dict] = []
+def run_batch(task_ids: list[str], severity: str, tag: str, merge: bool = False) -> list[dict]:
+    # When merging, seed from existing rows and upsert by task id (preserving order), so a
+    # re-run of a few tasks fills them in without clobbering the rest of the batch.
+    by_task: dict[str, dict] = {}
+    order: list[str] = []
+    if merge and OUT.exists():
+        for line in OUT.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                by_task[r["task"]] = r
+                order.append(r["task"])
+
     for i, task in enumerate(task_ids, 1):
         run_id = f"{task}/our-pipeline/{tag}"
         area = task.split("/")[0]
@@ -57,10 +67,14 @@ def run_batch(task_ids: list[str], severity: str, tag: str) -> list[dict]:
         except Exception as e:  # keep the batch going; record the failure
             row["error"] = f"{type(e).__name__}: {e}"
             traceback.print_exc()
-        rows.append(row)
+        if task not in by_task:
+            order.append(task)
+        by_task[task] = row
         # checkpoint after every task so a mid-batch crash keeps prior results
-        OUT.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
-    return rows
+        OUT.write_text(
+            "\n".join(json.dumps(by_task[t]) for t in order) + "\n", encoding="utf-8"
+        )
+    return [by_task[t] for t in order]
 
 
 def summarize(rows: list[dict]) -> None:
@@ -93,6 +107,8 @@ if __name__ == "__main__":
     p.add_argument("--tasks-file", required=True)
     p.add_argument("--severity", default="high", choices=["low", "medium", "high", "extreme"])
     p.add_argument("--tag", default="batchA")
+    p.add_argument("--merge", action="store_true",
+                   help="Upsert into existing batch_results.jsonl instead of overwriting.")
     args = p.parse_args()
     task_ids = json.loads(Path(args.tasks_file).read_text(encoding="utf-8"))
-    summarize(run_batch(task_ids, args.severity, args.tag))
+    summarize(run_batch(task_ids, args.severity, args.tag, args.merge))

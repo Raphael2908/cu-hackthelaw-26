@@ -38,6 +38,61 @@ def _strip_fences(text: str) -> str:
     return t.strip()
 
 
+def _loads_lenient(text: str) -> dict | list | None:
+    """Parse JSON from a model response, tolerating a markdown fence or surrounding prose.
+    Falls back to the outermost {...} / [...] span. Returns None if nothing parses."""
+    t = _strip_fences(text)
+    try:
+        return json.loads(t)
+    except json.JSONDecodeError:
+        pass
+    for open_c, close_c in (("{", "}"), ("[", "]")):
+        i, j = t.find(open_c), t.rfind(close_c)
+        if 0 <= i < j:
+            try:
+                return json.loads(t[i : j + 1])
+            except json.JSONDecodeError:
+                continue
+    return None
+
+
+def _finding(d: dict) -> Finding:
+    """Build a Finding from a model dict, ignoring unexpected keys and filling missing ones —
+    the model occasionally renames/omits a field, which must not crash the worker."""
+    if not isinstance(d, dict):
+        d = {}
+    cit = d.get("citation")
+    if isinstance(cit, dict):
+        cit = {"celex": cit.get("celex"), "claim": cit.get("claim")}
+        if not cit.get("celex"):
+            cit = None  # a citation with no resolvable CELEX is not a checkable claim
+    else:
+        cit = None
+    return Finding(
+        id=str(d.get("id") or ""),
+        clause_ref=str(d.get("clause_ref") or ""),
+        statement=str(d.get("statement") or ""),
+        citation=cit,
+    )
+
+
+def _deviation(d: dict) -> Deviation:
+    """Build a Deviation from a model dict, tolerating extra/missing/mis-typed keys."""
+    if not isinstance(d, dict):
+        d = {}
+    try:
+        score = float(d.get("score", 0.0))
+    except (TypeError, ValueError):
+        score = 0.0
+    return Deviation(
+        clause_ref=str(d.get("clause_ref") or ""),
+        standard_key=str(d.get("standard_key") or ""),
+        draft_text=str(d.get("draft_text") or ""),
+        score=score,
+        rationale=str(d.get("rationale") or ""),
+    )
+
+
 class AnthropicLLMProvider(LLMProvider):
     def __init__(self) -> None:
         if not settings.ANTHROPIC_API_KEY:
@@ -69,10 +124,16 @@ class AnthropicLLMProvider(LLMProvider):
 
     def _complete_json(self, system: str, user: str) -> dict:
         text = self._complete_text(system, user)
-        try:
-            return json.loads(_strip_fences(text))
-        except json.JSONDecodeError as e:  # pragma: no cover
-            raise ProviderError(f"Model did not return valid JSON: {text[:200]}") from e
+        data = _loads_lenient(text)
+        if data is None:
+            # One retry nudging for strict JSON — handles the occasional prose-wrapped or
+            # malformed response instead of failing the whole pipeline task.
+            retry_sys = f"{system}\n\nRespond with ONLY the JSON object — no prose, no code fence."
+            text = self._complete_text(retry_sys, user)
+            data = _loads_lenient(text)
+        if not isinstance(data, dict):
+            raise ProviderError(f"Model did not return a valid JSON object: {str(text)[:200]}")
+        return data
 
     def review_document(
         self, *, draft: dict, firm_standard: dict, process_section: str, run_index: int = 0
@@ -83,10 +144,10 @@ class AnthropicLLMProvider(LLMProvider):
         )
         data = self._complete_json(_REVIEW_SYS, user)
         return ReviewResult(
-            summary=data.get("summary", ""),
-            findings=[Finding(**f) for f in data.get("findings", [])],
-            clauses_relied_on=data.get("clauses_relied_on", []),
-            audit_sources=data.get("audit_sources", []),
+            summary=str(data.get("summary") or ""),
+            findings=[_finding(f) for f in (data.get("findings") or [])],
+            clauses_relied_on=list(data.get("clauses_relied_on") or []),
+            audit_sources=list(data.get("audit_sources") or []),
         )
 
     def check_citation_support(self, *, claim: str, source: dict) -> CitationCheck:
@@ -105,7 +166,7 @@ class AnthropicLLMProvider(LLMProvider):
         )
         user = f"FIRM STANDARD:\n{firm_standard['text']}\n\nDRAFT:\n{draft['text']}"
         data = self._complete_json(sys, user)
-        return [Deviation(**d) for d in data.get("deviations", [])]
+        return [_deviation(d) for d in (data.get("deviations") or [])]
 
     def plan_case(
         self,
