@@ -22,6 +22,17 @@ def _corpus_by_celex(repo: Repo, celex: str) -> dict | None:
     return None
 
 
+def _citation_work_ref(finding: dict, citation: dict) -> dict:
+    """The quoting side of a citation flag: the passage in the SUBMITTED WORK that cited the
+    source — which clause it's in, what the output asserted, and the proposition it attributed to
+    the source. Lets the partner compare what the work claimed against what the source says."""
+    return {
+        "clause_ref": finding.get("clause_ref"),
+        "statement": finding.get("statement", ""),
+        "claim": citation.get("claim"),
+    }
+
+
 def _flag(repo: Repo, task: dict, submission: dict, **fields) -> dict:
     """Persist a flag and mirror it into the supervision audit stream (kept separate from the
     accountability stream — architecture.md §11). Flags are checkable claims, never verdicts."""
@@ -89,6 +100,7 @@ def citation_support(
                             "exists": None,
                             "clause_ref": f["clause_ref"],
                         },
+                        work_ref=_citation_work_ref(f, cit),
                     )
                 )
                 continue
@@ -111,6 +123,7 @@ def citation_support(
                         "exists": False,
                         "clause_ref": f["clause_ref"],
                     },
+                    work_ref=_citation_work_ref(f, cit),
                 )
             )
             continue
@@ -134,6 +147,7 @@ def citation_support(
                         "exists": True,
                         "clause_ref": f["clause_ref"],
                     },
+                    work_ref=_citation_work_ref(f, cit),
                 )
             )
     verifiable = len(findings) - unverifiable
@@ -185,6 +199,12 @@ def precedent_deviation(
                         "corpus_document_id": std["id"],
                         "standard_key": d.standard_key,
                         "clause_ref": d.clause_ref,
+                    },
+                    # The quoting side: the draft's own clause that deviates from the standard.
+                    work_ref={
+                        "clause_ref": d.clause_ref,
+                        "statement": d.draft_text,
+                        "claim": None,
                     },
                 )
             )

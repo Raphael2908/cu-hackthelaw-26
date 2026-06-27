@@ -87,16 +87,29 @@ def aggregate(repo: Repo, *, process_doc_id: str) -> dict:
     return {"process_doc_id": process_doc_id, "by_section": by_section, "log": log}
 
 
-def apply_record(*, suggested_type: str, section_record: dict | None) -> tuple[str, str]:
+def apply_record(
+    *, suggested_type: str, section_record: dict | None, instructed: bool = False
+) -> tuple[str, str]:
     """Overlay a section's track record on the planner agent's nature-based suggestion.
 
     The planner agent decides delegation from the *nature* of the task (mechanical -> AI;
     high-judgment -> human/hybrid) — never from severity. This only adjusts that suggestion using
     what AI has actually done on this section of this map: graduate to AI on a clean record, pull
     back to a human owner on an adverse one. Returns ``(assignee_type, rationale)``; the plan stays
-    a proposal the partner edits (architecture.md §6, §14.7)."""
+    a proposal the partner edits (architecture.md §6, §14.7).
+
+    When ``instructed`` is set, the partner gave up-front instructions for this matter, and the
+    planner's suggestion already reflects them — so a clean record does NOT graduate the task to AI
+    over the partner's explicit steer. Pull-back on an adverse record still applies (it is a safety
+    mechanism, not an optimisation)."""
     rec = section_record
     if rec and rec.get("clean"):
+        if instructed:
+            return (
+                suggested_type,
+                "AI has a clean record on this section, but the partner's up-front instructions "
+                "steer this delegation — keeping the proposed assignee.",
+            )
         return (
             "ai",
             f"AI has a clean record on this section of this process map "

@@ -33,6 +33,7 @@ export const createCase = (body: {
   brief_text: string;
   goal: string;
   severity: Severity;
+  instructions?: string;
   process_doc_id?: string;
 }) => apiFetch<Case>("/cases", { method: "POST", body: JSON.stringify(body) });
 
@@ -55,10 +56,22 @@ export const uploadCaseDocuments = (caseId: string, files: File[]) => {
   return apiFetch<UploadedDoc[]>(`/cases/${caseId}/documents`, { method: "POST", body: form });
 };
 
+// An associate attaches supporting documents to their work on a task (case+task-tagged, audited).
+export const attachTaskDocuments = (taskId: string, files: File[]) => {
+  const form = new FormData();
+  files.forEach((f) => form.append("files", f));
+  return apiFetch<UploadedDoc[]>(`/tasks/${taskId}/attachments`, { method: "POST", body: form });
+};
+
 // --- Plan ---
 export const createPlan = (caseId: string) =>
   apiFetch<PlanResponse>(`/cases/${caseId}/plan`, { method: "POST" });
 export const getPlan = (caseId: string) => apiFetch<PlanResponse>(`/cases/${caseId}/plan`);
+export const revisePlan = (caseId: string, feedback: string) =>
+  apiFetch<PlanResponse>(`/cases/${caseId}/plan/revise`, {
+    method: "POST",
+    body: JSON.stringify({ feedback }),
+  });
 
 export type TaskPatchBody = Partial<{
   title: string;
@@ -67,9 +80,15 @@ export type TaskPatchBody = Partial<{
   assignee_id: string | null;
   severity: Task["severity"];
   ai_instruction: string;
+  human_instruction: string;
+  order_index: number;
 }>;
 export const patchTask = (taskId: string, body: TaskPatchBody) =>
   apiFetch<Task>(`/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(body) });
+export const addPlanTask = (caseId: string) =>
+  apiFetch<Task>(`/cases/${caseId}/plan/tasks`, { method: "POST" });
+export const deleteTask = (taskId: string) =>
+  apiFetch<void>(`/tasks/${taskId}`, { method: "DELETE" });
 
 export const approvePlan = (planId: string) =>
   apiFetch<ApproveResult>(`/plans/${planId}/approve`, { method: "POST" });
@@ -92,6 +111,10 @@ export const reassignTask = (
   taskId: string,
   body: { assignee_type: Task["assignee_type"]; assignee_id?: string; note: string }
 ) => apiFetch<unknown>(`/tasks/${taskId}/reassign`, { method: "POST", body: JSON.stringify(body) });
+
+// Partner<->associate ping-pong. Associate body raises a question; partner body answers it.
+export const postMessage = (taskId: string, body: { body: string }) =>
+  apiFetch<unknown>(`/tasks/${taskId}/message`, { method: "POST", body: JSON.stringify(body) });
 
 // --- Audit & debrief ---
 export const getAudit = (caseId: string) => apiFetch<AuditView>(`/cases/${caseId}/audit`);

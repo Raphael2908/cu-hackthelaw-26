@@ -219,6 +219,7 @@ class AnthropicLLMProvider(LLMProvider):
         process_doc: dict,
         drafts: list[dict],
         associates: list[dict],
+        instructions: str = "",
     ) -> list[dict]:
         sys = (
             "Scope the GOAL into review tasks by DECOMPOSING the process doc: produce at least "
@@ -249,6 +250,8 @@ class AnthropicLLMProvider(LLMProvider):
             "Do NOT route by the matter's severity: severity is the partner's separate up-front "
             "triage dial, set elsewhere — a high-severity matter can still contain low-stakes, "
             "checkable tasks that are right for AI. Judge stakes per task, not per matter.\n\n"
+            "RESPECT the partner's INSTRUCTIONS (if any) when choosing assignees and framing tasks "
+            "— they override the default quadrant lean.\n\n"
             "Bind target_document_id to one of the supplied DOCUMENTS. Return STRICT JSON "
             '{"tasks": [...]} where each task has title, description, task_type, assignee_type, '
             "target_document_id, input_brief_slice, ai_instruction|null. The plan is a proposal — "
@@ -257,19 +260,22 @@ class AnthropicLLMProvider(LLMProvider):
         types = json.dumps(process_doc.get("task_types", {}))
         docs = json.dumps([{"id": d["id"], "title": d["title"]} for d in drafts])
         user = f"GOAL: {goal}\n\nBRIEF: {brief}\n\nTASK TYPES: {types}\n\nDOCUMENTS: {docs}"
+        if instructions.strip():
+            user += f"\n\nPARTNER INSTRUCTIONS: {instructions.strip()}"
         return self._complete_json(sys, user).get("tasks", [])
 
-    def generate_debrief(
+    def debrief_carry_forward(
         self, *, case: dict, tasks: list[dict], flags: list[dict], decisions: list[dict]
-    ) -> str:
-        sys = "Write a concise markdown debrief of the matter from the record provided."
+    ) -> list[str]:
+        sys = (
+            "From the case record, list the concrete CARRY-FORWARD items the partner should action "
+            "before the next matter relies on this work — derived from the flags raised and the "
+            'partner\'s amendments. Return STRICT JSON {"carry_forward": [str, ...]}. Observations '
+            "only, never a verdict."
+        )
         user = json.dumps(
             {"case": case, "tasks": tasks, "flags": flags, "decisions": decisions}, default=str
         )
-        msg = self._client.messages.create(
-            model=self._model,
-            max_tokens=32768,
-            system=sys,
-            messages=[{"role": "user", "content": user}],
-        )
-        return "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+        data = self._complete_json(sys, user)
+        cf = data.get("carry_forward", [])
+        return [str(x) for x in cf] if isinstance(cf, list) else []

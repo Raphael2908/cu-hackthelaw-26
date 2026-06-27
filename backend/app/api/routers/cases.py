@@ -7,10 +7,10 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from app.core.audit import record_accountability
 from app.core.auth import CurrentUser, get_current_user
 from app.db.repo import get_repo
-from app.db.tables import CASES, CORPUS, DEBRIEFS, PLANS
+from app.db.tables import CASES, CORPUS, DEBRIEFS, PLANS, TASKS
 from app.fixtures import firm_standard, process_doc
 from app.providers.factory import get_llm_provider
-from app.schemas.models import CaseCreate
+from app.schemas.models import CaseCreate, PlanReviseRequest
 from app.services import debrief as debrief_svc
 from app.services import documents, planner, views
 
@@ -27,6 +27,7 @@ def create_case(body: CaseCreate, user: CurrentUser = Depends(get_current_user))
             "brief_text": body.brief_text,
             "goal": body.goal,
             "severity": body.severity,
+            "instructions": body.instructions,
             "process_doc_id": body.process_doc_id or process_doc()["id"],
             "firm_standard_id": body.firm_standard_id or firm_standard()["id"],
             "status": "open",
@@ -111,6 +112,37 @@ def create_plan(case_id: str, user: CurrentUser = Depends(get_current_user)) -> 
     return planner.propose_plan(repo, case=case, provider=get_llm_provider(), actor=user.email)
 
 
+@router.post("/cases/{case_id}/plan/tasks", status_code=201)
+def add_plan_task(case_id: str, user: CurrentUser = Depends(get_current_user)) -> dict:
+    """Add a blank proposed task to the plan for the partner to fill in (architecture.md §6)."""
+    repo = get_repo()
+    case = repo.get(CASES, case_id)
+    if not case:
+        raise HTTPException(404, "Case not found.")
+    try:
+        return planner.add_task(repo, case=case, actor=user.email)
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
+
+
+@router.post("/cases/{case_id}/plan/revise", status_code=201)
+def revise_case_plan(
+    case_id: str, body: PlanReviseRequest, user: CurrentUser = Depends(get_current_user)
+) -> dict:
+    """Re-propose the plan from the partner's free-text direction. Still a PROPOSAL — nothing
+    dispatches until the partner approves (architecture.md §6)."""
+    repo = get_repo()
+    case = repo.get(CASES, case_id)
+    if not case:
+        raise HTTPException(404, "Case not found.")
+    try:
+        return planner.revise_plan(
+            repo, case=case, provider=get_llm_provider(), feedback=body.feedback, actor=user.email
+        )
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from e
+
+
 @router.get("/cases/{case_id}/plan")
 def get_case_plan(case_id: str) -> dict:
     repo = get_repo()
@@ -133,12 +165,33 @@ def get_audit(case_id: str) -> dict:
     return views.audit_view(get_repo(), case_id)
 
 
+def _pending_close_message(p: dict) -> str:
+    parts = []
+    if p["awaiting_decision"]:
+        parts.append(f"{p['awaiting_decision']} awaiting your decision")
+    if p["with_associate"]:
+        parts.append(f"{p['with_associate']} with an associate")
+    if p["not_run"]:
+        parts.append(f"{p['not_run']} not yet started")
+    n = p["total"]
+    return (
+        f"Cannot close the case: {n} task{'s' if n != 1 else ''} still pending "
+        f"({', '.join(parts)}). Resolve every task before generating the debrief."
+    )
+
+
 @router.post("/cases/{case_id}/close")
 def close_case(case_id: str, user: CurrentUser = Depends(get_current_user)) -> dict:
+    """Close the case and generate the debrief — but only once every task is resolved. A debrief
+    drawn from an in-flight record would misrepresent the matter, so a case with any pending task is
+    refused (409). This is the authoritative guard; the frontend also disables the button."""
     repo = get_repo()
     case = repo.get(CASES, case_id)
     if not case:
         raise HTTPException(404, "Case not found.")
+    pending = views.pending_summary(repo.list(TASKS, case_id=case_id))
+    if pending["total"] > 0:
+        raise HTTPException(409, _pending_close_message(pending))
     repo.update(CASES, case_id, {"status": "closed", "closed_at": datetime.now(UTC).isoformat()})
     return debrief_svc.generate_debrief(
         repo, case=case, provider=get_llm_provider(), actor=user.email

@@ -44,6 +44,10 @@ class Repo(ABC):
     def update(self, table: str, id: str, fields: dict) -> dict | None: ...
 
     @abstractmethod
+    def delete(self, table: str, id: str) -> bool:
+        """Remove a record by id. Returns True if a row was deleted."""
+
+    @abstractmethod
     def last(self, table: str) -> dict | None:
         """The most recently inserted record in a table, or None. Used by the audit chain."""
 
@@ -97,6 +101,14 @@ class InMemoryRepo(Repo):
                 rec.update(fields)
                 return dict(rec)
         return None
+
+    def delete(self, table: str, id: str) -> bool:
+        rows = self._data.get(table, [])
+        for i, rec in enumerate(rows):
+            if rec["id"] == id:
+                del rows[i]
+                return True
+        return False
 
     def last(self, table: str) -> dict | None:
         rows = self._data.get(table, [])
@@ -211,6 +223,13 @@ class SqliteRepo(Repo):
             rec.update(fields)
             self._conn.execute(f"UPDATE {table} SET data = ? WHERE id = ?", (json.dumps(rec), id))
             return dict(rec)
+
+        return self._write(_do)
+
+    def delete(self, table: str, id: str) -> bool:
+        def _do() -> bool:
+            cur = self._conn.execute(f"DELETE FROM {table} WHERE id = ?", (id,))
+            return cur.rowcount > 0
 
         return self._write(_do)
 

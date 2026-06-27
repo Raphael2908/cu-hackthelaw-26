@@ -19,6 +19,24 @@ def _new_case_with_plan(client):
     return case, plan
 
 
+def _resolve_remaining(client, case_id):
+    """Drive every still-pending task to a terminal state so the case can be closed: submit any work
+    still with an associate (human + hybrid in the inbox), then decide everything now in review."""
+    for item in client.get("/api/inbox", headers=ASSOC_HEADERS).json():
+        t = item["task"]
+        if t.get("case_id") == case_id and t["status"] in ("dispatched", "in_progress", "returned"):
+            client.post(
+                f"/api/tasks/{t['id']}/submit",
+                json={"summary": "Reviewed; matches the standard.", "findings": []},
+                headers=ASSOC_HEADERS,
+            )
+    for card in client.get(f"/api/cases/{case_id}/cockpit").json()["queue"]:
+        client.post(
+            f"/api/tasks/{card['task']['id']}/decision",
+            json={"action": "approve", "note": "Signed off."},
+        )
+
+
 def test_approval_gate_blocks_dispatch(client):
     """Nothing is dispatched before the partner approves the plan (architecture.md §14.7)."""
     _, plan = _new_case_with_plan(client)
@@ -47,6 +65,121 @@ def test_plan_decomposes_one_task_per_process_section(client):
     sections = set(process_doc()["task_types"])
     assert {t["task_type"] for t in plan["tasks"]} == sections
     assert len(plan["tasks"]) == len(sections)
+
+
+def test_case_instructions_steer_the_planner(client):
+    """The partner's up-front instructions shape the plan: 'human-led' gives AI work human oversight
+    (AI → hybrid). Recorded on the plan_proposed event (the partner authoring the delegation)."""
+    case = client.post(
+        "/api/cases",
+        json={**CASE, "instructions": "Keep all the review human-led."},
+    ).json()
+    plan = client.post(f"/api/cases/{case['id']}/plan").json()
+    assert all(t["assignee_type"] != "ai" for t in plan["tasks"])
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    proposed = next(e for e in audit["accountability"] if e["type"] == "plan_proposed")
+    assert "human-led" in proposed["payload"]["instructions"].lower()
+
+
+def test_plan_carries_rationale_and_hybrid_split(client):
+    _, plan = _new_case_with_plan(client)
+    # Every task explains its reasoning; the hybrid task carries both halves of the split.
+    assert all(t.get("rationale") for t in plan["tasks"])
+    hybrid = next(t for t in plan["tasks"] if t["assignee_type"] == "hybrid")
+    assert hybrid["ai_instruction"] and hybrid["human_instruction"]
+
+
+def test_revise_plan_respects_feedback_and_stays_proposed(client):
+    case, plan = _new_case_with_plan(client)
+    plan_id = plan["plan"]["id"]
+    assert any(t["assignee_type"] == "ai" for t in plan["tasks"])
+
+    # "human-led" → the AI tasks gain human oversight (become hybrid); still a fresh PROPOSAL.
+    revised = client.post(
+        f"/api/cases/{case['id']}/plan/revise",
+        json={"feedback": "Make all the review human-led."},
+    )
+    assert revised.status_code == 201
+    body = revised.json()
+    assert body["plan"]["status"] == "proposed"
+    assert body["plan"]["id"] != plan_id  # latest plan wins, like regenerate
+    assert all(t["assignee_type"] != "ai" for t in body["tasks"])
+    # The partner's direction is recorded as part of the delegation record.
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    assert "plan_revised" in {e["type"] for e in audit["accountability"]}
+
+    # An approved plan can't be revised.
+    client.post(f"/api/plans/{body['plan']['id']}/approve")
+    blocked = client.post(
+        f"/api/cases/{case['id']}/plan/revise", json={"feedback": "one more change"}
+    )
+    assert blocked.status_code == 409
+
+
+def test_whole_plan_edit_add_remove_reorder(client):
+    case, plan = _new_case_with_plan(client)
+    n = len(plan["tasks"])
+
+    # Add a blank proposed task.
+    added = client.post(f"/api/cases/{case['id']}/plan/tasks")
+    assert added.status_code == 201
+    new_id = added.json()["id"]
+    assert len(client.get(f"/api/cases/{case['id']}/plan").json()["tasks"]) == n + 1
+
+    # Reorder via order_index patch.
+    patched = client.patch(f"/api/tasks/{new_id}", json={"order_index": 0})
+    assert patched.status_code == 200 and patched.json()["order_index"] == 0
+
+    # Remove it.
+    removed = client.delete(f"/api/tasks/{new_id}")
+    assert removed.status_code == 204
+    assert len(client.get(f"/api/cases/{case['id']}/plan").json()["tasks"]) == n
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    assert {"task_added", "task_removed"} <= {e["type"] for e in audit["accountability"]}
+
+    # Once approved, structural edits are refused.
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    assert client.post(f"/api/cases/{case['id']}/plan/tasks").status_code == 409
+
+
+def test_associate_attaches_documents_to_a_task(client):
+    case, plan = _new_case_with_plan(client)
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    human = next(
+        i["task"]
+        for i in client.get("/api/inbox", headers=ASSOC_HEADERS).json()
+        if i["task"]["assignee_type"] == "human"
+    )
+    tid = human["id"]
+
+    r = client.post(
+        f"/api/tasks/{tid}/attachments",
+        files={"files": ("analysis.txt", b"My supporting analysis.", "text/plain")},
+        headers=ASSOC_HEADERS,
+    )
+    assert r.status_code == 201 and len(r.json()) == 1
+    # Surfaced on the task detail, and recorded in the accountability audit (traceable to the task).
+    detail = client.get(f"/api/tasks/{tid}").json()
+    assert any(a["title"] == "analysis.txt" for a in detail["attachments"])
+    audit = client.get(f"/api/cases/{case['id']}/audit").json()
+    assert "documents_attached" in {e["type"] for e in audit["accountability"]}
+
+
+def test_flags_carry_both_sides_for_verification(client):
+    """Citation + deviation flags carry a work_ref (the quoting passage in the submitted work)
+    alongside source_ref (the quoted source), so the partner can compare both sides."""
+    case, plan = _new_case_with_plan(client)
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+    top = client.get(f"/api/cases/{case['id']}/cockpit").json()["queue"][0]
+    flags = client.get(f"/api/tasks/{top['task']['id']}").json()["flags"]
+
+    cite = next(f for f in flags if f["signal_type"] == "citation_support")
+    dev = next(f for f in flags if f["signal_type"] == "precedent_deviation")
+    for f in (cite, dev):
+        assert f.get("work_ref") and f["work_ref"].get("statement"), f["signal_type"]
+        assert f.get("source_ref")
+    # The citation flag also records the proposition the work attributed to the source.
+    assert cite["work_ref"].get("claim")
 
 
 def test_happy_path_end_to_end(client):
@@ -109,9 +242,36 @@ def test_happy_path_end_to_end(client):
     assert {"plan_proposed", "plan_approved", "decision_recorded"} <= acc_types
     assert audit["supervision"], "flags should appear in the supervision stream"
 
-    # Close → debrief generates from the record.
-    debrief = client.post(f"/api/cases/{case['id']}/close").json()
-    assert "Case debrief" in debrief["content"]
+    # Close requires every task resolved first — resolve the rest, then close → debrief generates.
+    _resolve_remaining(client, case["id"])
+    closed = client.post(f"/api/cases/{case['id']}/close")
+    assert closed.status_code == 200
+    # The debrief is an issue-centric structured payload: each needs-attention task joins its flags
+    # and the partner's decision in ONE entry; routine work collapses to a count.
+    report = closed.json()["content"]
+    assert report["goal"] and report["summary"]["tasks"] >= 1
+    amended = next(
+        i for i in report["issues"] if i["decision"] and i["decision"]["action"] == "amend"
+    )
+    assert amended["flags"] and amended["decision"]["amendment"]  # the join, in one record
+
+
+def test_close_blocked_while_tasks_pending(client):
+    """A debrief drawn from an in-flight record would misrepresent the matter: closing is refused
+    while any task is still pending, and no debrief is generated."""
+    case, plan = _new_case_with_plan(client)
+    client.post(f"/api/plans/{plan['plan']['id']}/approve")
+
+    # Straight after approval, work is mid-flight (review queue + associate inbox).
+    blocked = client.post(f"/api/cases/{case['id']}/close")
+    assert blocked.status_code == 409
+    assert "pending" in blocked.json()["detail"].lower()
+    assert client.get(f"/api/cases/{case['id']}/debrief").status_code == 404
+    assert client.get(f"/api/cases/{case['id']}").json()["status"] == "open"
+
+    # Once everything is resolved, the same call succeeds.
+    _resolve_remaining(client, case["id"])
+    assert client.post(f"/api/cases/{case['id']}/close").status_code == 200
 
 
 def test_all_planted_defects_surface(client):
