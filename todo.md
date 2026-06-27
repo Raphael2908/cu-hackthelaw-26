@@ -17,6 +17,28 @@ cut from the bottom if time runs short.
       `system-design/architecture.png` + `happy_path.png`, embedded in the README Architecture section).
 
 ## Frontend / UX
+- [ ] **Give associates a rich-text editor for their submission + document upload.** The associate's
+      submission is currently a bare `<textarea>` bound to `summary` (`app/inbox/page.tsx` →
+      `submitTask({ summary, findings })`). Upgrade it to a markdown editor in the spirit of a
+      GitHub-style comment box — **Write / Preview tabs**, a light formatting toolbar (heading, bold,
+      italic, link, code, bulleted/numbered list — buttons insert markdown into the textarea), and
+      **attach files** (click / paste / drag-drop) so an associate can upload supporting documents
+      with their work. Reuse the existing `Markdown` component (`components/Markdown.tsx`) for the
+      Preview tab — `summary` is already markdown elsewhere — so no new rendering path is needed.
+      - **Design alignment (important — do NOT copy the reference image's GitHub dark style).** Build
+        it in the product's existing light visual language: `Panel`/`Field` containers, the `.input`
+        focus ring (`brand` border + `brand-soft` ring), `text-ink`/`text-muted`/`canvas`/`line`
+        tokens. Use the **segmented-control pattern already in the codebase** for the Write/Preview
+        toggle (same look as the audit filter toggle and the role toggle), and keep the toolbar
+        glyphs consistent with existing iconography. It should read as the same app, not a
+        transplanted GitHub widget.
+      - **Backend seam for attachments (decide before building the upload).** File attachment on a
+        submission has no endpoint yet — documents only attach at the case level today
+        (`uploadCaseDocuments` → `POST /cases/{id}/documents`). The rich-text editing of `summary` is
+        frontend-only, but the upload needs a call: simplest is to reuse the case-documents endpoint
+        so the associate's file lands in the case corpus (tagged to the task), rather than adding a
+        new submission-attachment table. Record the attachment in the audit/submission record so it's
+        traceable. Keep submissions checkable claims that re-enter the flow — never an auto-decision.
 - [ ] **Cut redundant hint/helper text that clutters the view.** Several screens carry long muted
       explainer sentences (the `text-[11px]`/`text-xs text-muted` paragraphs) that restate what the
       adjacent control already makes obvious — visual noise for a time-poor partner. Trim them: keep
