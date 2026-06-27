@@ -4,6 +4,58 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Iterative planning — partner critiques, the planner revises (Cluster A, increment 2)
+
+**Where we are.** The plan is now a conversation, not a one-shot proposal: the partner gives
+free-text direction and the planner returns a revised PROPOSAL. Still gated — nothing dispatches
+until the partner approves (the one rule).
+
+**Built**
+- **Provider seam.** `LLMProvider.revise_plan(case, current_tasks, feedback)` returns FULL task
+  dicts (so the partner's edits survive). The base class ships a **safe no-op default** (returns the
+  current tasks), so the real provider stays valid until its prompt is written. The **mock** override
+  applies deterministic, demonstrable keyword transforms: "human-led" → AI tasks become hybrid;
+  "automate/use ai" → human tasks become hybrid; "remove/drop" → drops a task; "add/another" →
+  appends a partner-requested task. Unmatched feedback re-proposes unchanged.
+- **Service + endpoint.** `planner.revise_plan` re-stamps the revised tasks onto a **fresh proposed
+  plan** (latest-plan-wins, like regenerate — the repo has no delete), preserving per-task severity/
+  assignee/instruction edits, and records a `plan_revised` accountability event carrying the
+  feedback. `POST /cases/{id}/plan/revise` (`PlanReviseRequest`); 409 if there's no plan or it's
+  already approved.
+- **Frontend.** Plan page gains a "Shape the plan" feedback box (`onRevise` → `revisePlan`) that
+  re-renders the revised plan and shows a "Revised ×N" marker; gated on `proposed` + partner. Added
+  `revisePlan` to `lib/api.ts`.
+- **Verified.** New tests `test_revise_plan_respects_feedback_and_stays_proposed` +
+  `test_plan_carries_rationale_and_hybrid_split`. **29 backend tests green, ruff clean, frontend tsc
+  clean.** Live: `['ai','hybrid','ai','human']` + "make human-led, add a task" → `['hybrid','hybrid',
+  'hybrid','human','hybrid']`, status stays `proposed`, audit shows `plan_revised`.
+
+**Next (Cluster A).** Whole-plan add/remove/reorder (endpoints + `order_index` in `TaskPatch`);
+surface the `human_instruction` text in the associate inbox; real-provider prompts for
+rationale/revise.
+
+---
+
+## Audit entries signpost actor vs. task and read as clickable
+
+**Where we are.** Each audit entry's metadata line was `timestamp · actor · taskTitle` — three
+near-identical muted spans split by `·`. A reader couldn't tell *who* did it from *which task* it's
+on, and the actor/task were clickable filters that only signalled it on hover. Both fixed; pairs with
+the task-filter work above (clicking an entry's task now visibly drives the new Task dropdown).
+
+**Built**
+- **Frontend only (`app/cases/[id]/audit/page.tsx`, the `Entry` component).** Metadata line now reads
+  `timestamp · by <actor> · on <task>`: muted "by"/"on" signpost words label the two roles. The
+  actor/task buttons gained a dotted-underline link affordance (`text-ink-soft` → `hover:text-brand`,
+  `decoration-line` → `hover:decoration-brand`) so their clickability is visible at rest, not just on
+  hover. Tooltips reworded to "Filter the trail to this person/agent" / "…this task" to match the
+  filter-bar vocabulary — clicking still drives the same `setActor`/`setTask` filters.
+- **Untouched.** Technical-details disclosure and the decision/flag tag unchanged. No verdict
+  semantics — labelling + affordance only.
+- **Verified.** Frontend `tsc --noEmit` clean.
+
+---
+
 ## Explicit task filter on the audit page
 
 **Where we are.** The audit trail already filtered by task, but only *implicitly*: a partner had to

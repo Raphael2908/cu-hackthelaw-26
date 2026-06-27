@@ -290,13 +290,23 @@ function Entry({
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
           <span>{fmt(ev.created_at)}</span>
           <span>·</span>
-          <button onClick={onActor} className="hover:text-brand" title="Show only this person/agent">
+          <span>by</span>
+          <button
+            onClick={onActor}
+            className="font-medium text-ink-soft underline decoration-dotted decoration-line underline-offset-2 hover:text-brand hover:decoration-brand"
+            title="Filter the trail to this person/agent"
+          >
             {humanizeActor(ev.actor)}
           </button>
           {ev.task_id && taskTitle ? (
             <>
               <span>·</span>
-              <button onClick={onTask} className="hover:text-brand" title="Follow this task">
+              <span>on</span>
+              <button
+                onClick={onTask}
+                className="font-medium text-ink-soft underline decoration-dotted decoration-line underline-offset-2 hover:text-brand hover:decoration-brand"
+                title="Filter the trail to this task"
+              >
                 {taskTitle}
               </button>
             </>

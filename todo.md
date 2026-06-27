@@ -61,7 +61,7 @@ cut from the bottom if time runs short.
       - **Note:** overlaps the existing "side-by-side source diff for deviation flags" line
         under *Now (depth)* — fold them together. **One rule:** still just surfacing two checkable
         passages for the human to compare; the system never renders the verdict (keep the footer).
-- [ ] **Iterative planning — the partner critiques the plan and the planner revises (backend +
+- [x] **Iterative planning — the partner critiques the plan and the planner revises (backend +
       frontend).** Today the planner proposes a plan and the partner can only edit task fields
       (assignee/severity) or regenerate from scratch — there's no way to give natural-language
       direction ("make the liability review human-led", "add a task for the data-transfer clause",
@@ -225,7 +225,7 @@ cut from the bottom if time runs short.
         close" banner with the breakdown, and handles the `409`. Tests: `test_close_blocked_while_
         tasks_pending` + updated happy path drain everything before close. 27 backend tests green,
         ruff clean, frontend `tsc` clean.
-- [ ] **Signpost the actor vs. task on each audit entry, and make both read as clickable.** On the
+- [x] **Signpost the actor vs. task on each audit entry, and make both read as clickable.** On the
       audit timeline each entry's metadata line is `timestamp · actor · taskTitle`
       (`app/cases/[id]/audit/page.tsx`, the `Entry` component ~lines 266–280) — three near-identical
       muted spans separated by `·`. Two problems: (1) nothing signposts that one is **WHO** (the
@@ -243,6 +243,13 @@ cut from the bottom if time runs short.
         so it reads as the same filtering vocabulary.
       - Keep the `Technical details` disclosure and the decision/flag tag as-is; this is metadata-line
         only. No verdict semantics involved — purely affordance + labelling.
+      - **Done.** The `Entry` metadata line in `audit/page.tsx` now reads `timestamp · by <actor> · on
+        <task>`: muted "by"/"on" signpost words label the two roles, and the actor/task buttons carry
+        a dotted-underline link affordance (`text-ink-soft` → `hover:text-brand`, `decoration-line` →
+        `hover:decoration-brand`) so their clickability shows without hovering. Tooltips reworded to
+        "Filter the trail to this person/agent" / "…this task" to match the filter-bar vocabulary
+        (clicking still drives the same `setActor`/`setTask` filters). Technical-details disclosure and
+        the decision/flag tag untouched. `tsc --noEmit` clean.
 - [ ] **Give associates a rich-text editor for their submission + document upload.** The associate's
       submission is currently a bare `<textarea>` bound to `summary` (`app/inbox/page.tsx` →
       `submitTask({ summary, findings })`). Upgrade it to a markdown editor in the spirit of a
