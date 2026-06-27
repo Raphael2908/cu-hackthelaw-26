@@ -1,7 +1,7 @@
 # Architecture — Supervision Cockpit for Human and AI Legal Teams
 
-> **Hack the Law (Cambridge) · Clifford Chance track**
-> Problem: *How do we supervise legal AI agents?*
+> **Production build.** Originated on the Hack the Law (Cambridge) · Clifford Chance track.
+> The problem it answers: *How do we supervise legal AI agents?*
 
 This document is the single source of truth. Everything else (data model, services, API, UI)
 derives from it. Read this and `current_progress.md` first.
@@ -10,9 +10,10 @@ derives from it. Read this and `current_progress.md` first.
 
 ## 1. Goal and scope
 
-Build a working web demo of a system that **delegates legal work under partner approval, then
-supervises it**: it triages completed outputs, surfaces *checkable* flags, and records defensible
-sign-off, so a supervising partner stays accountable without manually reviewing every output.
+A production system that **delegates legal work under partner approval, then supervises it**: it
+triages completed outputs, surfaces *checkable* flags, and records defensible sign-off, so a
+supervising partner stays accountable without manually reviewing every output. (It began on the
+Hack the Law / Clifford Chance track; it is now being built out as the real product.)
 
 The one design principle that runs through everything:
 
@@ -23,9 +24,9 @@ outputs "this clause deviates from your firm's standard indemnity template, and 
 does not support the proposition" is useful even when wrong, because the human verifies it in
 seconds. We build the second kind.
 
-**Build the whole spine, keep every component thin.** Depth goes into the supervision layer
-(worker → checker → ranker → cockpit → audit) — that is what this track rewards. Delegation and
-orchestration are built to working breadth.
+**The whole spine matters, but depth concentrates in the supervision layer** (worker → checker →
+ranker → cockpit → audit) — that is where the product's value lives. Delegation and orchestration
+are built to solid, working breadth.
 
 | Component | Depth | Meaning |
 |---|---|---|
@@ -37,9 +38,9 @@ orchestration are built to working breadth.
 | Cockpit | **Depth** | Queue, flag panel with one-click sources, approve/amend/reject, audit. |
 | Debrief | Breadth | Templated summary from the case record. |
 
-**Fallback ordering (cut from the bottom if time runs short):** debrief → associate interface
-(simulate the human submission) → planner depth (hand-author one plan). Protect checker, ranker,
-cockpit, audit to the end.
+**Criticality ordering (what must never regress):** checker, ranker, cockpit and audit are
+load-bearing — the supervision and accountability guarantees rest on them. Planner, coordinator,
+associate interface and debrief support the flow around that core.
 
 ---
 
@@ -69,15 +70,16 @@ debrief agent summarises the record.
 |---|---|---|
 | Frontend | Next.js (App Router) + Tailwind | All API calls through `lib/apiClient.ts`. |
 | API | FastAPI (Python 3.12, `uv`, Pydantic v2) | Thin: validate → authorize → record → orchestrate via services. |
-| Store | **SQLite** (one file) | Case store, task/assignment records, append-only audit log. `InMemoryRepo` for tests. |
-| LLM | **Anthropic Claude** behind one `LLMProvider` | `PROVIDER_MODE=mock` (default) replays fixtures → the whole demo runs offline, keyless. |
-| Run | One backend command + one frontend command | No Celery/Redis/Supabase/Stripe/Docker — deliberately. |
+| Store | **SQLite** (one file) | The production store. Case store, task/assignment records, append-only audit log. `InMemoryRepo` for tests. |
+| LLM | **Anthropic Claude** behind one `LLMProvider` | `PROVIDER_MODE=real` in production; `mock` replays fixtures for a keyless, offline fallback and the test suite. |
+| Run | **Docker Compose** (backend + frontend) | Dockerized. In-process background dispatch today; Celery/Redis is the committed scale-up path (§8). No Supabase/Stripe. |
 
-**Why this shape.** The brief (§5) steers explicitly to "a small local store… one LLM provider
-behind a single service module… runnable from one command… runs offline from fixtures." Heavy
-infra would fight the on-stage demo. We keep the *conventions* that make a stack maintainable —
-docs-driven, provider-behind-a-factory, repo pattern, mock-mode boot, no-network tests — without
-the operational weight.
+**Why this shape.** We start lean — a small local SQLite store, one LLM provider behind a single
+service module, an offline fixture mode — and scale up component by component. The *conventions*
+that make this maintainable (docs-driven, provider-behind-a-factory, repo pattern, mock-mode boot,
+no-network tests) are exactly the seams that let us add Celery/Redis dispatch, web-search tools, and
+more without rewrites. SQLite is a deliberate production choice for this workload, not a stopgap:
+one file, transactional, easy to back up and reason about.
 
 **Conventions (load-bearing):**
 - **Provider abstraction + factory.** Orchestration depends only on the `LLMProvider` interface.
@@ -96,15 +98,16 @@ the operational weight.
 
 ## 4. Infra phasing
 
-- **Phase 0 (the offline demo).** One SQLite file, FastAPI + Next.js dev servers, mock provider.
-  Runs on a laptop, offline. Still the fallback for a keyless, network-free demo.
+- **Phase 0 (offline fallback).** One SQLite file, FastAPI + Next.js dev servers, mock provider.
+  Runs on a laptop, offline, keyless. Retained as the network-free fallback and the test mode.
 - **Phase 1 (now — the real run).** Same one SQLite file; `PROVIDER_MODE=real` + `ENV=production`
   against Anthropic Claude. **SQLite is the production store — we are not moving to Supabase/Postgres.**
   The repo seam stays (so a different store *could* drop in later) but is not exercised. Real auth
   (SSO/JWKS) in front of the `core/auth.py` seam is the remaining step before non-demo use.
 
-The deployment answer for a *real* legal deployment — where it runs, what is retained, data
-residency, privilege — is a slide, not build scope (see §13). A Clifford Chance judge will ask early.
+The deployment design for a real legal deployment — where it runs, what is retained, data
+residency, privilege — is an open decision we must make (see §13), not yet built. Any firm's
+security review will press on it early.
 
 ---
 
@@ -115,10 +118,10 @@ SQLite tables, each a resource on the `Repo`. `id`s are uuid4 strings; timestamp
 | Table | Key fields | Notes |
 |---|---|---|
 | `associates` | `name, practice_area, current_load, capacity` | Human-maintained capability + capacity registry. **Not scraped** (GDPR Art. 22 — see §13). The planner reads it to *propose*; the partner approves. |
-| `corpus_documents` | `celex, title, kind, source_url, text, planted_defects(json), ground_truth(json)` | `kind ∈ legislation\|case_law\|firm_standard\|process_doc`. EU Cellar-modelled + synthetic firm standard/process doc. |
-| `cases` | `title, brief_text, goal, process_doc_id, firm_standard_id, status, created_by` | `status ∈ open\|closed`. |
+| `corpus_documents` | `celex, title, kind, source_url, text, case_id, planted_defects(json), ground_truth(json)` | `kind ∈ legislation\|case_law\|firm_standard\|process_doc\|draft`. EU Cellar-modelled + synthetic firm standard/process doc; uploaded case documents are stored as `draft` rows tagged with `case_id`. |
+| `cases` | `title, brief_text, goal, severity, process_doc_id, firm_standard_id, status, created_by` | `status ∈ open\|closed`. `severity` is the partner's up-front choice for the matter. |
 | `plans` | `case_id, status, approved_by, approved_at` | `status ∈ proposed\|approved`. The plan is a **proposal**; nothing dispatches until `approved`. |
-| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, severity, input_brief_slice, input_process_section, ai_instruction, status, order_index` | `assignee_type ∈ human\|ai\|hybrid`; `severity ∈ low\|medium\|high` set **up front** from the process doc. |
+| `tasks` | `case_id, plan_id, title, description, task_type, assignee_type, assignee_id, severity, input_brief_slice, input_process_section, ai_instruction, status, order_index` | `assignee_type ∈ human\|ai\|hybrid`; `severity ∈ low\|medium\|high\|extreme` set **up front** by the partner at case creation. |
 | `submissions` | `task_id, produced_by, run_index, summary, findings(json), citations(json), clauses_relied_on(json), audit_sources(json)` | Worker output. `run_index` supports multi-run disagreement. `produced_by ∈ ai\|human\|hybrid`. |
 | `flags` | `task_id, submission_id, signal_type, hard(bool), title, description, evidence(json), source_ref(json)` | `signal_type ∈ citation_support\|precedent_deviation\|multi_run_disagreement`. **Never** a pass/fail. `source_ref` resolves to a corpus doc + locator for one-click verification. |
 | `risk_scores` | `task_id, severity_label, citation_support_rate, deviation_score, disagreement_score, uncertainty, priority, lane, sampled(bool)` | `lane ∈ review\|auto_clear`. Every signal stored separately so none is hidden behind the composite. |
@@ -137,7 +140,8 @@ signed_off | escalated | cleared`. Redo loops back to `approved` only by an expl
 The planner turns a goal into tasks, each carrying:
 - **Assignee type** — human associate, AI agent, or hybrid (a human told to use a specific AI step,
   who remains the owner of the result).
-- **Severity label** — drawn from the process document, set **at plan time**, not inferred later.
+- **Severity label** — chosen by the partner at case creation (`low|medium|high|extreme`), applied
+  as the default for every task in the plan and overridable per task; not inferred later.
 - **Inputs** — the slice of the brief, the relevant process-doc section, and (hybrid) the AI instruction.
 
 The plan renders in the cockpit as an **editable proposal**. The partner can change an assignee,
@@ -152,9 +156,9 @@ matters for this track is in the checker and cockpit, not the routing.
 Severity and uncertainty come from different places and must **not** be fused into one model guess.
 
 ### 7.1 Severity — set up front, owned by humans/policy
-A label attached to each task when the plan is created, drawn from the process document (e.g.
-verifying a binding obligation = High; summarising a non-key recital = Low). Auditable as a
-deliberate choice, never a model inference.
+The partner's up-front risk call for the matter, chosen at case creation (`low|medium|high|extreme`)
+and applied as the default for every task in the plan (overridable per task). Auditable as a
+deliberate human choice, never a model inference.
 
 ### 7.2 Uncertainty — measured after the fact from checkable signals
 A tunable weighted composite of three **independent, individually inspectable** signals. Each is
@@ -185,16 +189,21 @@ formula; it is that each signal stands on its own in the UI.
 
 ## 8. Async orchestration
 
-No Celery/Redis. Dispatching an approved AI/hybrid task runs the worker → checker → ranker pipeline,
-each transition writing an audit event; the `coordinator` service is the state machine. Under real
-models this pipeline is many slow calls, so dispatch runs on a **background thread pool**
-(`core/background.py`, `ASYNC_DISPATCH=true`): the approve request returns immediately and the
-cockpit polls, surfacing each task as its pipeline finishes. The store serialises writes and the
-audit chain is written under a lock, so concurrent workers stay safe and the chain stays valid. In
-mock mode the pipeline is instant; tests set `ASYNC_DISPATCH=false` to run it inline and keep
-post-approve assertions deterministic. A pipeline failure **fails safe** — the task escalates to a
-human, never silently dropped or auto-reassigned (§14.6). If this became real at scale, the same
-service boundary is where a durable queue (Celery/SQS) would slot in — the code wouldn't change shape.
+Dispatching an approved AI/hybrid task runs the worker → checker → ranker pipeline, each transition
+writing an audit event; the `coordinator` service is the state machine. Under real models this
+pipeline is many slow calls, so dispatch runs **off the request path**: approve returns immediately
+and the cockpit polls, surfacing each task as its pipeline finishes. The store serialises writes and
+the audit chain is written under a lock, so concurrent workers stay safe and the chain stays valid.
+A pipeline failure **fails safe** — the task escalates to a human, never silently dropped or
+auto-reassigned (§14.6). In mock mode the pipeline is instant; tests set `ASYNC_DISPATCH=false` to
+run it inline and keep post-approve assertions deterministic.
+
+**Dispatch mechanism — current and committed.** Today this runs on an in-process **background thread
+pool** (`core/background.py`, `ASYNC_DISPATCH=true`) — correct and simple, but bounded to one
+process and lost on restart. The committed production path is **Celery workers backed by Redis**
+(roadmap, `todo.md`): durable, retryable, horizontally scalable, surviving restarts. The
+`coordinator` boundary is exactly where it slots in — submitting a task to the queue replaces
+submitting it to the thread pool, and nothing else changes shape.
 
 ---
 
@@ -202,19 +211,23 @@ service boundary is where a durable queue (Celery/SQS) would slot in — the cod
 
 The "documents" are the corpus (EU Cellar-modelled legislation/case law + a synthetic firm standard
 + a process doc). They live in `corpus_documents` and are seeded from `backend/app/fixtures/` on
-boot. Bulk document upload at case creation (`POST /api/cases/{id}/documents`, PDF/DOCX/text) is
-implemented: each file's extracted text becomes a `draft` `corpus_document` tagged with its
-`case_id`, and the planner scopes tasks over a case's uploads (falling back to the seeded drafts when
-none were uploaded). Extraction is best-effort plain text — no OCR, no object store. `source_ref` on
-a flag is `{corpus_document_id, locator}` so the cockpit links straight to the cited passage.
+boot. Bulk document upload at case creation (`POST /api/cases/{id}/documents`, PDF/DOCX/text — with
+`.pptx` on the roadmap, `todo.md`) is implemented: each file's extracted text becomes a `draft`
+`corpus_document` tagged with its `case_id`, and the planner scopes tasks over a case's uploads
+(falling back to the seeded drafts when none were uploaded). Extraction is best-effort plain text —
+no OCR, no object store. `source_ref` on a flag is `{corpus_document_id, locator}` so the cockpit
+links straight to the cited passage. Live external sources retrieved by agents (web search via
+Perplexity, on the roadmap) are recorded the same way — every fetched source kept with its URL for
+one-click verification, so it stays a checkable claim, never a verdict.
 
 ---
 
 ## 10. Auth
 
-A real legal deployment needs proper auth (JWKS, SSO, RLS). For the demo we use a lightweight
-`CurrentUser` defaulting to the supervising **partner** identity, overridable by header for the
-associate view. The seam (`core/auth.py`) is where real auth drops in. Out of build scope, on a slide.
+A real legal deployment needs proper auth (JWKS, SSO, RLS). Today a lightweight `CurrentUser`
+defaults to the supervising **partner** identity, overridable by header for the associate view. The
+seam (`core/auth.py`) is where real auth drops in — and wiring it (SSO/JWKS) is the **next
+production step** before any non-demo use, not a deferred slide.
 
 ---
 
@@ -239,7 +252,8 @@ streams. The hash chain (`prev_hash → hash`) makes tampering detectable.
 | `GET /healthz`, `GET /api/healthz` | Liveness. |
 | `GET /api/corpus`, `GET /api/corpus/{id}` | List / fetch corpus docs (for one-click source view). |
 | `GET /api/associates` · `POST /api/associates` | Capability + capacity registry. |
-| `POST /api/cases` · `GET /api/cases` · `GET /api/cases/{id}` | Case intake + list/detail. |
+| `POST /api/cases` · `GET /api/cases` · `GET /api/cases/{id}` | Case intake (with severity) + list/detail. |
+| `POST /api/cases/{id}/documents` · `GET /api/cases/{id}/documents` | Bulk-attach case documents (PDF/DOCX/text) for the planner; list them. |
 | `POST /api/cases/{id}/plan` | Run the planner → a **proposed** plan with tasks. |
 | `GET /api/plans/{id}` · `PATCH /api/tasks/{id}` | Read plan; edit a proposed task (assignee/severity/split). |
 | `POST /api/plans/{id}/approve` | **Approval gate** — records, then dispatches. |
@@ -261,14 +275,17 @@ No endpoint returns an agent-generated verdict.
    most trustworthy; citation checking depends on retrieval quality; deviation depends on a good
    firm standard. We claim a useful *triage* signal, not a correct one.
 2. **Privilege & confidentiality.** Routing privileged material through multiple agents and
-   retaining intermediate evidence raises waiver/confidentiality risk. The deployment answer (where
-   it runs, what is retained, data residency) is a slide, out of build scope.
+   retaining intermediate evidence raises waiver/confidentiality risk. The deployment design (where
+   it runs, what is retained, data residency) is an open decision to make before production use, and
+   it gets sharper as agents reach out to the web (Perplexity) — what leaves the boundary must be
+   governed.
 3. **Sampling rate is a policy lever, not a constant.** Too low → drift slips through; too high → the
    efficiency claim weakens. Set per task type by the firm (`SAMPLE_RATE`).
 4. **Standards quality is a dependency.** Precedent deviation is only as good as the firm standard it
    compares against. Garbage scaffold, garbage signal.
-5. **Breadth risk.** The full spine is a large surface for a hackathon. Mitigated by the depth table
-   (§1) and the bottom-up fallback ordering.
+5. **Surface area.** The full spine is broad. Depth concentrates where it matters (§1), and the
+   provider / repo / dispatch seams keep scale-up (Celery/Redis, web search, pptx) incremental
+   rather than rewrites.
 
 ---
 

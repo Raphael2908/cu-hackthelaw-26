@@ -4,6 +4,30 @@ Running build log. Newest at the top. Read `architecture.md` first for the desig
 
 ---
 
+## Production stance — building the real product now
+
+**Where we are.** This is no longer framed as a hackathon demo: it is the **production build**.
+The stack runs against real Anthropic Claude on SQLite, Dockerized, with async dispatch. PR #2 is
+retitled and rewritten as the production build, and `architecture.md` has been swept to a production
+stance (offline mock mode is now the keyless *fallback*, not the default story).
+
+**Done**
+- Reframed `architecture.md` from "working web demo / on a slide / out of build scope / no infra
+  deliberately" to a production posture: real Anthropic on SQLite is the run, Docker is in, Celery/
+  Redis is the named scale-up path, real auth is the next step (not a slide).
+
+**Planned next (production scale-up — see `todo.md`)**
+- **PPTX ingestion** — add `.pptx` to document upload via `python-pptx`, same extractor path as
+  PDF/DOCX/text.
+- **Celery + Redis** — replace the in-process background thread pool (`core/background.py`) with
+  durable, retryable, horizontally-scalable Celery workers for the agentic worker→checker→ranker
+  flows. The `coordinator` boundary stays; only the dispatch mechanism changes.
+- **Perplexity web search** — give AI agents live web retrieval behind a tool/provider seam to
+  improve citation-support retrieval; every fetched source recorded with its URL, still a claim and
+  never a verdict.
+
+---
+
 ## Real mode + bulk document upload + partner-chosen severity
 
 **Where we are.** Committed to the real Anthropic provider and added case document upload. The stack

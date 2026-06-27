@@ -14,10 +14,23 @@ cut from the bottom if time runs short.
 - [ ] Associate inbox: richer task context; show hybrid AI instruction inline with submit.
 - [ ] Debrief: include carry-forward notes derived from flags the partner amended.
 
-## Real integrations (post-demo)
+## Production scale-up (next)
+- [ ] **PPTX ingestion.** Add `.pptx` to document upload — extract slide text via `python-pptx`,
+      alongside the existing PDF/DOCX/text extractors in `services/documents.py`. Same path: each
+      becomes a `case_id`-tagged `draft` corpus document the planner scopes over.
+- [ ] **Celery + Redis dispatch.** Replace the in-process background thread pool
+      (`core/background.py`) with Celery workers backed by Redis to run the agentic
+      worker→checker→ranker flows — durable, retryable, horizontally scalable, surviving restarts.
+      The `coordinator` service boundary stays; only the dispatch mechanism changes (architecture §8).
+- [ ] **Perplexity web search.** Give AI agents web-search via Perplexity, behind a tool/provider
+      seam, so workers can retrieve live external sources when checking citations and gathering
+      context — improving citation-support retrieval quality (§13.1). Keep it checkable: every fetched
+      source is recorded with its URL for one-click verification, and remains a claim, never a verdict.
+
+## Real integrations
 - [x] Run on real Anthropic (`PROVIDER_MODE=real`, `ENV=production`); SQLite stays the store.
 - [ ] Tune the real review/plan prompts; verify structured output parsing; raise `max_tokens`.
-- [ ] Live EU Cellar API connector (keep fixtures as the offline demo fallback).
+- [ ] Live EU Cellar API connector (keep fixtures as the offline fallback).
 - [ ] Real auth (SSO/JWKS); per-firm process-doc + standard management. (No Postgres/Supabase —
       SQLite is the production store.)
 
